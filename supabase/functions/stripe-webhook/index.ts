@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
     if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET not configured");
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const stripe = new Stripe(stripeKey);
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
 

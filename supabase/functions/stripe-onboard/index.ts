@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const stripe = new Stripe(stripeKey);
 
     // Check if user already has a stripe account row
     const { data: existingAccount } = await supabaseAdmin
@@ -95,8 +95,9 @@ Deno.serve(async (req) => {
 
     // Parse request body for return/refresh URLs
     const body = await req.json().catch(() => ({}));
-    const returnUrl = body.return_url || "https://rentauto.ca/host";
-    const refreshUrl = body.refresh_url || "https://rentauto.ca/host";
+    const appUrl = Deno.env.get("PUBLIC_APP_URL") || "https://rentauto.ca";
+    const returnUrl = body.return_url || `${appUrl}/host`;
+    const refreshUrl = body.refresh_url || `${appUrl}/host`;
 
     // Create Account Link for onboarding
     const accountLink = await stripe.accountLinks.create({
