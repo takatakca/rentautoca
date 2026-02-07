@@ -37,7 +37,7 @@
    };
  
    return (
-     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-muted/30">
+     <div className="min-h-screen flex items-center justify-center px-4 py-12">
        <Card className="w-full max-w-md">
          <CardHeader className="text-center">
            <div className="flex justify-center mb-4">
@@ -76,18 +76,24 @@
                />
              </div>
            </CardContent>
-           <CardFooter className="flex flex-col gap-4">
-             <Button type="submit" className="w-full" disabled={loading}>
-               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-               Sign in
-             </Button>
-             <p className="text-sm text-muted-foreground">
-               Don't have an account?{" "}
-               <Link to="/signup" className="text-primary hover:underline">
-                 Sign up
-               </Link>
-             </p>
-           </CardFooter>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign in
+              </Button>
+              <Link
+                to="/forgot-password"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Forgot your password?
+              </Link>
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link to="/signup" className="text-primary hover:underline">
+                  Sign up
+                </Link>
+              </p>
+            </CardFooter>
          </form>
        </Card>
      </div>
