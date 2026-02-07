@@ -8,9 +8,9 @@
        <main className="flex-1">
          <Outlet />
        </main>
-       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-         <p>© {new Date().getFullYear()} Rentauto.ca — Canada's peer-to-peer car rental marketplace</p>
-       </footer>
+        <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
+          <p>© {new Date().getFullYear()} Rentauto.ca — Canada's peer-to-peer car rental marketplace</p>
+        </footer>
      </div>
    );
  }
