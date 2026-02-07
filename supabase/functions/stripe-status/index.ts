@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch live status from Stripe
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const stripe = new Stripe(stripeKey);
     let stripeAccount;
     try {
       stripeAccount = await stripe.accounts.retrieve(account.stripe_account_id);

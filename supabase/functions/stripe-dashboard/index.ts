@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const stripe = new Stripe(stripeKey);
 
     try {
       const loginLink = await stripe.accounts.createLoginLink(account.stripe_account_id);
