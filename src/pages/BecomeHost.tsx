@@ -55,7 +55,7 @@
        setLoading(false);
      } else {
        await refreshRoles();
-       navigate("/host");
+       navigate("/host/onboarding");
      }
    };
  
