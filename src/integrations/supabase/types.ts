@@ -14,11 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      host_preferences: {
+        Row: {
+          advance_notice_hours: number | null
+          buffer_hours: number | null
+          created_at: string
+          delivery_available: boolean | null
+          delivery_fee_cents: number | null
+          delivery_radius_km: number | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          id: string
+          max_trip_days: number | null
+          min_trip_days: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advance_notice_hours?: number | null
+          buffer_hours?: number | null
+          created_at?: string
+          delivery_available?: boolean | null
+          delivery_fee_cents?: number | null
+          delivery_radius_km?: number | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          id?: string
+          max_trip_days?: number | null
+          min_trip_days?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advance_notice_hours?: number | null
+          buffer_hours?: number | null
+          created_at?: string
+          delivery_available?: boolean | null
+          delivery_fee_cents?: number | null
+          delivery_radius_km?: number | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          id?: string
+          max_trip_days?: number | null
+          min_trip_days?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      host_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          id_back_url: string | null
+          id_front_url: string | null
+          reviewed_at: string | null
+          reviewer_notes: string | null
+          selfie_url: string | null
+          updated_at: string
+          user_id: string
+          verification_status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          selfie_url?: string | null
+          updated_at?: string
+          user_id: string
+          verification_status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          selfie_url?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           city: string | null
           created_at: string
+          display_name: string | null
           first_name: string | null
           id: string
           id_verified: boolean
@@ -31,8 +120,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           city?: string | null
           created_at?: string
+          display_name?: string | null
           first_name?: string | null
           id: string
           id_verified?: boolean
@@ -45,8 +136,10 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           city?: string | null
           created_at?: string
+          display_name?: string | null
           first_name?: string | null
           id?: string
           id_verified?: boolean

@@ -15,6 +15,7 @@ import Explore from "./pages/Explore";
 import Trips from "./pages/Trips";
 import Messages from "./pages/Messages";
 import HostDashboard from "./pages/HostDashboard";
+import HostOnboarding from "./pages/HostOnboarding";
 import AdminPanel from "./pages/AdminPanel";
 import BecomeHost from "./pages/BecomeHost";
 import Profile from "./pages/Profile";
@@ -70,6 +71,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRole="host">
                     <HostDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/onboarding"
+                element={
+                  <ProtectedRoute requiredRole="host">
+                    <HostOnboarding />
                   </ProtectedRoute>
                 }
               />
