@@ -14,6 +14,258 @@ export type Database = {
   }
   public: {
     Tables: {
+      availability_blocks: {
+        Row: {
+          car_id: string
+          created_at: string
+          end_at: string
+          id: string
+          start_at: string
+          type: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          end_at: string
+          id?: string
+          start_at: string
+          type?: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          end_at?: string
+          id?: string
+          start_at?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_blocks_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cancellation_policies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          rules: Json
+          summary: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          rules?: Json
+          summary: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          rules?: Json
+          summary?: string
+        }
+        Relationships: []
+      }
+      car_extras: {
+        Row: {
+          car_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_qty: number
+          name: string
+          price_cents: number
+          pricing_type: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_qty?: number
+          name: string
+          price_cents?: number
+          pricing_type?: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_qty?: number
+          name?: string
+          price_cents?: number
+          pricing_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_extras_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_photos: {
+        Row: {
+          car_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          url: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          url: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_photos_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_policies: {
+        Row: {
+          cancellation_policy_id: string
+          car_id: string
+        }
+        Insert: {
+          cancellation_policy_id: string
+          car_id: string
+        }
+        Update: {
+          cancellation_policy_id?: string
+          car_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_policies_cancellation_policy_id_fkey"
+            columns: ["cancellation_policy_id"]
+            isOneToOne: false
+            referencedRelation: "cancellation_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_policies_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cars: {
+        Row: {
+          base_daily_price_cents: number
+          body_type: string | null
+          consumption_l_per_100km: number | null
+          created_at: string
+          currency: string
+          description: string | null
+          doors: number
+          extra_km_price_cents: number
+          features: Json | null
+          fuel_type: string
+          host_id: string
+          id: string
+          included_km_per_day: number
+          lat: number | null
+          lng: number | null
+          location_label: string | null
+          make: string
+          model: string
+          rules: Json | null
+          seats: number
+          status: string
+          title: string
+          transmission: string
+          trim: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          base_daily_price_cents?: number
+          body_type?: string | null
+          consumption_l_per_100km?: number | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          doors?: number
+          extra_km_price_cents?: number
+          features?: Json | null
+          fuel_type?: string
+          host_id: string
+          id?: string
+          included_km_per_day?: number
+          lat?: number | null
+          lng?: number | null
+          location_label?: string | null
+          make?: string
+          model?: string
+          rules?: Json | null
+          seats?: number
+          status?: string
+          title?: string
+          transmission?: string
+          trim?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          base_daily_price_cents?: number
+          body_type?: string | null
+          consumption_l_per_100km?: number | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          doors?: number
+          extra_km_price_cents?: number
+          features?: Json | null
+          fuel_type?: string
+          host_id?: string
+          id?: string
+          included_km_per_day?: number
+          lat?: number | null
+          lng?: number | null
+          location_label?: string | null
+          make?: string
+          model?: string
+          rules?: Json | null
+          seats?: number
+          status?: string
+          title?: string
+          transmission?: string
+          trim?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       host_preferences: {
         Row: {
           advance_notice_hours: number | null
@@ -111,11 +363,14 @@ export type Database = {
           first_name: string | null
           id: string
           id_verified: boolean
+          is_all_star: boolean
           last_name: string | null
           phone: string | null
           phone_verified: boolean
           postal_code: string | null
           province: string | null
+          rating_avg: number | null
+          trips_count: number
           updated_at: string
         }
         Insert: {
@@ -127,11 +382,14 @@ export type Database = {
           first_name?: string | null
           id: string
           id_verified?: boolean
+          is_all_star?: boolean
           last_name?: string | null
           phone?: string | null
           phone_verified?: boolean
           postal_code?: string | null
           province?: string | null
+          rating_avg?: number | null
+          trips_count?: number
           updated_at?: string
         }
         Update: {
@@ -143,11 +401,14 @@ export type Database = {
           first_name?: string | null
           id?: string
           id_verified?: boolean
+          is_all_star?: boolean
           last_name?: string | null
           phone?: string | null
           phone_verified?: boolean
           postal_code?: string | null
           province?: string | null
+          rating_avg?: number | null
+          trips_count?: number
           updated_at?: string
         }
         Relationships: [
@@ -180,6 +441,59 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          car_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating_accuracy: number | null
+          rating_cleanliness: number | null
+          rating_communication: number | null
+          rating_convenience: number | null
+          rating_maintenance: number | null
+          rating_overall: number
+          reviewer_id: string
+          trip_id: string | null
+        }
+        Insert: {
+          car_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating_accuracy?: number | null
+          rating_cleanliness?: number | null
+          rating_communication?: number | null
+          rating_convenience?: number | null
+          rating_maintenance?: number | null
+          rating_overall: number
+          reviewer_id: string
+          trip_id?: string | null
+        }
+        Update: {
+          car_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating_accuracy?: number | null
+          rating_cleanliness?: number | null
+          rating_communication?: number | null
+          rating_convenience?: number | null
+          rating_maintenance?: number | null
+          rating_overall?: number
+          reviewer_id?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stripe_accounts: {
         Row: {
@@ -234,6 +548,62 @@ export type Database = {
           stripe_event_id?: string
         }
         Relationships: []
+      }
+      trips: {
+        Row: {
+          car_id: string
+          created_at: string
+          currency: string
+          end_at: string
+          guest_id: string
+          id: string
+          pickup_location: string | null
+          pricing_breakdown: Json | null
+          return_location: string | null
+          start_at: string
+          status: string
+          total_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          currency?: string
+          end_at: string
+          guest_id: string
+          id?: string
+          pickup_location?: string | null
+          pricing_breakdown?: Json | null
+          return_location?: string | null
+          start_at: string
+          status?: string
+          total_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          currency?: string
+          end_at?: string
+          guest_id?: string
+          id?: string
+          pickup_location?: string | null
+          pricing_breakdown?: Json | null
+          return_location?: string | null
+          start_at?: string
+          status?: string
+          total_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

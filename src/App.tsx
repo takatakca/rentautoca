@@ -19,6 +19,7 @@ import HostOnboarding from "./pages/HostOnboarding";
 import AdminPanel from "./pages/AdminPanel";
 import BecomeHost from "./pages/BecomeHost";
 import Profile from "./pages/Profile";
+import CarListing from "./pages/CarListing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/explore" element={<Explore />} />
+              <Route path="/cars/:carId" element={<CarListing />} />
               <Route
                 path="/trips"
                 element={
