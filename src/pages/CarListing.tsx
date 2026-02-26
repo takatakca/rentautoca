@@ -118,6 +118,15 @@ export default function CarListing() {
       {/* Included in the price */}
       <IncludedInPriceCard />
 
+      <div className="h-1 bg-primary" />
+
+      {/* Insurance & Protection */}
+      <ProtectionPlanSelector
+        selectedPlanId={selectedPlanId}
+        onSelect={setSelectedPlanId}
+        days={tripDays}
+      />
+
       {/* Ratings and reviews - darker bg */}
       <div className="bg-secondary/50">
         <RatingsSection
