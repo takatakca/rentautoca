@@ -25,6 +25,7 @@ export default function CarListing() {
   const navigate = useNavigate();
   const { data: car, isLoading, error } = useCarListing(carId);
   const [tripDays] = useState(3);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
