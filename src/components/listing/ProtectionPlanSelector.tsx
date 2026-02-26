@@ -29,7 +29,7 @@ export function ProtectionPlanSelector({ selectedPlanId, onSelect, days = 1 }: P
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
-      return (data || []) as ProtectionPlan[];
+      return (data || []) as unknown as ProtectionPlan[];
     },
   });
 
