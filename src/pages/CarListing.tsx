@@ -13,6 +13,7 @@ import { RulesOfRoadSection } from "@/components/listing/RulesOfRoadSection";
 import { VehicleFeaturesSection } from "@/components/listing/VehicleFeaturesSection";
 import { HostCardSection } from "@/components/listing/HostCardSection";
 import { ExtrasSection } from "@/components/listing/ExtrasSection";
+import { ProtectionPlanSelector } from "@/components/listing/ProtectionPlanSelector";
 import { StickyCheckoutBar } from "@/components/listing/StickyCheckoutBar";
 import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanner";
 import { ArrowLeft, Share2, Heart } from "lucide-react";
@@ -24,6 +25,7 @@ export default function CarListing() {
   const navigate = useNavigate();
   const { data: car, isLoading, error } = useCarListing(carId);
   const [tripDays] = useState(3);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -115,6 +117,15 @@ export default function CarListing() {
 
       {/* Included in the price */}
       <IncludedInPriceCard />
+
+      <div className="h-1 bg-primary" />
+
+      {/* Insurance & Protection */}
+      <ProtectionPlanSelector
+        selectedPlanId={selectedPlanId}
+        onSelect={setSelectedPlanId}
+        days={tripDays}
+      />
 
       {/* Ratings and reviews - darker bg */}
       <div className="bg-secondary/50">
