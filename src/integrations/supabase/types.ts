@@ -194,11 +194,15 @@ export type Database = {
           host_id: string
           id: string
           included_km_per_day: number
+          insurance_status: string
+          insurance_url: string | null
           lat: number | null
           lng: number | null
           location_label: string | null
           make: string
           model: string
+          plate_number: string | null
+          registration_url: string | null
           rules: Json | null
           seats: number
           status: string
@@ -206,6 +210,7 @@ export type Database = {
           transmission: string
           trim: string | null
           updated_at: string
+          vin: string | null
           year: number
         }
         Insert: {
@@ -222,11 +227,15 @@ export type Database = {
           host_id: string
           id?: string
           included_km_per_day?: number
+          insurance_status?: string
+          insurance_url?: string | null
           lat?: number | null
           lng?: number | null
           location_label?: string | null
           make?: string
           model?: string
+          plate_number?: string | null
+          registration_url?: string | null
           rules?: Json | null
           seats?: number
           status?: string
@@ -234,6 +243,7 @@ export type Database = {
           transmission?: string
           trim?: string | null
           updated_at?: string
+          vin?: string | null
           year?: number
         }
         Update: {
@@ -250,11 +260,15 @@ export type Database = {
           host_id?: string
           id?: string
           included_km_per_day?: number
+          insurance_status?: string
+          insurance_url?: string | null
           lat?: number | null
           lng?: number | null
           location_label?: string | null
           make?: string
           model?: string
+          plate_number?: string | null
+          registration_url?: string | null
           rules?: Json | null
           seats?: number
           status?: string
@@ -262,6 +276,7 @@ export type Database = {
           transmission?: string
           trim?: string | null
           updated_at?: string
+          vin?: string | null
           year?: number
         }
         Relationships: []
@@ -420,6 +435,45 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      protection_plans: {
+        Row: {
+          coverage_details: Json
+          created_at: string
+          deductible_cents: number
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_per_day_cents: number
+          sort_order: number
+          tier: string
+        }
+        Insert: {
+          coverage_details?: Json
+          created_at?: string
+          deductible_cents?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_per_day_cents?: number
+          sort_order?: number
+          tier: string
+        }
+        Update: {
+          coverage_details?: Json
+          created_at?: string
+          deductible_cents?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_per_day_cents?: number
+          sort_order?: number
+          tier?: string
+        }
+        Relationships: []
       }
       provinces: {
         Row: {
