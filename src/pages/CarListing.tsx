@@ -13,6 +13,7 @@ import { RulesOfRoadSection } from "@/components/listing/RulesOfRoadSection";
 import { VehicleFeaturesSection } from "@/components/listing/VehicleFeaturesSection";
 import { HostCardSection } from "@/components/listing/HostCardSection";
 import { ExtrasSection } from "@/components/listing/ExtrasSection";
+import { ProtectionPlanSelector } from "@/components/listing/ProtectionPlanSelector";
 import { StickyCheckoutBar } from "@/components/listing/StickyCheckoutBar";
 import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanner";
 import { ArrowLeft, Share2, Heart } from "lucide-react";
