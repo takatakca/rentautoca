@@ -96,7 +96,30 @@ Deno.serve(async (req) => {
     else if (days >= 3) discountPercent = 5;
     const discounts = Math.round(basePrice * discountPercent / 100);
 
-    const subtotal = basePrice + extrasTotal - discounts;
+    // Protection plan (Basic / Silver / Gold)
+    let protectionTotal = 0;
+    let protectionSnapshot: Record<string, unknown> | null = null;
+    if (protectionPlanId) {
+      const { data: plan } = await supabase
+        .from("protection_plans")
+        .select("id, name, tier, price_per_day_cents, deductible_cents")
+        .eq("id", protectionPlanId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (plan) {
+        protectionTotal = plan.price_per_day_cents * days;
+        protectionSnapshot = {
+          id: plan.id,
+          name: plan.name,
+          tier: plan.tier,
+          price_per_day_cents: plan.price_per_day_cents,
+          deductible_cents: plan.deductible_cents,
+          total_cents: protectionTotal,
+        };
+      }
+    }
+
+    const subtotal = basePrice + extrasTotal + protectionTotal - discounts;
 
     // Quebec GST (5%) + QST (9.975%) as default; simplified
     const gstRate = 0.05;
@@ -120,7 +143,8 @@ Deno.serve(async (req) => {
       base_price: basePrice,
       extras_total: extrasTotal,
       extras_breakdown: extrasBreakdown,
-      protection_total: 0,
+      protection_total: protectionTotal,
+      protection_snapshot: protectionSnapshot,
       discounts,
       discount_percent: discountPercent,
       taxes,

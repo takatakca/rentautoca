@@ -6,9 +6,18 @@ interface Props {
   totalCents: number;
   disabled?: boolean;
   loading?: boolean;
+  ctaLabel?: string;
+  onReserve?: () => void;
 }
 
-export function StickyCheckoutBar({ originalCents, totalCents, disabled, loading }: Props) {
+export function StickyCheckoutBar({
+  originalCents,
+  totalCents,
+  disabled,
+  loading,
+  ctaLabel = "Continue",
+  onReserve,
+}: Props) {
   const hasDiscount = originalCents > totalCents;
 
   return (
@@ -31,8 +40,13 @@ export function StickyCheckoutBar({ originalCents, totalCents, disabled, loading
           </>
         )}
       </div>
-      <Button size="lg" className="px-8 rounded-xl" disabled={disabled || loading}>
-        Continue
+      <Button
+        size="lg"
+        className="px-8 rounded-xl"
+        disabled={disabled || loading}
+        onClick={onReserve}
+      >
+        {ctaLabel}
       </Button>
     </div>
   );
