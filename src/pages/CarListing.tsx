@@ -1,10 +1,13 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useCarListing } from "@/hooks/use-car-listing";
 import { useTripQuote } from "@/hooks/use-trip-quote";
+import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CarImageCarousel } from "@/components/listing/CarImageCarousel";
 import { CarHeaderSummary } from "@/components/listing/CarHeaderSummary";
-import { TripSection } from "@/components/listing/TripSection";
 import { CancellationPolicyCard } from "@/components/listing/CancellationPolicyCard";
 import { PaymentOptionsCard } from "@/components/listing/PaymentOptionsCard";
 import { KilometersIncludedCard } from "@/components/listing/KilometersIncludedCard";
@@ -17,25 +20,59 @@ import { ExtrasSection } from "@/components/listing/ExtrasSection";
 import { ProtectionPlanSelector } from "@/components/listing/ProtectionPlanSelector";
 import { StickyCheckoutBar } from "@/components/listing/StickyCheckoutBar";
 import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanner";
-import { ArrowLeft, Share2, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
-import { addDays } from "date-fns";
+import { ArrowLeft, Share2, Heart, CalendarDays } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { addDays, format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CarListing() {
   const { carId } = useParams<{ carId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { data: car, isLoading, error } = useCarListing(carId);
 
-  // Trip dates state
-  const [startDate] = useState(() => addDays(new Date(), 7));
-  const [endDate] = useState(() => addDays(new Date(), 10));
+  // Trip dates: prefer ?start=&end= from search, otherwise default to next week
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const s = searchParams.get("start");
+    return s ? new Date(s) : addDays(new Date(), 7);
+  });
+  const [endDate, setEndDate] = useState<Date>(() => {
+    const e = searchParams.get("end");
+    return e ? new Date(e) : addDays(new Date(), 10);
+  });
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [selectedExtras] = useState<string[]>([]);
+  const [reserving, setReserving] = useState(false);
 
-  const tripDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  // Default protection plan = Silver (standard tier)
+  const { data: defaultSilver } = useQuery({
+    queryKey: ["default-silver-plan"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("protection_plans")
+        .select("id")
+        .eq("tier", "standard")
+        .eq("is_active", true)
+        .maybeSingle();
+      return data?.id ?? null;
+    },
+  });
+  useEffect(() => {
+    if (!selectedPlanId && defaultSilver) setSelectedPlanId(defaultSilver);
+  }, [defaultSilver, selectedPlanId]);
 
-  // Call quote engine
+  const tripDays = Math.max(
+    1,
+    Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+
   const quoteParams = useMemo(() => {
     if (!carId) return null;
     return {
@@ -47,7 +84,7 @@ export default function CarListing() {
     };
   }, [carId, startDate, endDate, selectedExtras, selectedPlanId]);
 
-  const { data: quote, isLoading: quoteLoading } = useTripQuote(quoteParams);
+  const { data: quote, isLoading: quoteLoading, error: quoteError } = useTripQuote(quoteParams);
 
   if (isLoading) {
     return (
@@ -75,13 +112,46 @@ export default function CarListing() {
   }
 
   const isDisabled = car.status !== "active";
+  const datesUnavailable = !!(quoteError as Error | undefined)?.message?.toLowerCase()?.includes("not available");
 
-  // Use quote data if available, otherwise fallback to local calc
   const baseTotalCents = quote?.base_price ?? car.base_daily_price_cents * tripDays;
-  const discountCents = quote?.discounts ?? Math.round(baseTotalCents * 0.05);
-  const totalBeforeTax = quote?.total_before_tax ?? (baseTotalCents - discountCents);
-  const totalAfterTax = quote?.total_after_tax ?? totalBeforeTax;
+  const discountCents = quote?.discounts ?? 0;
+  const protectionCents = quote?.protection_total ?? 0;
+  const totalBeforeTax = quote?.total_before_tax ?? (baseTotalCents - discountCents + protectionCents);
   const includedKmTotal = quote?.included_km_total ?? car.included_km_per_day * tripDays;
+
+  const handleReserve = async () => {
+    if (!user) {
+      toast({ title: "Please sign in to continue", description: "You need an account to reserve a vehicle." });
+      navigate(`/login?redirect=/cars/${carId}`);
+      return;
+    }
+    if (!quote) return;
+    setReserving(true);
+    const { data, error: insertErr } = await supabase
+      .from("trips")
+      .insert({
+        car_id: carId!,
+        guest_id: user.id,
+        start_at: startDate.toISOString(),
+        end_at: endDate.toISOString(),
+        status: "draft",
+        currency: quote.currency,
+        total_cents: quote.total_after_tax,
+        pickup_location: car.location_label,
+        return_location: car.location_label,
+        pricing_breakdown: quote as any,
+      })
+      .select("id")
+      .single();
+    setReserving(false);
+    if (insertErr) {
+      toast({ title: "Could not create booking", description: insertErr.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Booking draft created", description: "Find it in My Trips." });
+    navigate(`/trips`);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
@@ -105,53 +175,82 @@ export default function CarListing() {
         </div>
       </div>
 
-      {/* Hero carousel */}
       <CarImageCarousel photos={car.photos} />
-
-      {/* Header */}
       <CarHeaderSummary car={car} />
 
       <div className="h-1 bg-primary" />
 
-      {/* Your trip */}
-      <TripSection location={car.location_label} />
+      {/* Editable trip dates */}
+      <div className="px-4 py-5">
+        <h2 className="text-xl font-bold mb-3">Your trip</h2>
+        <div className="flex gap-2">
+          <Popover open={startOpen} onOpenChange={setStartOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex-1 justify-start text-left h-12 rounded-xl">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                <span className="truncate">{format(startDate, "EEE, MMM d")}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={startDate}
+                onSelect={(d) => { if (d) { setStartDate(d); if (d >= endDate) setEndDate(addDays(d, 3)); } setStartOpen(false); }}
+                disabled={(d) => d < new Date()}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover open={endOpen} onOpenChange={setEndOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex-1 justify-start text-left h-12 rounded-xl">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                <span className="truncate">{format(endDate, "EEE, MMM d")}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={(d) => { if (d) setEndDate(d); setEndOpen(false); }}
+                disabled={(d) => d <= startDate}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Pickup: <span className="text-foreground">{car.location_label || "TBD"}</span>
+        </p>
+        {datesUnavailable && (
+          <p className="text-sm text-destructive mt-2">These dates aren't available — please pick another range.</p>
+        )}
+      </div>
 
-      {/* Disabled banner */}
       {isDisabled && <DisabledVehicleBanner />}
 
       <div className="h-1 bg-primary" />
-
-      {/* Cancellation */}
       <CancellationPolicyCard policy={quote?.cancellation_policy_snapshot ?? car.cancellation_policy} />
 
       <div className="h-1 bg-primary" />
-
-      {/* Payment options */}
       <PaymentOptionsCard />
 
       <div className="h-1 bg-primary" />
-
-      {/* Kilometers included */}
       <KilometersIncludedCard
         includedKm={includedKmTotal}
         extraKmPriceCents={quote?.extra_km_price ?? car.extra_km_price_cents}
       />
 
       <div className="h-1 bg-primary" />
-
-      {/* Included in the price */}
       <IncludedInPriceCard />
 
       <div className="h-1 bg-primary" />
-
-      {/* Insurance & Protection */}
       <ProtectionPlanSelector
         selectedPlanId={selectedPlanId}
         onSelect={setSelectedPlanId}
         days={tripDays}
       />
 
-      {/* Ratings and reviews */}
       <div className="bg-secondary/50">
         <RatingsSection
           ratingAvg={car.rating_avg}
@@ -162,26 +261,18 @@ export default function CarListing() {
       </div>
 
       <div className="h-1 bg-primary" />
-
-      {/* Vehicle features */}
       <VehicleFeaturesSection car={car} />
 
       <div className="h-1 bg-primary" />
-
-      {/* Rules of the road */}
       <RulesOfRoadSection rules={car.rules} />
 
-      {/* Hosted by */}
       <div className="bg-secondary/50">
         <HostCardSection host={car.host} />
       </div>
 
       <div className="h-1 bg-primary" />
-
-      {/* Extras */}
       <ExtrasSection extras={car.extras} />
 
-      {/* Quote summary */}
       {quote && (
         <div className="px-4 py-4 space-y-2 text-sm border-t border-border">
           <h3 className="font-bold text-base">Price breakdown</h3>
@@ -193,6 +284,12 @@ export default function CarListing() {
             <div className="flex justify-between text-success">
               <span>Multi-day discount ({quote.discount_percent}%)</span>
               <span>-${(quote.discounts / 100).toFixed(2)}</span>
+            </div>
+          )}
+          {quote.protection_total > 0 && quote.protection_snapshot && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{quote.protection_snapshot.name} protection × {quote.days} days</span>
+              <span>${(quote.protection_total / 100).toFixed(2)}</span>
             </div>
           )}
           {quote.extras_breakdown.map((ex) => (
@@ -211,17 +308,18 @@ export default function CarListing() {
           </div>
           <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
             <span>Total</span>
-            <span>${(quote.total_after_tax / 100).toFixed(2)}</span>
+            <span>${(quote.total_after_tax / 100).toFixed(2)} CAD</span>
           </div>
         </div>
       )}
 
-      {/* Sticky checkout bar */}
       <StickyCheckoutBar
         originalCents={baseTotalCents}
         totalCents={totalBeforeTax}
-        disabled={isDisabled}
-        loading={quoteLoading}
+        disabled={isDisabled || datesUnavailable || !quote}
+        loading={quoteLoading || reserving}
+        ctaLabel={user ? "Reserve" : "Sign in to reserve"}
+        onReserve={handleReserve}
       />
     </div>
   );
