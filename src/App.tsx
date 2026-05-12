@@ -20,6 +20,7 @@ import AdminPanel from "./pages/AdminPanel";
 import BecomeHost from "./pages/BecomeHost";
 import Profile from "./pages/Profile";
 import CarListing from "./pages/CarListing";
+import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/cars/:carId" element={<CarListing />} />
+              <Route path="/favorites" element={<Favorites />} />
               <Route
                 path="/trips"
                 element={

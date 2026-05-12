@@ -7,6 +7,14 @@ export interface TripQuote {
   extras_total: number;
   extras_breakdown: { name: string; price_cents: number }[];
   protection_total: number;
+  protection_snapshot: {
+    id: string;
+    name: string;
+    tier: string;
+    price_per_day_cents: number;
+    deductible_cents: number;
+    total_cents: number;
+  } | null;
   discounts: number;
   discount_percent: number;
   taxes: number;
