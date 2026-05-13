@@ -181,6 +181,7 @@ export type Database = {
       }
       cars: {
         Row: {
+          airport_pickup_enabled: boolean
           base_daily_price_cents: number
           body_type: string | null
           consumption_l_per_100km: number | null
@@ -201,6 +202,7 @@ export type Database = {
           location_label: string | null
           make: string
           model: string
+          monthly_enabled: boolean
           plate_number: string | null
           registration_url: string | null
           rules: Json | null
@@ -214,6 +216,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          airport_pickup_enabled?: boolean
           base_daily_price_cents?: number
           body_type?: string | null
           consumption_l_per_100km?: number | null
@@ -234,6 +237,7 @@ export type Database = {
           location_label?: string | null
           make?: string
           model?: string
+          monthly_enabled?: boolean
           plate_number?: string | null
           registration_url?: string | null
           rules?: Json | null
@@ -247,6 +251,7 @@ export type Database = {
           year?: number
         }
         Update: {
+          airport_pickup_enabled?: boolean
           base_daily_price_cents?: number
           body_type?: string | null
           consumption_l_per_100km?: number | null
@@ -267,6 +272,7 @@ export type Database = {
           location_label?: string | null
           make?: string
           model?: string
+          monthly_enabled?: boolean
           plate_number?: string | null
           registration_url?: string | null
           rules?: Json | null
@@ -278,6 +284,27 @@ export type Database = {
           updated_at?: string
           vin?: string | null
           year?: number
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          car_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }

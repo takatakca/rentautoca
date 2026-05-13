@@ -128,6 +128,25 @@ export default function CarListing() {
     }
     if (!quote) return;
     setReserving(true);
+
+    // Final availability overlap check before insert
+    const { data: overlap } = await supabase
+      .from("availability_blocks")
+      .select("id")
+      .eq("car_id", carId!)
+      .lt("start_at", endDate.toISOString())
+      .gt("end_at", startDate.toISOString())
+      .limit(1);
+    if (overlap && overlap.length > 0) {
+      setReserving(false);
+      toast({
+        title: "Dates no longer available",
+        description: "Please pick different dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { data, error: insertErr } = await supabase
       .from("trips")
       .insert({
