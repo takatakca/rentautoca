@@ -168,8 +168,8 @@ export default function CarListing() {
       toast({ title: "Could not create booking", description: insertErr.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Booking draft created", description: "Find it in My Trips." });
-    navigate(`/trips`);
+    toast({ title: "Reviewing your booking", description: "Almost done — confirm and pay." });
+    navigate(`/checkout/${data.id}`);
   };
 
   return (

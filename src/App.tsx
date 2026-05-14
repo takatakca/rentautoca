@@ -17,14 +17,22 @@ import ResetPassword from "./pages/ResetPassword";
 const Explore = lazy(() => import("./pages/Explore"));
 const Trips = lazy(() => import("./pages/Trips"));
 const TripDetail = lazy(() => import("./pages/TripDetail"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 const Messages = lazy(() => import("./pages/Messages"));
 const HostDashboard = lazy(() => import("./pages/HostDashboard"));
 const HostOnboarding = lazy(() => import("./pages/HostOnboarding"));
+const HostCars = lazy(() => import("./pages/HostCars"));
+const HostCarEdit = lazy(() => import("./pages/HostCarEdit"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const BecomeHost = lazy(() => import("./pages/BecomeHost"));
 const Profile = lazy(() => import("./pages/Profile"));
 const CarListing = lazy(() => import("./pages/CarListing"));
 const Favorites = lazy(() => import("./pages/Favorites"));
+const Terms = lazy(() => import("./pages/legal/Terms"));
+const Privacy = lazy(() => import("./pages/legal/Privacy"));
+const Insurance = lazy(() => import("./pages/legal/Insurance"));
+const CancellationPolicy = lazy(() => import("./pages/legal/CancellationPolicy"));
+const Help = lazy(() => import("./pages/legal/Help"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -66,6 +74,14 @@ const App = () => (
                   }
                 />
                 <Route
+                  path="/checkout/:tripId"
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/messages"
                   element={
                     <ProtectedRoute>
@@ -81,6 +97,7 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/more" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route
                   path="/become-host"
                   element={
@@ -105,6 +122,8 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/host/cars" element={<ProtectedRoute requiredRole="host"><HostCars /></ProtectedRoute>} />
+                <Route path="/host/cars/:id/edit" element={<ProtectedRoute requiredRole="host"><HostCarEdit /></ProtectedRoute>} />
                 <Route
                   path="/admin"
                   element={
@@ -113,6 +132,11 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/insurance" element={<Insurance />} />
+                <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+                <Route path="/help" element={<Help />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
