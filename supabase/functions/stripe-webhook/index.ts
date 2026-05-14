@@ -106,10 +106,55 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const tripId = session.metadata?.trip_id;
+        console.log(`checkout.session.completed: ${session.id} trip=${tripId}`);
+        if (tripId) {
+          await supabase
+            .from("trips")
+            .update({
+              status: "confirmed",
+              payment_status: "paid",
+              stripe_payment_intent_id:
+                typeof session.payment_intent === "string" ? session.payment_intent : null,
+            })
+            .eq("id", tripId);
+
+          // Block availability
+          const { data: trip } = await supabase
+            .from("trips")
+            .select("car_id, start_at, end_at")
+            .eq("id", tripId)
+            .single();
+          if (trip) {
+            await supabase.from("availability_blocks").insert({
+              car_id: trip.car_id,
+              start_at: trip.start_at,
+              end_at: trip.end_at,
+              type: "booking_self",
+            });
+          }
+        }
+        break;
+      }
+
+      case "checkout.session.expired":
+      case "checkout.session.async_payment_failed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const tripId = session.metadata?.trip_id;
+        if (tripId) {
+          await supabase
+            .from("trips")
+            .update({ status: "draft", payment_status: "failed" })
+            .eq("id", tripId);
+        }
+        break;
+      }
+
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
         console.log(`payment_intent.succeeded: ${pi.id} amount=${pi.amount}`);
-        // TODO Phase 4: update booking payment status
         break;
       }
 
@@ -118,7 +163,6 @@ Deno.serve(async (req) => {
         console.log(
           `payment_intent.payment_failed: ${pi.id} error=${pi.last_payment_error?.message}`
         );
-        // TODO Phase 4: update booking payment status
         break;
       }
 
