@@ -122,6 +122,8 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/host/cars" element={<ProtectedRoute requiredRole="host"><HostCars /></ProtectedRoute>} />
+                <Route path="/host/cars/:id/edit" element={<ProtectedRoute requiredRole="host"><HostCarEdit /></ProtectedRoute>} />
                 <Route
                   path="/admin"
                   element={
@@ -130,6 +132,11 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/insurance" element={<Insurance />} />
+                <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+                <Route path="/help" element={<Help />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
