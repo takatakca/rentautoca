@@ -1,12 +1,10 @@
 import { Outlet } from "react-router-dom";
 import { AppHeader } from "./AppHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { RouteMeta } from "@/components/seo/RouteMeta";
 
 export function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col">
-      <RouteMeta />
       <AppHeader />
       <main className="flex-1">
         <Outlet />
