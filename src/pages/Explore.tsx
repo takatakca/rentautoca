@@ -241,7 +241,7 @@ export default function Explore() {
         ) : filteredCars.length === 0 ? (
           <div className="text-center py-16">
             <Car className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="font-bold text-lg mb-1">No cars found</h3>
+            <h2 className="font-bold text-lg mb-1">No cars found</h2>
             <p className="text-muted-foreground text-sm mb-4">
               Try adjusting your dates, filters, or location.
             </p>
