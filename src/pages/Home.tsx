@@ -110,6 +110,7 @@ export default function Home() {
         <button
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
           onClick={(e) => e.preventDefault()}
+          aria-label="Add to favorites"
         >
           <Heart className="h-4 w-4 text-foreground" />
         </button>
