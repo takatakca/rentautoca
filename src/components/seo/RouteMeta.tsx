@@ -157,6 +157,34 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
       description: "Answers to common questions about renting and hosting cars on Rentauto.ca.",
     },
   },
+  {
+    pattern: "/login",
+    meta: {
+      title: "Log in to Rentauto.ca",
+      description: "Sign in to your Rentauto.ca account to book cars or manage your hosting business.",
+    },
+  },
+  {
+    pattern: "/signup",
+    meta: {
+      title: "Create your Rentauto.ca account",
+      description: "Join Rentauto.ca to rent cars from local hosts or list your own vehicle across Canada.",
+    },
+  },
+  {
+    pattern: "/forgot-password",
+    meta: {
+      title: "Reset your password | Rentauto.ca",
+      description: "Request a password reset link for your Rentauto.ca account.",
+    },
+  },
+  {
+    pattern: "/reset-password",
+    meta: {
+      title: "Choose a new password | Rentauto.ca",
+      description: "Set a new password to regain access to your Rentauto.ca account.",
+    },
+  },
 ];
 
 const FALLBACK: Meta = {
