@@ -110,6 +110,7 @@ export default function Home() {
         <button
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
           onClick={(e) => e.preventDefault()}
+          aria-label="Add to favorites"
         >
           <Heart className="h-4 w-4 text-foreground" />
         </button>
@@ -134,18 +135,21 @@ export default function Home() {
 
   return (
     <div className="flex flex-col pb-20 md:pb-0">
+      <h1 className="sr-only">Rent the perfect car in Montreal and across Canada</h1>
       {/* Search Bar */}
       <div className="px-4 pt-4 pb-2">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="Search anywhere"
+            aria-label="Search cars"
             className="h-14 pl-12 pr-16 text-base rounded-full bg-card border-border focus-visible:ring-primary"
             readOnly
             onClick={() => (window.location.href = "/explore")}
           />
           <Button
             size="icon"
+            aria-label="Search cars"
             className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full"
             asChild
           >

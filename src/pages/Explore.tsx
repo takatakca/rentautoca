@@ -125,10 +125,12 @@ export default function Explore() {
   return (
     <div className="flex flex-col pb-20 md:pb-0 min-h-screen">
       <div className="px-4 pt-4 pb-2 space-y-3">
+        <h1 className="sr-only">Explore cars available to rent</h1>
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="City, make, model"
+            aria-label="Search by city, make, or model"
             className="h-12 pl-12 rounded-full bg-card border-border"
             value={locationQuery}
             onChange={(e) => setLocationQuery(e.target.value)}
@@ -239,7 +241,7 @@ export default function Explore() {
         ) : filteredCars.length === 0 ? (
           <div className="text-center py-16">
             <Car className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="font-bold text-lg mb-1">No cars found</h3>
+            <h2 className="font-bold text-lg mb-1">No cars found</h2>
             <p className="text-muted-foreground text-sm mb-4">
               Try adjusting your dates, filters, or location.
             </p>
