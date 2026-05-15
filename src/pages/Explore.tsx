@@ -125,10 +125,12 @@ export default function Explore() {
   return (
     <div className="flex flex-col pb-20 md:pb-0 min-h-screen">
       <div className="px-4 pt-4 pb-2 space-y-3">
+        <h1 className="sr-only">Explore cars available to rent</h1>
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="City, make, model"
+            aria-label="Search by city, make, or model"
             className="h-12 pl-12 rounded-full bg-card border-border"
             value={locationQuery}
             onChange={(e) => setLocationQuery(e.target.value)}
