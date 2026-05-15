@@ -179,16 +179,17 @@ export default function CarListing() {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Go back"
           className="rounded-full bg-background/60 backdrop-blur-sm"
           onClick={() => navigate(-1)}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="rounded-full bg-background/60 backdrop-blur-sm">
+          <Button variant="ghost" size="icon" aria-label="Share this car" className="rounded-full bg-background/60 backdrop-blur-sm">
             <Share2 className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full bg-background/60 backdrop-blur-sm">
+          <Button variant="ghost" size="icon" aria-label="Save to favorites" className="rounded-full bg-background/60 backdrop-blur-sm">
             <Heart className="h-5 w-5" />
           </Button>
         </div>
