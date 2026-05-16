@@ -23,6 +23,7 @@ import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanne
 import { ArrowLeft, Share2, Heart, CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { addDays, format } from "date-fns";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -174,6 +175,10 @@ export default function CarListing() {
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
+      <Helmet>
+        <title>{`${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""}`.trim() + " — Rent on Rentauto.ca"}</title>
+        <meta name="description" content={`Rent the ${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""} in ${car.location_label ?? "Canada"} from $${Math.round((car.base_daily_price_cents ?? 0) / 100)}/day on Rentauto.ca.`.replace(/\s+/g, " ").trim()} />
+      </Helmet>
       {/* Top navigation overlay */}
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4">
         <Button
