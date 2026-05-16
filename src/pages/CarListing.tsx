@@ -23,6 +23,7 @@ import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanne
 import { ArrowLeft, Share2, Heart, CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { addDays, format } from "date-fns";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
