@@ -1,7 +1,9 @@
 import { Helmet } from "react-helmet-async";
 import { useLocation, matchPath } from "react-router-dom";
 
-const SITE = "https://rentautoca.lovable.app";
+const SITE = (
+  (import.meta.env.VITE_APP_URL as string | undefined) || "https://rentautoca.lovable.app"
+).replace(/\/$/, "");
 
 type Meta = { title: string; description: string };
 
