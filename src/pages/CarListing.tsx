@@ -301,6 +301,15 @@ export default function CarListing() {
       <div className="h-1 bg-primary" />
       <ExtrasSection extras={car.extras} />
 
+      <div className="h-1 bg-primary" />
+      <RentalPolicyCard />
+
+      <div className="h-1 bg-primary" />
+      <TrackingDisclosureCard />
+
+      <div className="h-1 bg-primary" />
+      <FAQSection />
+
       {quote && (
         <div className="px-4 py-4 space-y-2 text-sm border-t border-border">
           <h3 className="font-bold text-base">Price breakdown</h3>
