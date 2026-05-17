@@ -86,6 +86,9 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/trips/:tripId/check-in" element={<ProtectedRoute><TripCheckIn /></ProtectedRoute>} />
+                <Route path="/trips/:tripId/check-out" element={<ProtectedRoute><TripCheckOut /></ProtectedRoute>} />
+                <Route path="/trips/:tripId/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
                 <Route
                   path="/messages"
                   element={
