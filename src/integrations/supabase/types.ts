@@ -184,6 +184,7 @@ export type Database = {
           airport_pickup_enabled: boolean
           base_daily_price_cents: number
           body_type: string | null
+          category: string
           consumption_l_per_100km: number | null
           created_at: string
           currency: string
@@ -195,6 +196,7 @@ export type Database = {
           host_id: string
           id: string
           included_km_per_day: number
+          instant_book: boolean
           insurance_status: string
           insurance_url: string | null
           lat: number | null
@@ -209,6 +211,7 @@ export type Database = {
           seats: number
           status: string
           title: string
+          tracking_consent_required: boolean
           transmission: string
           trim: string | null
           updated_at: string
@@ -219,6 +222,7 @@ export type Database = {
           airport_pickup_enabled?: boolean
           base_daily_price_cents?: number
           body_type?: string | null
+          category?: string
           consumption_l_per_100km?: number | null
           created_at?: string
           currency?: string
@@ -230,6 +234,7 @@ export type Database = {
           host_id: string
           id?: string
           included_km_per_day?: number
+          instant_book?: boolean
           insurance_status?: string
           insurance_url?: string | null
           lat?: number | null
@@ -244,6 +249,7 @@ export type Database = {
           seats?: number
           status?: string
           title?: string
+          tracking_consent_required?: boolean
           transmission?: string
           trim?: string | null
           updated_at?: string
@@ -254,6 +260,7 @@ export type Database = {
           airport_pickup_enabled?: boolean
           base_daily_price_cents?: number
           body_type?: string | null
+          category?: string
           consumption_l_per_100km?: number | null
           created_at?: string
           currency?: string
@@ -265,6 +272,7 @@ export type Database = {
           host_id?: string
           id?: string
           included_km_per_day?: number
+          instant_book?: boolean
           insurance_status?: string
           insurance_url?: string | null
           lat?: number | null
@@ -279,6 +287,7 @@ export type Database = {
           seats?: number
           status?: string
           title?: string
+          tracking_consent_required?: boolean
           transmission?: string
           trim?: string | null
           updated_at?: string
@@ -630,6 +639,111 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload_json: Json
+          trip_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload_json?: Json
+          trip_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload_json?: Json
+          trip_id?: string
+        }
+        Relationships: []
+      }
+      trip_incidents: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          photo_urls: string[]
+          reporter_user_id: string
+          status: string
+          trip_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          photo_urls?: string[]
+          reporter_user_id: string
+          status?: string
+          trip_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          photo_urls?: string[]
+          reporter_user_id?: string
+          status?: string
+          trip_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trip_tracking_sessions: {
+        Row: {
+          car_id: string
+          consent_accepted_at: string | null
+          created_at: string
+          ended_at: string | null
+          guest_id: string
+          host_id: string
+          id: string
+          started_at: string | null
+          status: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          car_id: string
+          consent_accepted_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          guest_id: string
+          host_id: string
+          id?: string
+          started_at?: string | null
+          status?: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          car_id?: string
+          consent_accepted_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          guest_id?: string
+          host_id?: string
+          id?: string
+          started_at?: string | null
+          status?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           car_id: string
@@ -704,6 +818,84 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_location_events: {
+        Row: {
+          accuracy_meters: number | null
+          car_id: string
+          created_at: string
+          heading: number | null
+          id: string
+          lat: number
+          lng: number
+          recorded_at: string
+          source: string
+          speed_kmh: number | null
+          trip_id: string
+        }
+        Insert: {
+          accuracy_meters?: number | null
+          car_id: string
+          created_at?: string
+          heading?: number | null
+          id?: string
+          lat: number
+          lng: number
+          recorded_at?: string
+          source?: string
+          speed_kmh?: number | null
+          trip_id: string
+        }
+        Update: {
+          accuracy_meters?: number | null
+          car_id?: string
+          created_at?: string
+          heading?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          recorded_at?: string
+          source?: string
+          speed_kmh?: number | null
+          trip_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_tracking_devices: {
+        Row: {
+          car_id: string
+          created_at: string
+          device_identifier: string
+          id: string
+          installed_at: string
+          last_seen_at: string | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          device_identifier: string
+          id?: string
+          installed_at?: string
+          last_seen_at?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          device_identifier?: string
+          id?: string
+          installed_at?: string
+          last_seen_at?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
