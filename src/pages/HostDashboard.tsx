@@ -124,6 +124,8 @@ export default function HostDashboard() {
         </CardContent>
       </Card>
 
+      <ActiveRentalsSection carIds={cars.map((c) => c.id)} />
+
       <Card>
         <CardHeader>
           <CardTitle>Bookings</CardTitle>
@@ -163,3 +165,35 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: any; label: string;
     </Card>
   );
 }
+
+function ActiveRentalsSection({ carIds }: { carIds: string[] }) {
+  const [sessions, setSessions] = useState<any[]>([]);
+  useEffect(() => {
+    if (carIds.length === 0) { setSessions([]); return; }
+    supabase
+      .from("trip_tracking_sessions")
+      .select("id, trip_id, car_id, status, started_at")
+      .in("car_id", carIds)
+      .eq("status", "active")
+      .then(({ data }) => setSessions(data || []));
+  }, [carIds.join(",")]);
+
+  if (sessions.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Active rentals</CardTitle>
+        <CardDescription>{sessions.length} vehicle{sessions.length === 1 ? "" : "s"} currently out</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {sessions.map((s) => (
+          <div key={s.id} className="flex items-center justify-between text-sm">
+            <span>Trip {String(s.trip_id).slice(0, 8)}…</span>
+            <Button asChild size="sm" variant="outline"><Link to={`/trips/${s.trip_id}`}>View live</Link></Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+

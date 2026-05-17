@@ -19,6 +19,9 @@ const Explore = lazy(() => import("./pages/Explore"));
 const Trips = lazy(() => import("./pages/Trips"));
 const TripDetail = lazy(() => import("./pages/TripDetail"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const TripCheckIn = lazy(() => import("./pages/TripCheckIn"));
+const TripCheckOut = lazy(() => import("./pages/TripCheckOut"));
+const ReportIssue = lazy(() => import("./pages/ReportIssue"));
 const Messages = lazy(() => import("./pages/Messages"));
 const HostDashboard = lazy(() => import("./pages/HostDashboard"));
 const HostOnboarding = lazy(() => import("./pages/HostOnboarding"));
@@ -83,6 +86,9 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/trips/:tripId/check-in" element={<ProtectedRoute><TripCheckIn /></ProtectedRoute>} />
+                <Route path="/trips/:tripId/check-out" element={<ProtectedRoute><TripCheckOut /></ProtectedRoute>} />
+                <Route path="/trips/:tripId/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
                 <Route
                   path="/messages"
                   element={

@@ -20,6 +20,9 @@ import { ExtrasSection } from "@/components/listing/ExtrasSection";
 import { ProtectionPlanSelector } from "@/components/listing/ProtectionPlanSelector";
 import { StickyCheckoutBar } from "@/components/listing/StickyCheckoutBar";
 import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanner";
+import { RentalPolicyCard } from "@/components/listing/RentalPolicyCard";
+import { TrackingDisclosureCard } from "@/components/listing/TrackingDisclosureCard";
+import { FAQSection } from "@/components/listing/FAQSection";
 import { ArrowLeft, Share2, Heart, CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { addDays, format } from "date-fns";
@@ -297,6 +300,15 @@ export default function CarListing() {
 
       <div className="h-1 bg-primary" />
       <ExtrasSection extras={car.extras} />
+
+      <div className="h-1 bg-primary" />
+      <RentalPolicyCard />
+
+      <div className="h-1 bg-primary" />
+      <TrackingDisclosureCard />
+
+      <div className="h-1 bg-primary" />
+      <FAQSection />
 
       {quote && (
         <div className="px-4 py-4 space-y-2 text-sm border-t border-border">
