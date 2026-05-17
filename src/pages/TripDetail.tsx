@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, MapPin, Calendar, Shield } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut } from "lucide-react";
 import { format } from "date-fns";
+import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
 
 export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
