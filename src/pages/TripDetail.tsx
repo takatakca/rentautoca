@@ -122,13 +122,24 @@ export default function TripDetail() {
               <MapPin className="h-4 w-4 text-muted-foreground" /> Return: {trip.return_location}
             </div>
           )}
-          <div className="pt-2">
+          <div className="pt-2 flex items-center gap-2 flex-wrap">
             <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary capitalize">
-              {trip.status.replace("_", " ")}
+              {trip.status.replace(/_/g, " ")}
             </span>
+            {["confirmed", "check_in_pending"].includes(trip.status) && trip.guest_id === user?.id && (
+              <Button asChild size="sm"><Link to={`/trips/${trip.id}/check-in`}><KeyRound className="h-3.5 w-3.5 mr-1" />Start check-in</Link></Button>
+            )}
+            {["active", "check_out_pending"].includes(trip.status) && (
+              <Button asChild size="sm" variant="outline"><Link to={`/trips/${trip.id}/check-out`}><LogOut className="h-3.5 w-3.5 mr-1" />Check-out</Link></Button>
+            )}
+            <Button asChild size="sm" variant="ghost"><Link to={`/trips/${trip.id}/report-issue`}><AlertTriangle className="h-3.5 w-3.5 mr-1" />Report issue</Link></Button>
           </div>
         </CardContent>
       </Card>
+
+      {["active", "check_out_pending"].includes(trip.status) && (
+        <LiveLocationCard tripId={trip.id} showRoute />
+      )}
 
       {protection && (
         <Card>
