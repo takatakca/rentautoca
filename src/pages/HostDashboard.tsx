@@ -126,7 +126,7 @@ export default function HostDashboard() {
 
       <ActiveRentalsSection carIds={cars.map((c) => c.id)} />
 
-
+      <Card>
         <CardHeader>
           <CardTitle>Bookings</CardTitle>
           <CardDescription>Reservations for your vehicles</CardDescription>
