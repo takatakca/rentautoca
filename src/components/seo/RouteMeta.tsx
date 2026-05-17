@@ -54,6 +54,18 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
     },
   },
   {
+    pattern: "/trips/:tripId/check-in",
+    meta: { title: "Trip check-in | Rentauto.ca", description: "Confirm pickup, capture vehicle photos, odometer and fuel, and start your Rentauto trip." },
+  },
+  {
+    pattern: "/trips/:tripId/check-out",
+    meta: { title: "Trip check-out | Rentauto.ca", description: "Return your rental: capture final photos, odometer and fuel, then end the trip." },
+  },
+  {
+    pattern: "/trips/:tripId/report-issue",
+    meta: { title: "Report a trip issue | Rentauto.ca", description: "Report damage, accidents, late returns or other incidents related to your Rentauto rental." },
+  },
+  {
     pattern: "/checkout/:tripId",
     meta: {
       title: "Review and confirm your booking | Rentauto.ca",
