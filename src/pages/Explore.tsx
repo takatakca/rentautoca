@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CarCardGridSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Search, MapPin, CalendarDays, Car, Heart, Star,
   Plane, Navigation, Building2, SlidersHorizontal
@@ -123,7 +124,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="flex flex-col pb-20 md:pb-0 min-h-screen">
+    <div className="flex flex-col pb-24 md:pb-0 min-h-dvh">
       <div className="px-4 pt-4 pb-2 space-y-3">
         <h1 className="sr-only">Explore cars available to rent</h1>
         <div className="relative">
@@ -229,30 +230,20 @@ export default function Explore() {
 
       <div className="px-4 pb-8">
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="aspect-[4/3] rounded-xl" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))}
-          </div>
+          <CarCardGridSkeleton count={6} />
         ) : filteredCars.length === 0 ? (
-          <div className="text-center py-16">
-            <Car className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <h2 className="font-bold text-lg mb-1">No cars found</h2>
-            <p className="text-muted-foreground text-sm mb-4">
-              Try adjusting your dates, filters, or location.
-            </p>
-            <Button variant="outline" onClick={reset}>Reset filters</Button>
-          </div>
+          <EmptyState
+            icon={Car}
+            title="No cars match your search"
+            description="Try a different city, widen your dates, or clear filters to see more options."
+            action={{ label: "Reset filters", onClick: reset }}
+          />
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-3 mt-1">
               {filteredCars.length} {filteredCars.length === 1 ? "car" : "cars"} available
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredCars.map((car) => (
                 <CarCard key={car.id} car={car} />
               ))}

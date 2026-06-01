@@ -4,7 +4,7 @@ import { MobileBottomNav } from "./MobileBottomNav";
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <AppHeader />
       <main className="flex-1">
         <Outlet />

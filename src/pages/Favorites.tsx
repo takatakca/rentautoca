@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { TripListSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Heart, Star, MapPin, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -109,19 +110,12 @@ export default function Favorites() {
     return (
       <div className="container py-8 max-w-3xl mx-auto pb-24 md:pb-8">
         <h1 className="text-3xl font-bold mb-6">Your Favorites</h1>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Heart className="h-5 w-5" /> Sign in to see favorites
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">Save vehicles to come back to later.</p>
-            <Button asChild>
-              <Link to="/login">Sign in</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Heart}
+          title="Sign in to see favorites"
+          description="Save vehicles to come back to later."
+          action={{ label: "Sign in", href: "/login" }}
+        />
       </div>
     );
   }
@@ -131,25 +125,14 @@ export default function Favorites() {
       <h1 className="text-3xl font-bold mb-6">Your Favorites</h1>
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-lg" />
-          ))}
-        </div>
+        <TripListSkeleton count={3} />
       ) : items.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Heart className="h-5 w-5" /> No favorites yet
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">Tap the heart on any vehicle to save it.</p>
-            <Button asChild>
-              <Link to="/explore">Browse cars</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Heart}
+          title="No favorites yet"
+          description="Tap the heart on any vehicle to save it for later."
+          action={{ label: "Browse cars", href: "/explore" }}
+        />
       ) : (
         <div className="space-y-3">
           {items.map((it) => (

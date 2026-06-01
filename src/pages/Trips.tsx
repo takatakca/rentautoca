@@ -4,9 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { TripListSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Calendar, MapPin, AlertCircle, Shield } from "lucide-react";
+import { Calendar, MapPin, Shield } from "lucide-react";
 import { format } from "date-fns";
 
 interface TripRow {
@@ -104,10 +106,8 @@ export default function Trips() {
 
   if (loading) {
     return (
-      <div className="container py-8 max-w-3xl mx-auto pb-24 md:pb-8 space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-lg" />
-        ))}
+      <div className="container py-8 max-w-3xl mx-auto pb-24 md:pb-8">
+        <TripListSkeleton count={3} />
       </div>
     );
   }
@@ -115,16 +115,11 @@ export default function Trips() {
   if (error) {
     return (
       <div className="container py-8 max-w-3xl mx-auto pb-24 md:pb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" /> Could not load trips
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Could not load your trips"
+          description="We had trouble reaching the booking service. Check your connection and try again."
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -134,21 +129,12 @@ export default function Trips() {
       <h1 className="text-3xl font-bold mb-6">Your Trips</h1>
 
       {trips.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" /> No trips yet
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              When you book a vehicle, your upcoming and past trips will appear here.
-            </p>
-            <Button asChild>
-              <Link to="/explore">Browse cars</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Calendar}
+          title="No trips yet"
+          description="When you book a vehicle, your upcoming and past trips will appear here."
+          action={{ label: "Browse cars", href: "/explore" }}
+        />
       ) : (
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
