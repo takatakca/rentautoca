@@ -93,26 +93,17 @@ export default function CarListing() {
   const { data: quote, isLoading: quoteLoading, error: quoteError } = useTripQuote(quoteParams);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Skeleton className="w-full aspect-[4/3]" />
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (error || !car) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-2">Vehicle not found</h2>
-          <p className="text-muted-foreground mb-4">This listing may have been removed.</p>
-          <Button onClick={() => navigate("/explore")}>Browse cars</Button>
-        </div>
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
+        <ErrorState
+          title="Vehicle not found"
+          description="This listing may have been removed or is no longer available."
+          onRetry={() => navigate("/explore")}
+        />
       </div>
     );
   }
