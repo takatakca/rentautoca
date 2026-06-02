@@ -56,14 +56,17 @@ export default function AdminPanel() {
       setActiveTrips(ats.data || []);
       setPendingCheckIns(pci.data || []);
       setIncidents(inc.data || []);
+      setLoading(false);
     })();
   }, []);
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="container py-8 pb-24 md:pb-8">
       <h1 className="text-3xl font-bold mb-6">Admin Control Center</h1>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         <Stat icon={Users} label="Users" value={stats.users} />
         <Stat icon={Car} label="Cars" value={stats.cars} />
         <Stat icon={Calendar} label="Trips" value={stats.trips} />
