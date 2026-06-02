@@ -41,14 +41,18 @@ export default function CheckOut() {
     })();
   }, [tripId, user]);
 
-  if (loading) return <div className="container py-8 max-w-2xl mx-auto"><Skeleton className="h-72 w-full" /></div>;
-  if (!trip) return <div className="container py-8 max-w-2xl mx-auto text-center"><h1 className="text-xl font-bold">Trip not found</h1></div>;
+  if (loading) return <div className="container py-8 max-w-2xl mx-auto space-y-3"><Skeleton className="h-8 w-40" /><Skeleton className="h-72 w-full" /></div>;
+  if (!trip) {
+    return (
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Trip not found" description="We couldn't find this trip." onRetry={() => navigate("/trips")} />
+      </div>
+    );
+  }
   if (!["active", "check_out_pending"].includes(trip.status)) {
     return (
-      <div className="container py-8 max-w-2xl mx-auto text-center">
-        <h1 className="text-xl font-bold mb-2">Check-out unavailable</h1>
-        <p className="text-muted-foreground mb-4">Status: {trip.status}</p>
-        <Button asChild variant="outline"><Link to={`/trips/${tripId}`}>Back to trip</Link></Button>
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Check-out unavailable" description={`Current status: ${trip.status.replace(/_/g, " ")}`} onRetry={() => navigate(`/trips/${tripId}`)} />
       </div>
     );
   }
