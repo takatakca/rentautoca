@@ -343,14 +343,29 @@ export default function CarListing() {
         </div>
       )}
 
-      <StickyCheckoutBar
-        originalCents={baseTotalCents}
-        totalCents={totalBeforeTax}
-        disabled={isDisabled || datesUnavailable || !quote}
-        loading={quoteLoading || reserving}
-        ctaLabel={user ? "Reserve" : "Sign in to reserve"}
-        onReserve={handleReserve}
-      />
+      {(() => {
+        const reasons: string[] = [];
+        if (isDisabled) reasons.push("This vehicle is currently unavailable.");
+        else if (datesUnavailable) reasons.push("Pick different dates — these are taken.");
+        else if (quoteLoading) reasons.push("Calculating your quote…");
+        else if (!user) reasons.push("You'll be asked to sign in.");
+        const ctaLabel = !user ? "Sign in to reserve" : reserving ? "Reserving…" : "Reserve";
+        return (
+          <>
+            {reasons.length > 0 && (
+              <p className="px-4 pb-2 text-xs text-muted-foreground" aria-live="polite">{reasons[0]}</p>
+            )}
+            <StickyCheckoutBar
+              originalCents={baseTotalCents}
+              totalCents={totalBeforeTax}
+              disabled={isDisabled || datesUnavailable || !quote}
+              loading={quoteLoading || reserving}
+              ctaLabel={ctaLabel}
+              onReserve={handleReserve}
+            />
+          </>
+        );
+      })()}
     </div>
   );
 }
