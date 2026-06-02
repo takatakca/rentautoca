@@ -78,7 +78,7 @@ export default function AdminPanel() {
       </div>
 
       <Tabs defaultValue="active">
-        <TabsList>
+        <TabsList className="w-full overflow-x-auto justify-start">
           <TabsTrigger value="active">Active rentals</TabsTrigger>
           <TabsTrigger value="checkins">Pending check-ins</TabsTrigger>
           <TabsTrigger value="incidents">Open incidents</TabsTrigger>
