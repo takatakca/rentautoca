@@ -170,7 +170,7 @@ export default function CarListing() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 relative">
+    <div className="min-h-dvh bg-background pb-32 relative overflow-x-hidden">
       <Helmet>
         <title>{`${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""}`.trim() + " — Rent on Rentauto.ca"}</title>
         <meta name="description" content={`Rent the ${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""} in ${car.location_label ?? "Canada"} from $${Math.round((car.base_daily_price_cents ?? 0) / 100)}/day on Rentauto.ca.`.replace(/\s+/g, " ").trim()} />
