@@ -99,22 +99,22 @@ export default function Checkout() {
   if (loading) {
     return (
       <div className="container max-w-2xl py-8 pb-32 space-y-3">
-        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-32 w-full rounded-xl" />
         <Skeleton className="h-32 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
       </div>
     );
   }
   if (error || !trip) {
     return (
       <div className="container max-w-2xl py-8">
-        <Card>
-          <CardHeader><CardTitle>Cannot load checkout</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button asChild variant="outline"><Link to="/trips">Back to trips</Link></Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Cannot load checkout"
+          description={error || "We couldn't find this booking."}
+          onRetry={() => navigate("/trips")}
+        />
       </div>
     );
   }
