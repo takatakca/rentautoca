@@ -65,17 +65,11 @@ export default function TripDetail() {
   if (error || !trip) {
     return (
       <div className="container py-8 max-w-3xl mx-auto pb-24 md:pb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trip not found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button asChild variant="outline">
-              <Link to="/trips">Back to trips</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Trip not found"
+          description={error || "We couldn't load this trip."}
+          onRetry={() => (window.location.href = "/trips")}
+        />
       </div>
     );
   }
