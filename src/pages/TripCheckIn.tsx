@@ -41,25 +41,26 @@ export default function CheckIn() {
   }, [tripId, user]);
 
   if (loading) {
-    return <div className="container py-8 max-w-2xl mx-auto"><Skeleton className="h-72 w-full" /></div>;
+    return <div className="container py-8 max-w-2xl mx-auto space-y-3"><Skeleton className="h-8 w-40" /><Skeleton className="h-72 w-full" /></div>;
   }
   if (!trip) {
     return (
-      <div className="container py-8 max-w-2xl mx-auto text-center">
-        <h1 className="text-xl font-bold mb-2">Trip not found</h1>
-        <Button asChild variant="outline"><Link to="/trips">Back to trips</Link></Button>
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Trip not found" description="This trip may have been cancelled or removed." onRetry={() => navigate("/trips")} />
       </div>
     );
   }
   if (trip.guest_id !== user?.id) {
-    return <div className="container py-8 max-w-2xl mx-auto text-center"><h1 className="text-xl font-bold">Not authorized</h1></div>;
+    return (
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Not authorized" description="You don't have access to this trip." onRetry={() => navigate("/trips")} />
+      </div>
+    );
   }
   if (!["confirmed", "check_in_pending"].includes(trip.status)) {
     return (
-      <div className="container py-8 max-w-2xl mx-auto text-center">
-        <h1 className="text-xl font-bold mb-2">Check-in unavailable</h1>
-        <p className="text-muted-foreground mb-4">Status: {trip.status}</p>
-        <Button asChild variant="outline"><Link to={`/trips/${tripId}`}>Back to trip</Link></Button>
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Check-in unavailable" description={`Current status: ${trip.status.replace(/_/g, " ")}`} onRetry={() => navigate(`/trips/${tripId}`)} />
       </div>
     );
   }
