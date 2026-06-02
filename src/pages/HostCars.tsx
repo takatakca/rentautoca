@@ -60,9 +60,12 @@ export default function HostCars() {
       {loading ? (
         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
       ) : cars.length === 0 ? (
-        <Card><CardHeader><CardTitle>No vehicles yet</CardTitle></CardHeader>
-          <CardContent><p className="text-muted-foreground">Add your first vehicle from your host onboarding.</p></CardContent>
-        </Card>
+        <EmptyState
+          icon={Car}
+          title="No vehicles yet"
+          description="List your first vehicle to start earning on Rentauto."
+          action={{ label: "Start onboarding", href: "/host/onboarding" }}
+        />
       ) : (
         cars.map((c) => (
           <Card key={c.id}>
