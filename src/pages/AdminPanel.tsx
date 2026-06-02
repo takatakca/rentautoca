@@ -18,6 +18,7 @@ export default function AdminPanel() {
   const [activeTrips, setActiveTrips] = useState<any[]>([]);
   const [pendingCheckIns, setPendingCheckIns] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
