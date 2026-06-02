@@ -116,16 +116,32 @@ export default function HostDashboard() {
 
       <StripeStatusCard />
 
+      {cars.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard icon={Activity} label="Active" value={String(activeCars)} sub="Listed & bookable" />
+          <StatCard icon={AlertTriangle} label="Paused / draft" value={String(fleetHealth.paused)} sub="Not bookable" />
+          <StatCard icon={Camera} label="Missing photos" value={String(fleetHealth.withoutPhotos)} sub="Hurts conversion" />
+          <StatCard icon={Cpu} label="No tracking device" value={String(fleetHealth.withoutDevices)} sub="Live GPS unavailable" />
+        </div>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Your vehicles</CardTitle>
-            <CardDescription>{loading ? "Loading…" : cars.length === 0 ? "You haven't listed any vehicles yet." : `${cars.length} vehicle${cars.length === 1 ? "" : "s"}`}</CardDescription>
+            <CardDescription>{cars.length === 0 ? "You haven't listed any vehicles yet." : `${cars.length} vehicle${cars.length === 1 ? "" : "s"}`}</CardDescription>
           </div>
-          <Button asChild variant="outline" size="sm"><Link to="/host/cars">View all</Link></Button>
+          {cars.length > 0 && <Button asChild variant="outline" size="sm"><Link to="/host/cars">View all</Link></Button>}
         </CardHeader>
         <CardContent className="space-y-3">
-          {cars.slice(0, 4).map((c) => (
+          {cars.length === 0 ? (
+            <EmptyState
+              icon={Car}
+              title="No vehicles listed"
+              description="Add your first vehicle to start earning."
+              action={{ label: "Add a vehicle", href: "/host/onboarding" }}
+            />
+          ) : cars.slice(0, 4).map((c) => (
             <Link key={c.id} to={`/host/cars/${c.id}/edit`} className="flex gap-3 items-center hover:bg-muted/50 rounded-lg p-2 -mx-2 transition-colors">
               <SafeImage src={c.photo_url ?? undefined} className="w-16 h-16 rounded-md shrink-0" />
               <div className="flex-1 min-w-0">
