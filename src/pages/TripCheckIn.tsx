@@ -113,7 +113,7 @@ export default function CheckIn() {
   };
 
   return (
-    <div className="container py-6 max-w-2xl mx-auto pb-24 space-y-4">
+    <div className="container py-6 max-w-2xl mx-auto pb-32 space-y-4">
       <Link to={`/trips/${tripId}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground">
         <ArrowLeft className="h-4 w-4" /> Cancel check-in
       </Link>
