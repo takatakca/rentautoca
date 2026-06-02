@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Power, PowerOff, ArrowLeft } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Car, Pencil, Power, PowerOff, ArrowLeft } from "lucide-react";
 
 interface HostCar {
   id: string; title: string; make: string; model: string; year: number;
