@@ -185,7 +185,7 @@ export default function CheckIn() {
         </CardContent></Card>
       )}
 
-      <div className="flex gap-2">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2 max-w-2xl mx-auto">
         {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} disabled={submitting}>Back</Button>}
         {step < STEPS.length - 1 ? (
           <Button className="flex-1" onClick={() => setStep(step + 1)}>Continue</Button>
