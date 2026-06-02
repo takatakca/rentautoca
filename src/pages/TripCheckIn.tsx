@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Camera, Upload, ShieldCheck, MapPin } from "lucide-react";
 
@@ -41,25 +42,26 @@ export default function CheckIn() {
   }, [tripId, user]);
 
   if (loading) {
-    return <div className="container py-8 max-w-2xl mx-auto"><Skeleton className="h-72 w-full" /></div>;
+    return <div className="container py-8 max-w-2xl mx-auto space-y-3"><Skeleton className="h-8 w-40" /><Skeleton className="h-72 w-full" /></div>;
   }
   if (!trip) {
     return (
-      <div className="container py-8 max-w-2xl mx-auto text-center">
-        <h1 className="text-xl font-bold mb-2">Trip not found</h1>
-        <Button asChild variant="outline"><Link to="/trips">Back to trips</Link></Button>
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Trip not found" description="This trip may have been cancelled or removed." onRetry={() => navigate("/trips")} />
       </div>
     );
   }
   if (trip.guest_id !== user?.id) {
-    return <div className="container py-8 max-w-2xl mx-auto text-center"><h1 className="text-xl font-bold">Not authorized</h1></div>;
+    return (
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Not authorized" description="You don't have access to this trip." onRetry={() => navigate("/trips")} />
+      </div>
+    );
   }
   if (!["confirmed", "check_in_pending"].includes(trip.status)) {
     return (
-      <div className="container py-8 max-w-2xl mx-auto text-center">
-        <h1 className="text-xl font-bold mb-2">Check-in unavailable</h1>
-        <p className="text-muted-foreground mb-4">Status: {trip.status}</p>
-        <Button asChild variant="outline"><Link to={`/trips/${tripId}`}>Back to trip</Link></Button>
+      <div className="container py-8 max-w-2xl mx-auto">
+        <ErrorState title="Check-in unavailable" description={`Current status: ${trip.status.replace(/_/g, " ")}`} onRetry={() => navigate(`/trips/${tripId}`)} />
       </div>
     );
   }
@@ -113,7 +115,7 @@ export default function CheckIn() {
   };
 
   return (
-    <div className="container py-6 max-w-2xl mx-auto pb-24 space-y-4">
+    <div className="container py-6 max-w-2xl mx-auto pb-32 space-y-4">
       <Link to={`/trips/${tripId}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground">
         <ArrowLeft className="h-4 w-4" /> Cancel check-in
       </Link>
@@ -185,7 +187,7 @@ export default function CheckIn() {
         </CardContent></Card>
       )}
 
-      <div className="flex gap-2">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2 max-w-2xl mx-auto">
         {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} disabled={submitting}>Back</Button>}
         {step < STEPS.length - 1 ? (
           <Button className="flex-1" onClick={() => setStep(step + 1)}>Continue</Button>

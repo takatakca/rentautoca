@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu } from "lucide-react";
 
 export default function AdminPanel() {
@@ -16,6 +18,7 @@ export default function AdminPanel() {
   const [activeTrips, setActiveTrips] = useState<any[]>([]);
   const [pendingCheckIns, setPendingCheckIns] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -53,14 +56,17 @@ export default function AdminPanel() {
       setActiveTrips(ats.data || []);
       setPendingCheckIns(pci.data || []);
       setIncidents(inc.data || []);
+      setLoading(false);
     })();
   }, []);
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="container py-8 pb-24 md:pb-8">
       <h1 className="text-3xl font-bold mb-6">Admin Control Center</h1>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         <Stat icon={Users} label="Users" value={stats.users} />
         <Stat icon={Car} label="Cars" value={stats.cars} />
         <Stat icon={Calendar} label="Trips" value={stats.trips} />
@@ -72,7 +78,7 @@ export default function AdminPanel() {
       </div>
 
       <Tabs defaultValue="active">
-        <TabsList>
+        <TabsList className="w-full overflow-x-auto justify-start">
           <TabsTrigger value="active">Active rentals</TabsTrigger>
           <TabsTrigger value="checkins">Pending check-ins</TabsTrigger>
           <TabsTrigger value="incidents">Open incidents</TabsTrigger>

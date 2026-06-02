@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useToast } from "@/hooks/use-toast";
@@ -98,22 +99,22 @@ export default function Checkout() {
   if (loading) {
     return (
       <div className="container max-w-2xl py-8 pb-32 space-y-3">
-        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-32 w-full rounded-xl" />
         <Skeleton className="h-32 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
       </div>
     );
   }
   if (error || !trip) {
     return (
       <div className="container max-w-2xl py-8">
-        <Card>
-          <CardHeader><CardTitle>Cannot load checkout</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button asChild variant="outline"><Link to="/trips">Back to trips</Link></Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Cannot load checkout"
+          description={error || "We couldn't find this booking."}
+          onRetry={() => navigate("/trips")}
+        />
       </div>
     );
   }
@@ -213,12 +214,12 @@ export default function Checkout() {
         </Card>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border px-4 py-3 flex items-center justify-between">
-        <div>
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">Total due</p>
-          <p className="text-lg font-bold">${(totalCents / 100).toFixed(2)} {trip.currency || "CAD"}</p>
+          <p className="text-lg font-bold truncate">${(totalCents / 100).toFixed(2)} {trip.currency || "CAD"}</p>
         </div>
-        <Button size="lg" className="px-6 rounded-xl" disabled={!acknowledged || unavailable || paying} onClick={handlePay}>
+        <Button size="lg" className="px-6 rounded-xl shrink-0" disabled={!acknowledged || unavailable || paying || paymentNotConfigured} onClick={handlePay}>
           {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
           {paying ? "Starting…" : "Confirm and pay"}
         </Button>

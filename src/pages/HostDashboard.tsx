@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { SafeImage } from "@/components/ui/safe-image";
-import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil } from "lucide-react";
+import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu } from "lucide-react";
+import { DashboardSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { StripeStatusCard } from "@/components/host/StripeStatusCard";
 import { useHostCompletion } from "@/hooks/use-host-completion";
 import { format } from "date-fns";
@@ -29,6 +31,7 @@ export default function HostDashboard() {
   const [bookings, setBookings] = useState<HostBooking[]>([]);
   const [earnings, setEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [fleetHealth, setFleetHealth] = useState({ withoutPhotos: 0, withoutDevices: 0, paused: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -42,11 +45,21 @@ export default function HostDashboard() {
 
       const carIds = (carRows || []).map((c) => c.id);
       const photoMap: Record<string, string> = {};
+      let devicedIds = new Set<string>();
       if (carIds.length) {
-        const { data: photos } = await supabase
-          .from("car_photos").select("car_id, url").in("car_id", carIds).order("sort_order");
+        const [{ data: photos }, { data: devices }] = await Promise.all([
+          supabase.from("car_photos").select("car_id, url").in("car_id", carIds).order("sort_order"),
+          supabase.from("vehicle_tracking_devices").select("car_id").in("car_id", carIds),
+        ]);
         (photos || []).forEach((p) => { if (!photoMap[p.car_id]) photoMap[p.car_id] = p.url; });
+        devicedIds = new Set((devices || []).map((d: any) => d.car_id));
       }
+      const carsWithPhotos = new Set(Object.keys(photoMap));
+      setFleetHealth({
+        withoutPhotos: carIds.filter((id) => !carsWithPhotos.has(id)).length,
+        withoutDevices: carIds.filter((id) => !devicedIds.has(id)).length,
+        paused: (carRows || []).filter((c) => c.status !== "active").length,
+      });
       setCars((carRows || []).map((c) => ({ ...c, photo_url: photoMap[c.id] ?? null })));
 
       if (carIds.length) {
@@ -69,6 +82,8 @@ export default function HostDashboard() {
 
   const upcoming = bookings.filter((b) => new Date(b.end_at) >= new Date() && b.status !== "cancelled" && b.status !== "draft");
   const activeCars = cars.filter((c) => c.status === "active").length;
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="container py-8 pb-24 md:pb-8 space-y-6">
@@ -101,16 +116,32 @@ export default function HostDashboard() {
 
       <StripeStatusCard />
 
+      {cars.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard icon={Activity} label="Active" value={String(activeCars)} sub="Listed & bookable" />
+          <StatCard icon={AlertTriangle} label="Paused / draft" value={String(fleetHealth.paused)} sub="Not bookable" />
+          <StatCard icon={Camera} label="Missing photos" value={String(fleetHealth.withoutPhotos)} sub="Hurts conversion" />
+          <StatCard icon={Cpu} label="No tracking device" value={String(fleetHealth.withoutDevices)} sub="Live GPS unavailable" />
+        </div>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Your vehicles</CardTitle>
-            <CardDescription>{loading ? "Loading…" : cars.length === 0 ? "You haven't listed any vehicles yet." : `${cars.length} vehicle${cars.length === 1 ? "" : "s"}`}</CardDescription>
+            <CardDescription>{cars.length === 0 ? "You haven't listed any vehicles yet." : `${cars.length} vehicle${cars.length === 1 ? "" : "s"}`}</CardDescription>
           </div>
-          <Button asChild variant="outline" size="sm"><Link to="/host/cars">View all</Link></Button>
+          {cars.length > 0 && <Button asChild variant="outline" size="sm"><Link to="/host/cars">View all</Link></Button>}
         </CardHeader>
         <CardContent className="space-y-3">
-          {cars.slice(0, 4).map((c) => (
+          {cars.length === 0 ? (
+            <EmptyState
+              icon={Car}
+              title="No vehicles listed"
+              description="Add your first vehicle to start earning."
+              action={{ label: "Add a vehicle", href: "/host/onboarding" }}
+            />
+          ) : cars.slice(0, 4).map((c) => (
             <Link key={c.id} to={`/host/cars/${c.id}/edit`} className="flex gap-3 items-center hover:bg-muted/50 rounded-lg p-2 -mx-2 transition-colors">
               <SafeImage src={c.photo_url ?? undefined} className="w-16 h-16 rounded-md shrink-0" />
               <div className="flex-1 min-w-0">

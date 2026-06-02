@@ -3,6 +3,8 @@ import { useCarListing } from "@/hooks/use-car-listing";
 import { useTripQuote } from "@/hooks/use-trip-quote";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DetailPageSkeleton } from "@/components/ui/skeletons";
+import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -91,26 +93,17 @@ export default function CarListing() {
   const { data: quote, isLoading: quoteLoading, error: quoteError } = useTripQuote(quoteParams);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Skeleton className="w-full aspect-[4/3]" />
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (error || !car) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-2">Vehicle not found</h2>
-          <p className="text-muted-foreground mb-4">This listing may have been removed.</p>
-          <Button onClick={() => navigate("/explore")}>Browse cars</Button>
-        </div>
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
+        <ErrorState
+          title="Vehicle not found"
+          description="This listing may have been removed or is no longer available."
+          onRetry={() => navigate("/explore")}
+        />
       </div>
     );
   }
@@ -177,7 +170,7 @@ export default function CarListing() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 relative">
+    <div className="min-h-dvh bg-background pb-32 relative overflow-x-hidden">
       <Helmet>
         <title>{`${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""}`.trim() + " — Rent on Rentauto.ca"}</title>
         <meta name="description" content={`Rent the ${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""} in ${car.location_label ?? "Canada"} from $${Math.round((car.base_daily_price_cents ?? 0) / 100)}/day on Rentauto.ca.`.replace(/\s+/g, " ").trim()} />
@@ -350,14 +343,29 @@ export default function CarListing() {
         </div>
       )}
 
-      <StickyCheckoutBar
-        originalCents={baseTotalCents}
-        totalCents={totalBeforeTax}
-        disabled={isDisabled || datesUnavailable || !quote}
-        loading={quoteLoading || reserving}
-        ctaLabel={user ? "Reserve" : "Sign in to reserve"}
-        onReserve={handleReserve}
-      />
+      {(() => {
+        const reasons: string[] = [];
+        if (isDisabled) reasons.push("This vehicle is currently unavailable.");
+        else if (datesUnavailable) reasons.push("Pick different dates — these are taken.");
+        else if (quoteLoading) reasons.push("Calculating your quote…");
+        else if (!user) reasons.push("You'll be asked to sign in.");
+        const ctaLabel = !user ? "Sign in to reserve" : reserving ? "Reserving…" : "Reserve";
+        return (
+          <>
+            {reasons.length > 0 && (
+              <p className="px-4 pb-2 text-xs text-muted-foreground" aria-live="polite">{reasons[0]}</p>
+            )}
+            <StickyCheckoutBar
+              originalCents={baseTotalCents}
+              totalCents={totalBeforeTax}
+              disabled={isDisabled || datesUnavailable || !quote}
+              loading={quoteLoading || reserving}
+              ctaLabel={ctaLabel}
+              onReserve={handleReserve}
+            />
+          </>
+        );
+      })()}
     </div>
   );
 }

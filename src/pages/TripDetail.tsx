@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
@@ -64,17 +65,11 @@ export default function TripDetail() {
   if (error || !trip) {
     return (
       <div className="container py-8 max-w-3xl mx-auto pb-24 md:pb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trip not found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button asChild variant="outline">
-              <Link to="/trips">Back to trips</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Trip not found"
+          description={error || "We couldn't load this trip."}
+          onRetry={() => (window.location.href = "/trips")}
+        />
       </div>
     );
   }

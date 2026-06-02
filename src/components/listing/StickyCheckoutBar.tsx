@@ -21,8 +21,8 @@ export function StickyCheckoutBar({
   const hasDiscount = originalCents > totalCents;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border px-4 py-3 flex items-center justify-between">
-      <div>
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3">
+      <div className="min-w-0">
         {loading ? (
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
