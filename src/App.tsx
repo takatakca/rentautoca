@@ -28,6 +28,7 @@ const HostOnboarding = lazy(() => import("./pages/HostOnboarding"));
 const HostCars = lazy(() => import("./pages/HostCars"));
 const HostCarEdit = lazy(() => import("./pages/HostCarEdit"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const AdminLaunchChecklist = lazy(() => import("./pages/AdminLaunchChecklist"));
 const BecomeHost = lazy(() => import("./pages/BecomeHost"));
 const Profile = lazy(() => import("./pages/Profile"));
 const CarListing = lazy(() => import("./pages/CarListing"));
@@ -137,6 +138,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRole="admin">
                       <AdminPanel />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/launch-checklist"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminLaunchChecklist />
                     </ProtectedRoute>
                   }
                 />
