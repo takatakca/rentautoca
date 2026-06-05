@@ -64,7 +64,12 @@ export default function AdminPanel() {
 
   return (
     <div className="container py-8 pb-24 md:pb-8">
-      <h1 className="text-3xl font-bold mb-6">Admin Control Center</h1>
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <h1 className="text-3xl font-bold">Admin Control Center</h1>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/admin/launch-checklist">LC1 Launch Checklist</Link>
+        </Button>
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         <Stat icon={Users} label="Users" value={stats.users} />
