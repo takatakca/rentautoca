@@ -149,12 +149,15 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
       reviewer: reviewerMap[r.reviewer_id] || null,
     })),
     host: hostRes.data
-      ? {
-          ...hostRes.data,
-          is_all_star: hostRes.data.is_all_star ?? false,
-          rating_avg: hostRes.data.rating_avg ? Number(hostRes.data.rating_avg) : null,
-          trips_count: hostRes.data.trips_count ?? 0,
-        }
+      ? (() => {
+          const h = hostRes.data as any;
+          return {
+            ...h,
+            is_all_star: h.is_all_star ?? false,
+            rating_avg: h.rating_avg ? Number(h.rating_avg) : null,
+            trips_count: h.trips_count ?? 0,
+          };
+        })()
       : null,
     rating_avg: ratingAvg ? Math.round(ratingAvg * 10) / 10 : null,
     rating_count: ratingCount,
