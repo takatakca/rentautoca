@@ -58,10 +58,10 @@ export default function Checkout() {
       if ((blocks || []).length > 0) setUnavailable(true);
 
       if (c?.host_id) {
-        const { data: h } = await supabase.from("profiles")
+        const { data: h } = await supabase.from("profiles_public" as any)
           .select("display_name, first_name, avatar_url, rating_avg")
           .eq("id", c.host_id).maybeSingle();
-        setHost(h);
+        setHost(h as any);
       }
       setLoading(false);
     })();
