@@ -102,7 +102,7 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
 
   // Fetch host profile
   const hostRes = await supabase
-    .from("profiles")
+    .from("profiles_public" as any)
     .select("id, display_name, avatar_url, is_all_star, rating_avg, trips_count, created_at")
     .eq("id", car.host_id)
     .single();
@@ -113,7 +113,7 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
   let reviewerMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
   if (reviewerIds.length > 0) {
     const profilesRes = await supabase
-      .from("profiles")
+      .from("profiles_public" as any)
       .select("id, display_name, avatar_url")
       .in("id", reviewerIds);
     (profilesRes.data || []).forEach((p) => {
