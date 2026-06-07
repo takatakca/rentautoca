@@ -116,7 +116,7 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
       .from("profiles_public" as any)
       .select("id, display_name, avatar_url")
       .in("id", reviewerIds);
-    (profilesRes.data || []).forEach((p) => {
+    ((profilesRes.data as any[]) || []).forEach((p: any) => {
       reviewerMap[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url };
     });
   }
