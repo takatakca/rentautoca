@@ -126,12 +126,25 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Gate seed endpoint behind an admin shared secret so it cannot be invoked
+  // publicly in production. Set SEED_DEMO_SECRET in project secrets; callers
+  // must send it as x-seed-secret.
+  const required = Deno.env.get("SEED_DEMO_SECRET");
+  const provided = req.headers.get("x-seed-secret");
+  if (!required || provided !== required) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { persistSession: false } },
     );
+
 
     const log: string[] = [];
 
