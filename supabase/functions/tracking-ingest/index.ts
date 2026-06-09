@@ -35,13 +35,37 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = (await req.json()) as IngestPayload;
-    if (!body?.device_identifier || typeof body.lat !== "number" || typeof body.lng !== "number") {
+    // Reject oversized payloads (defense vs. flood / amplification)
+    const contentLength = Number(req.headers.get("content-length") || "0");
+    if (contentLength > 2048) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const raw = await req.text();
+    if (raw.length > 2048) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const body = JSON.parse(raw) as IngestPayload;
+
+    const validCoords =
+      typeof body?.lat === "number" && typeof body?.lng === "number" &&
+      body.lat >= -90 && body.lat <= 90 && body.lng >= -180 && body.lng <= 180;
+    const validSpeed = body.speed_kmh == null || (typeof body.speed_kmh === "number" && body.speed_kmh >= 0 && body.speed_kmh < 400);
+    const validAcc = body.accuracy_meters == null || (typeof body.accuracy_meters === "number" && body.accuracy_meters >= 0 && body.accuracy_meters < 100000);
+
+    if (!body?.device_identifier || typeof body.device_identifier !== "string" || body.device_identifier.length > 128 || !validCoords || !validSpeed || !validAcc) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
