@@ -167,8 +167,64 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
   {
     pattern: "/help",
     meta: {
-      title: "Help center | Rentauto.ca",
+      title: "Help centre | Rentauto.ca",
       description: "Answers to common questions about renting and hosting cars on Rentauto.ca.",
+    },
+  },
+  {
+    pattern: "/how-it-works",
+    meta: {
+      title: "How Rentauto works — Rent a car in minutes | Rentauto.ca",
+      description: "From searching cars to returning the keys: a step-by-step guide to renting a car on Rentauto.ca.",
+    },
+  },
+  {
+    pattern: "/for-hosts",
+    meta: {
+      title: "Host resources — Earn with your car | Rentauto.ca",
+      description: "Pricing tools, calendar control, payouts and protection — everything you need to host successfully on Rentauto.ca.",
+    },
+  },
+  {
+    pattern: "/airport-rentals",
+    meta: {
+      title: "Airport car rentals at YUL, YQB and beyond | Rentauto.ca",
+      description: "Skip the rental counter at Montreal-Trudeau (YUL), Quebec City (YQB) and other Canadian airports. Book directly from local hosts.",
+    },
+  },
+  {
+    pattern: "/monthly-car-rentals",
+    meta: {
+      title: "Monthly car rentals in Quebec | Rentauto.ca",
+      description: "Long-stay car rentals across Quebec with monthly discounts, transparent pricing, and protection plans included.",
+    },
+  },
+  {
+    pattern: "/electric-vehicles",
+    meta: {
+      title: "Rent an EV — Tesla, Polestar, Ioniq | Rentauto.ca",
+      description: "Try the latest electric vehicles from local Quebec hosts. Tesla, Polestar, Hyundai Ioniq, Kia EV6 and more.",
+    },
+  },
+  {
+    pattern: "/luxury-rentals",
+    meta: {
+      title: "Luxury car rentals across Quebec | Rentauto.ca",
+      description: "BMW, Mercedes-AMG, Porsche, Audi RS — book premium cars for weddings, business trips and weekend drives.",
+    },
+  },
+  {
+    pattern: "/safety",
+    meta: {
+      title: "Safety & trust on Rentauto | Rentauto.ca",
+      description: "Verified identities, protection plans, photo check-in and incident reporting — how Rentauto keeps trips safe.",
+    },
+  },
+  {
+    pattern: "/tracking",
+    meta: {
+      title: "GPS tracking & privacy on Rentauto | Rentauto.ca",
+      description: "How Rentauto handles in-trip GPS: active only during your rental, encrypted, and disclosed before you book.",
     },
   },
   {

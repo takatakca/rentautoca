@@ -24,9 +24,11 @@
      navigate("/");
    };
  
-   const navLinks = [
-     { to: "/explore", label: "Explore" },
-   ];
+  const navLinks = [
+    { to: "/explore", label: "Explore cars" },
+    { to: "/how-it-works", label: "How it works" },
+    { to: "/become-host", label: "Become a host" },
+  ];
  
    const userLinks = [
      { to: "/trips", label: "Trips" },
