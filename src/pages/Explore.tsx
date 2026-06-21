@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const categories = [
 type SortKey = "newest" | "price_asc" | "price_desc" | "rating";
 
 export default function Explore() {
+  const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("All");
   const [locationQuery, setLocationQuery] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -36,6 +37,20 @@ export default function Explore() {
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const [sort, setSort] = useState<SortKey>("newest");
+
+  // Hydrate from URL query params on mount
+  useEffect(() => {
+    const loc = searchParams.get("location");
+    const s = searchParams.get("start");
+    const e = searchParams.get("end");
+    const cat = searchParams.get("category");
+    if (loc) setLocationQuery(loc);
+    if (s) { const d = new Date(s); if (!isNaN(d.getTime())) setStartDate(d); }
+    if (e) { const d = new Date(e); if (!isNaN(d.getTime())) setEndDate(d); }
+    if (cat === "Monthly") setActiveCategory("Monthly");
+    if (cat === "Airports" || cat === "Airport") setActiveCategory("Airports");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const tripDays = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : null;
 
