@@ -38,6 +38,14 @@ const Privacy = lazy(() => import("./pages/legal/Privacy"));
 const Insurance = lazy(() => import("./pages/legal/Insurance"));
 const CancellationPolicy = lazy(() => import("./pages/legal/CancellationPolicy"));
 const Help = lazy(() => import("./pages/legal/Help"));
+const HowItWorks = lazy(() => import("./pages/marketing/HowItWorks"));
+const ForHosts = lazy(() => import("./pages/marketing/ForHosts"));
+const AirportRentals = lazy(() => import("./pages/marketing/AirportRentals"));
+const MonthlyRentals = lazy(() => import("./pages/marketing/MonthlyRentals"));
+const ElectricVehicles = lazy(() => import("./pages/marketing/ElectricVehicles"));
+const LuxuryRentals = lazy(() => import("./pages/marketing/LuxuryRentals"));
+const Safety = lazy(() => import("./pages/marketing/Safety"));
+const Tracking = lazy(() => import("./pages/marketing/Tracking"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -154,6 +162,14 @@ const App = () => (
                 <Route path="/insurance" element={<Insurance />} />
                 <Route path="/cancellation-policy" element={<CancellationPolicy />} />
                 <Route path="/help" element={<Help />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/for-hosts" element={<ForHosts />} />
+                <Route path="/airport-rentals" element={<AirportRentals />} />
+                <Route path="/monthly-car-rentals" element={<MonthlyRentals />} />
+                <Route path="/electric-vehicles" element={<ElectricVehicles />} />
+                <Route path="/luxury-rentals" element={<LuxuryRentals />} />
+                <Route path="/safety" element={<Safety />} />
+                <Route path="/tracking" element={<Tracking />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
