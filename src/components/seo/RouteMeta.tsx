@@ -255,6 +255,13 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
       description: "Set a new password to regain access to your Rentauto.ca account.",
     },
   },
+  {
+    pattern: "/verify-email",
+    meta: {
+      title: "Verify your email | Rentauto.ca",
+      description: "Enter the 6-digit code we sent you to confirm your Rentauto.ca account.",
+    },
+  },
 ];
 
 const FALLBACK: Meta = {
