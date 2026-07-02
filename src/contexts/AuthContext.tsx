@@ -1,18 +1,20 @@
- import { createContext, useContext, useEffect, useState, ReactNode } from "react";
- import { Session, User } from "@supabase/supabase-js";
- import { supabase } from "@/integrations/supabase/client";
- 
- export type AppRole = "guest" | "host" | "admin";
- 
- interface AuthContextType {
-   session: Session | null;
-   user: User | null;
-   roles: AppRole[];
-   isLoading: boolean;
-   hasRole: (role: AppRole) => boolean;
-   signOut: () => Promise<void>;
-   refreshRoles: () => Promise<void>;
- }
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { ensureProfile } from "@/lib/auth-helpers";
+
+export type AppRole = "guest" | "host" | "admin";
+
+interface AuthContextType {
+  session: Session | null;
+  user: User | null;
+  roles: AppRole[];
+  displayName: string | null;
+  isLoading: boolean;
+  hasRole: (role: AppRole) => boolean;
+  signOut: () => Promise<void>;
+  refreshRoles: () => Promise<void>;
+}
  
  const AuthContext = createContext<AuthContextType | undefined>(undefined);
  
@@ -43,71 +45,95 @@
      }
    };
  
-   useEffect(() => {
-     // Set up auth state listener BEFORE checking session
-     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-       async (event, session) => {
-         setSession(session);
-         setUser(session?.user ?? null);
-         
-         if (session?.user) {
-           // Use setTimeout to avoid potential deadlock with Supabase client
-           setTimeout(async () => {
-             const userRoles = await fetchRoles(session.user.id);
-             setRoles(userRoles);
-             setIsLoading(false);
-           }, 0);
-         } else {
-           setRoles([]);
-           setIsLoading(false);
-         }
-       }
-     );
- 
-     // Check initial session
-     supabase.auth.getSession().then(({ data: { session } }) => {
-       setSession(session);
-       setUser(session?.user ?? null);
-       if (session?.user) {
-         fetchRoles(session.user.id).then((userRoles) => {
-           setRoles(userRoles);
-           setIsLoading(false);
-         });
-       } else {
-         setIsLoading(false);
-       }
-     });
- 
-     return () => {
-       subscription.unsubscribe();
-     };
-   }, []);
- 
-   const hasRole = (role: AppRole) => roles.includes(role);
- 
-   const signOut = async () => {
-     await supabase.auth.signOut();
-     setSession(null);
-     setUser(null);
-     setRoles([]);
-   };
- 
-   return (
-     <AuthContext.Provider
-       value={{
-         session,
-         user,
-         roles,
-         isLoading,
-         hasRole,
-         signOut,
-         refreshRoles,
-       }}
-     >
-       {children}
-     </AuthContext.Provider>
-   );
- }
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  const hydrateDisplayName = async (u: User) => {
+    const md = (u.user_metadata || {}) as Record<string, any>;
+    const fromMeta = md.full_name || md.display_name || md.name;
+    if (fromMeta) {
+      setDisplayName(fromMeta);
+    }
+    const { data } = await supabase
+      .from("profiles")
+      .select("display_name, first_name")
+      .eq("id", u.id)
+      .maybeSingle();
+    if (data?.display_name || data?.first_name) {
+      setDisplayName(data.display_name || data.first_name);
+    }
+  };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          setTimeout(async () => {
+            if (event === "SIGNED_IN") {
+              await ensureProfile(session.user);
+            }
+            await hydrateDisplayName(session.user);
+            const userRoles = await fetchRoles(session.user.id);
+            setRoles(userRoles);
+            setIsLoading(false);
+          }, 0);
+        } else {
+          setRoles([]);
+          setDisplayName(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        (async () => {
+          await hydrateDisplayName(session.user);
+          const userRoles = await fetchRoles(session.user.id);
+          setRoles(userRoles);
+          setIsLoading(false);
+        })();
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const hasRole = (role: AppRole) => roles.includes(role);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setRoles([]);
+    setDisplayName(null);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        roles,
+        displayName,
+        isLoading,
+        hasRole,
+        signOut,
+        refreshRoles,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
  
  export function useAuth() {
    const context = useContext(AuthContext);

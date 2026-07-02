@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Car, Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { friendlyAuthError, passwordStrength } from "@/lib/auth-helpers";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -16,136 +17,78 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const navigate = useNavigate();
+  const strength = passwordStrength(password);
 
   useEffect(() => {
-    // Check if user arrived via a valid reset link (Supabase auto-exchanges the token)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setHasSession(true);
-      }
+      if (session) setHasSession(true);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setHasSession(true);
-      }
+      if (event === "PASSWORD_RECOVERY") setHasSession(true);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-
+    if (password !== confirmPassword) return setError("Passwords do not match.");
+    if (password.length < 8) return setError("Password must be at least 8 characters.");
     setLoading(true);
-
     const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess(true);
-      setTimeout(() => navigate("/"), 2000);
-    }
     setLoading(false);
+    if (error) return setError(friendlyAuthError(error.message));
+    setSuccess(true);
+    setTimeout(() => navigate("/", { replace: true }), 1500);
   };
 
   if (!hasSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Invalid or expired link</CardTitle>
-            <CardDescription>
-              This password reset link is invalid or has expired. Please request a new one.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Button asChild>
-              <Link to="/forgot-password">Request new link</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <AuthShell
+        title="Invalid or expired link"
+        description="This password reset link is invalid or has expired."
+        footer={<Link to="/forgot-password" className="text-primary hover:underline">Request a new link</Link>}
+      >
+        <Button asChild className="w-full"><Link to="/forgot-password">Request new link</Link></Button>
+      </AuthShell>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <CheckCircle className="h-12 w-12 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Password updated!</CardTitle>
-            <CardDescription>
-              Your password has been changed. Redirecting you now…
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <AuthShell title="Password updated" description="Redirecting you now…">
+        <div className="flex justify-center py-2"><CheckCircle className="h-12 w-12 text-primary" /></div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Car className="h-12 w-12 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Set new password</CardTitle>
-          <CardDescription>Choose a new password for your account.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleUpdate}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+    <AuthShell title="Set a new password" description="Choose a strong password to protect your account.">
+      <form onSubmit={handleUpdate} className="space-y-4">
+        {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+        <div className="space-y-2">
+          <Label htmlFor="password">New password</Label>
+          <Input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+          {password && (
+            <div className="space-y-1">
+              <div className="flex gap-1">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={`h-1 flex-1 rounded ${i < strength.score ? (strength.score >= 3 ? "bg-primary" : "bg-amber-500") : "bg-muted"}`} />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">{strength.label}</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update password
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm password</Label>
+          <Input id="confirmPassword" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+        </div>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Update password
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
