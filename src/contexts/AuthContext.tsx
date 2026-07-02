@@ -1,18 +1,20 @@
- import { createContext, useContext, useEffect, useState, ReactNode } from "react";
- import { Session, User } from "@supabase/supabase-js";
- import { supabase } from "@/integrations/supabase/client";
- 
- export type AppRole = "guest" | "host" | "admin";
- 
- interface AuthContextType {
-   session: Session | null;
-   user: User | null;
-   roles: AppRole[];
-   isLoading: boolean;
-   hasRole: (role: AppRole) => boolean;
-   signOut: () => Promise<void>;
-   refreshRoles: () => Promise<void>;
- }
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { ensureProfile } from "@/lib/auth-helpers";
+
+export type AppRole = "guest" | "host" | "admin";
+
+interface AuthContextType {
+  session: Session | null;
+  user: User | null;
+  roles: AppRole[];
+  displayName: string | null;
+  isLoading: boolean;
+  hasRole: (role: AppRole) => boolean;
+  signOut: () => Promise<void>;
+  refreshRoles: () => Promise<void>;
+}
  
  const AuthContext = createContext<AuthContextType | undefined>(undefined);
  
