@@ -150,10 +150,10 @@ export default function BecomeHost() {
            )}
          </CardContent>
          <CardFooter className="justify-center">
-           <Button size="lg" onClick={handleBecomeHost} disabled={loading}>
-             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-             Become a Host
-           </Button>
+            <Button size="lg" onClick={handleApply} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Apply to become a host
+            </Button>
          </CardFooter>
        </Card>
      </div>
