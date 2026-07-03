@@ -1,63 +1,85 @@
- import { useState } from "react";
- import { useNavigate } from "react-router-dom";
- import { supabase } from "@/integrations/supabase/client";
- import { useAuth } from "@/contexts/AuthContext";
- import { Button } from "@/components/ui/button";
- import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
- import { Alert, AlertDescription } from "@/components/ui/alert";
- import { Car, DollarSign, Shield, Loader2, CheckCircle } from "lucide-react";
- 
- export default function BecomeHost() {
-   const { user, hasRole, refreshRoles } = useAuth();
-   const navigate = useNavigate();
-   const [loading, setLoading] = useState(false);
-   const [error, setError] = useState<string | null>(null);
- 
-   if (!user) {
-     navigate("/login");
-     return null;
-   }
- 
-   if (hasRole("host")) {
-     return (
-       <div className="container py-8 max-w-2xl mx-auto">
-         <Card>
-           <CardHeader className="text-center">
-             <div className="flex justify-center mb-4">
-               <CheckCircle className="h-16 w-16 text-primary" />
-             </div>
-             <CardTitle className="text-2xl">You're already a host!</CardTitle>
-             <CardDescription>
-               You can manage your listings from the Host Dashboard.
-             </CardDescription>
-           </CardHeader>
-           <CardFooter className="justify-center">
-             <Button asChild>
-               <a href="/host">Go to Host Dashboard</a>
-             </Button>
-           </CardFooter>
-         </Card>
-       </div>
-     );
-   }
- 
-   const handleBecomeHost = async () => {
-     setError(null);
-     setLoading(true);
- 
-     const { error } = await supabase.from("user_roles").insert({
-       user_id: user.id,
-       role: "host" as const,
-     });
- 
-     if (error) {
-       setError(error.message);
-       setLoading(false);
-     } else {
-       await refreshRoles();
-       navigate("/host/onboarding");
-     }
-   };
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Car, DollarSign, Shield, Loader2, CheckCircle, Clock } from "lucide-react";
+
+export default function BecomeHost() {
+  const { user, hasRole } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!user) {
+    navigate("/login?redirect=/become-host");
+    return null;
+  }
+
+  if (hasRole("host")) {
+    return (
+      <div className="container py-8 max-w-2xl mx-auto">
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="h-16 w-16 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">You're already a host!</CardTitle>
+            <CardDescription>
+              You can manage your listings from the Host Dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Button asChild>
+              <a href="/host">Go to Host Dashboard</a>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  const applied = Boolean((user.user_metadata as any)?.host_intent);
+
+  const handleApply = async () => {
+    setError(null);
+    setLoading(true);
+    // Record host application intent only. Role escalation to "host" is
+    // performed server-side by an admin after review (RLS blocks client writes
+    // to user_roles).
+    const { error: metaErr } = await supabase.auth.updateUser({
+      data: { host_intent: true, host_applied_at: new Date().toISOString() },
+    });
+    setLoading(false);
+    if (metaErr) return setError(metaErr.message);
+    setSubmitted(true);
+  };
+
+  if (submitted || applied) {
+    return (
+      <div className="container py-8 max-w-2xl mx-auto">
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Clock className="h-16 w-16 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Application received</CardTitle>
+            <CardDescription>
+              Your host application must be reviewed before you can publish vehicles.
+              We'll email you when your account is approved. In the meantime, you can
+              keep browsing and booking cars as a guest.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Button variant="outline" onClick={() => navigate("/")}>Back to home</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
  
    return (
      <div className="container py-8 max-w-4xl mx-auto">
@@ -115,10 +137,11 @@
        <Card className="max-w-md mx-auto">
          <CardHeader className="text-center">
            <CardTitle>Ready to start hosting?</CardTitle>
-           <CardDescription>
-             Click below to become a host. You'll need to complete Stripe Connect onboarding 
-             before you can publish listings.
-           </CardDescription>
+            <CardDescription>
+              Submit your application to become a Rentauto host. Our team reviews
+              every application before approval. Once approved, you'll complete
+              Stripe Connect onboarding and can publish your first listing.
+            </CardDescription>
          </CardHeader>
          <CardContent>
            {error && (
@@ -128,10 +151,10 @@
            )}
          </CardContent>
          <CardFooter className="justify-center">
-           <Button size="lg" onClick={handleBecomeHost} disabled={loading}>
-             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-             Become a Host
-           </Button>
+            <Button size="lg" onClick={handleApply} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Apply to become a host
+            </Button>
          </CardFooter>
        </Card>
      </div>
