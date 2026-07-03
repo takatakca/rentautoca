@@ -22,7 +22,10 @@ export default function Login() {
   const [resending, setResending] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
+  const params = new URLSearchParams(location.search);
+  const rawRedirect = params.get("redirect");
+  const safeRedirect = rawRedirect && /^\/[^/]/.test(rawRedirect) ? rawRedirect : null;
+  const from = safeRedirect || (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
