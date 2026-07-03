@@ -137,10 +137,11 @@ export default function BecomeHost() {
        <Card className="max-w-md mx-auto">
          <CardHeader className="text-center">
            <CardTitle>Ready to start hosting?</CardTitle>
-           <CardDescription>
-             Click below to become a host. You'll need to complete Stripe Connect onboarding 
-             before you can publish listings.
-           </CardDescription>
+            <CardDescription>
+              Submit your application to become a Rentauto host. Our team reviews
+              every application before approval. Once approved, you'll complete
+              Stripe Connect onboarding and can publish your first listing.
+            </CardDescription>
          </CardHeader>
          <CardContent>
            {error && (
