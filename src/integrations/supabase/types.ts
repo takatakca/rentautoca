@@ -752,11 +752,14 @@ export type Database = {
           end_at: string
           guest_id: string
           id: string
+          payment_status: string
           pickup_location: string | null
           pricing_breakdown: Json | null
           return_location: string | null
           start_at: string
           status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
           total_cents: number | null
           updated_at: string
         }
@@ -767,11 +770,14 @@ export type Database = {
           end_at: string
           guest_id: string
           id?: string
+          payment_status?: string
           pickup_location?: string | null
           pricing_breakdown?: Json | null
           return_location?: string | null
           start_at: string
           status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           total_cents?: number | null
           updated_at?: string
         }
@@ -782,11 +788,14 @@ export type Database = {
           end_at?: string
           guest_id?: string
           id?: string
+          payment_status?: string
           pickup_location?: string | null
           pricing_breakdown?: Json | null
           return_location?: string | null
           start_at?: string
           status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           total_cents?: number | null
           updated_at?: string
         }
