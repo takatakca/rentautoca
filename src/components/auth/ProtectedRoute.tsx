@@ -19,9 +19,11 @@
      );
    }
  
-   if (!user) {
-     return <Navigate to="/login" state={{ from: location }} replace />;
-   }
+  if (!user) {
+    const dest = location.pathname + location.search;
+    const q = dest && dest !== "/" ? `?redirect=${encodeURIComponent(dest)}` : "";
+    return <Navigate to={`/login${q}`} state={{ from: location }} replace />;
+  }
  
    if (requiredRole && !hasRole(requiredRole)) {
      return <Navigate to="/" replace />;
