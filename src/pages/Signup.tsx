@@ -82,7 +82,7 @@ export default function Signup() {
       return;
     }
     if (result.redirected) return;
-    navigate("/", { replace: true });
+    navigate(postAuthDest, { replace: true });
   };
 
   return (
