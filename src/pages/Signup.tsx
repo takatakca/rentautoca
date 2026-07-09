@@ -23,6 +23,9 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectParam = sanitizeRedirect(new URLSearchParams(location.search).get("redirect"));
+  const postAuthDest = hostIntent ? "/become-host" : (redirectParam || "/");
 
   const strength = passwordStrength(password);
 
