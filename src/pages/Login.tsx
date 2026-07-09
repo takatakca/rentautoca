@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
-import { friendlyAuthError } from "@/lib/auth-helpers";
+import { friendlyAuthError, sanitizeRedirect } from "@/lib/auth-helpers";
 import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -23,9 +23,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const rawRedirect = params.get("redirect");
-  const safeRedirect = rawRedirect && /^\/[^/]/.test(rawRedirect) ? rawRedirect : null;
-  const from = safeRedirect || (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
+  const safeRedirect = sanitizeRedirect(params.get("redirect"));
+  const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname;
+  const from = safeRedirect || sanitizeRedirect(fromState) || "/";
+  const isCheckoutRedirect = from.startsWith("/checkout");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
