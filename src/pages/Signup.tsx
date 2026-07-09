@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
-import { friendlyAuthError, passwordStrength } from "@/lib/auth-helpers";
+import { friendlyAuthError, passwordStrength, sanitizeRedirect } from "@/lib/auth-helpers";
 
 export default function Signup() {
   const [fullName, setFullName] = useState("");
@@ -23,6 +23,9 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectParam = sanitizeRedirect(new URLSearchParams(location.search).get("redirect"));
+  const postAuthDest = hostIntent ? "/become-host" : (redirectParam || "/");
 
   const strength = passwordStrength(password);
 
@@ -60,9 +63,10 @@ export default function Signup() {
     if (hostIntent) sessionStorage.setItem("rentauto_host_intent", "1");
 
     if (data.session) {
-      navigate(hostIntent ? "/become-host" : "/", { replace: true });
+      navigate(postAuthDest, { replace: true });
     } else {
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, { replace: true });
+      const q = new URLSearchParams({ email: email.trim(), redirect: postAuthDest });
+      navigate(`/verify-email?${q.toString()}`, { replace: true });
     }
   };
 
@@ -78,7 +82,7 @@ export default function Signup() {
       return;
     }
     if (result.redirected) return;
-    navigate("/", { replace: true });
+    navigate(postAuthDest, { replace: true });
   };
 
   return (

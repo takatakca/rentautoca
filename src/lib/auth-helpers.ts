@@ -1,6 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+/**
+ * Only accept same-origin internal paths starting with a single "/".
+ * Rejects protocol-relative ("//evil.com"), absolute URLs, and empty strings.
+ */
+export function sanitizeRedirect(raw: string | null | undefined): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  if (!raw.startsWith("/")) return null;
+  if (raw.startsWith("//")) return null;
+  if (/^\/https?:/i.test(raw)) return null;
+  return raw;
+}
+
 export function friendlyAuthError(message: string | undefined | null): string {
   if (!message) return "Something went wrong. Please try again.";
   const m = message.toLowerCase();
