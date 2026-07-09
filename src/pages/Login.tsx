@@ -67,13 +67,13 @@ export default function Login() {
     setResending(false);
     if (error) return setError(friendlyAuthError(error.message));
     toast({ title: "Confirmation sent", description: "Check your inbox for a new verification code." });
-    navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+    navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&redirect=${encodeURIComponent(from)}`);
   };
 
   return (
     <AuthShell
-      title="Welcome back"
-      description="Sign in to book cars or manage your listings."
+      title={isCheckoutRedirect ? "Sign in to continue to checkout" : "Welcome back"}
+      description={isCheckoutRedirect ? "Log in to complete your booking securely." : "Sign in to book cars or manage your listings."}
       footer={
         <>
           New to Rentauto?{" "}
