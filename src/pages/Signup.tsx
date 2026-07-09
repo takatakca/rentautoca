@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
-import { friendlyAuthError, passwordStrength } from "@/lib/auth-helpers";
+import { friendlyAuthError, passwordStrength, sanitizeRedirect } from "@/lib/auth-helpers";
 
 export default function Signup() {
   const [fullName, setFullName] = useState("");
