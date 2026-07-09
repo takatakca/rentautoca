@@ -63,9 +63,10 @@ export default function Signup() {
     if (hostIntent) sessionStorage.setItem("rentauto_host_intent", "1");
 
     if (data.session) {
-      navigate(hostIntent ? "/become-host" : "/", { replace: true });
+      navigate(postAuthDest, { replace: true });
     } else {
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, { replace: true });
+      const q = new URLSearchParams({ email: email.trim(), redirect: postAuthDest });
+      navigate(`/verify-email?${q.toString()}`, { replace: true });
     }
   };
 
