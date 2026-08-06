@@ -47,6 +47,14 @@ const ElectricVehicles = lazy(() => import("./pages/marketing/ElectricVehicles")
 const LuxuryRentals = lazy(() => import("./pages/marketing/LuxuryRentals"));
 const Safety = lazy(() => import("./pages/marketing/Safety"));
 const Tracking = lazy(() => import("./pages/marketing/Tracking"));
+const DashboardLayout = lazy(() => import("./components/dashboard/DashboardLayout"));
+const DashboardOverview = lazy(() => import("./pages/dashboard/Overview"));
+const DashboardTrips = lazy(() => import("./pages/dashboard/Trips"));
+const DashboardDocuments = lazy(() => import("./pages/dashboard/Documents"));
+const DashboardPayments = lazy(() => import("./pages/dashboard/Payments"));
+const DashboardSupport = lazy(() => import("./pages/dashboard/Support"));
+const DashboardNotifications = lazy(() => import("./pages/dashboard/Notifications"));
+const DashboardSecurity = lazy(() => import("./pages/dashboard/Security"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -158,6 +166,25 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<DashboardOverview />} />
+                  <Route path="trips" element={<DashboardTrips />} />
+                  <Route path="favorites" element={<Favorites />} />
+                  <Route path="messages" element={<Messages />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="documents" element={<DashboardDocuments />} />
+                  <Route path="payments" element={<DashboardPayments />} />
+                  <Route path="notifications" element={<DashboardNotifications />} />
+                  <Route path="support" element={<DashboardSupport />} />
+                  <Route path="security" element={<DashboardSecurity />} />
+                </Route>
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/insurance" element={<Insurance />} />
