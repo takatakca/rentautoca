@@ -79,7 +79,7 @@ export default function DashboardSupport() {
       user_id: user!.id,
       subject: parsed.data.subject,
       category: parsed.data.category,
-      message: parsed.data.message,
+      body: parsed.data.message,
     });
     setSaving(false);
     if (error) {
@@ -176,14 +176,13 @@ export default function DashboardSupport() {
                         {String(t.status).replace(/_/g, " ")}
                       </StatusBadge>
                     </div>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{t.message}</p>
+                    <p className="line-clamp-2 text-sm text-muted-foreground">{t.body}</p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(t.created_at), "MMM d, yyyy • HH:mm")}
-                      {t.admin_response ? " · answered" : ""}
+                      {t.last_response_at
+                        ? ` · answered ${format(new Date(t.last_response_at), "MMM d")}`
+                        : ""}
                     </p>
-                    {t.admin_response && (
-                      <p className="rounded-md bg-muted/50 p-2 text-sm">{t.admin_response}</p>
-                    )}
                   </li>
                 ))}
               </ul>
