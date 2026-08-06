@@ -32,7 +32,7 @@ export default function DashboardSecurity() {
     const { error } = await supabase.auth.updateUser({ password: pw });
     setSaving(false);
     if (error) {
-      toast({ title: "Could not update", description: friendlyAuthError(error), variant: "destructive" });
+      toast({ title: "Could not update", description: friendlyAuthError(error.message), variant: "destructive" });
       return;
     }
     setPw("");
