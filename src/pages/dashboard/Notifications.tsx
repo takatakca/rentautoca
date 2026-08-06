@@ -78,7 +78,7 @@ export default function DashboardNotifications() {
       <DashboardPageHeader
         title="Notifications"
         description={unread > 0 ? `${unread} unread update${unread > 1 ? "s" : ""}` : "You're all caught up."}
-        action={
+        actions={
           unread > 0 ? (
             <Button variant="outline" size="sm" onClick={markAll}>
               <CheckCheck className="mr-2 h-4 w-4" /> Mark all read
