@@ -133,7 +133,10 @@ export default function Explore() {
   });
 
   const filteredCars = useMemo(() => {
-    const list = [...(cars || [])];
+    let list = [...(cars || [])];
+    if (maxPrice) list = list.filter((c) => c.base_daily_price_cents <= maxPrice * 100);
+    if (minSeats) list = list.filter((c) => (c.seats ?? 0) >= minSeats);
+    if (electricOnly) list = list.filter((c) => /electric/i.test(c.fuel_type || ""));
     switch (sort) {
       case "price_asc": list.sort((a, b) => a.base_daily_price_cents - b.base_daily_price_cents); break;
       case "price_desc": list.sort((a, b) => b.base_daily_price_cents - a.base_daily_price_cents); break;
@@ -141,7 +144,7 @@ export default function Explore() {
       default: break;
     }
     return list;
-  }, [cars, sort]);
+  }, [cars, sort, maxPrice, minSeats, electricOnly]);
 
   const reset = () => {
     setLocationQuery("");
@@ -149,7 +152,11 @@ export default function Explore() {
     setEndDate(undefined);
     setActiveCategory("All");
     setSort("newest");
+    setMaxPrice(null);
+    setMinSeats(null);
+    setElectricOnly(false);
   };
+
 
   return (
     <div className="flex flex-col pb-24 md:pb-0 min-h-dvh">
