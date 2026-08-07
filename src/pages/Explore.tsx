@@ -37,6 +37,9 @@ export default function Explore() {
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const [sort, setSort] = useState<SortKey>("newest");
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [minSeats, setMinSeats] = useState<number | null>(null);
+  const [electricOnly, setElectricOnly] = useState(false);
 
   // Hydrate from URL query params on mount
   useEffect(() => {
@@ -47,10 +50,20 @@ export default function Explore() {
     if (loc) setLocationQuery(loc);
     if (s) { const d = new Date(s); if (!isNaN(d.getTime())) setStartDate(d); }
     if (e) { const d = new Date(e); if (!isNaN(d.getTime())) setEndDate(d); }
-    if (cat === "Monthly") setActiveCategory("Monthly");
-    if (cat === "Airports" || cat === "Airport") setActiveCategory("Airports");
+    if (cat === "Monthly" || searchParams.get("monthly") === "1") setActiveCategory("Monthly");
+    if (cat === "Airports" || cat === "Airport" || searchParams.get("airport") === "1") setActiveCategory("Airports");
+
+    const price = Number(searchParams.get("maxPrice"));
+    if (Number.isFinite(price) && price > 0) setMaxPrice(price);
+    const seats = Number(searchParams.get("seats"));
+    if (Number.isFinite(seats) && seats > 0) setMinSeats(seats);
+    if (searchParams.get("electric") === "1" || cat === "Electric") setElectricOnly(true);
+
+    const sortParam = searchParams.get("sort") as SortKey | null;
+    if (sortParam && ["newest", "price_asc", "price_desc", "rating"].includes(sortParam)) setSort(sortParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const tripDays = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : null;
 
