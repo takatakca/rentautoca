@@ -13,7 +13,7 @@ export default function Concierge() {
   const { threadId } = useParams<{ threadId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { data: threads, isLoading } = useConciergeThreads();
   const { createThread, deleteThread } = useConciergeActions();
 
