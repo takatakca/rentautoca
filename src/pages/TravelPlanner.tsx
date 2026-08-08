@@ -56,13 +56,18 @@ export default function TravelPlanner() {
       const threadId = await createThread(`${origin} → ${destination || "anywhere"}`);
       const { error } = await supabase.from("travel_itineraries").insert({
         user_id: user.id,
-        thread_id: threadId,
+        label: `${origin} → ${destination || "anywhere"}`,
         origin,
-        destination: destination || null,
-        start_date: startDate,
-        end_date: endDate,
+        departure_at: new Date(`${startDate}T12:00:00`).toISOString(),
+        arrival_at: new Date(`${endDate}T12:00:00`).toISOString(),
         passengers,
-        preferences: { budget_per_day_cad: budget ? Number(budget) : null, vibes, notes },
+        preferences: {
+          destination: destination || null,
+          budget_per_day_cad: budget ? Number(budget) : null,
+          vibes,
+          notes,
+          thread_id: threadId,
+        },
       });
       if (error) console.error("itinerary save failed", error.message);
       navigate(`/concierge/${threadId}?q=${encodeURIComponent(prompt)}`);
