@@ -200,6 +200,9 @@ const App = () => (
                 <Route path="/luxury-rentals" element={<LuxuryRentals />} />
                 <Route path="/safety" element={<Safety />} />
                 <Route path="/tracking" element={<Tracking />} />
+                <Route path="/concierge" element={<Concierge />} />
+                <Route path="/concierge/:threadId" element={<Concierge />} />
+                <Route path="/travel-planner" element={<TravelPlanner />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
