@@ -25,6 +25,30 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
     },
   },
   {
+    pattern: "/concierge",
+    meta: {
+      title: "AI Rental Concierge | Rentauto.ca",
+      description:
+        "Chat with the Rentauto AI Concierge to find vehicles, compare protection plans and get exact trip quotes in seconds.",
+    },
+  },
+  {
+    pattern: "/concierge/:threadId",
+    meta: {
+      title: "AI Rental Concierge | Rentauto.ca",
+      description:
+        "Your saved concierge conversation — vehicle matches, quotes and rental advice from Rentauto's AI assistant.",
+    },
+  },
+  {
+    pattern: "/travel-planner",
+    meta: {
+      title: "Travel Planner — Plan your trip | Rentauto.ca",
+      description:
+        "Tell us where you're going and Rentauto's AI planner matches the right vehicle, price and pickup timing.",
+    },
+  },
+  {
     pattern: "/cars/:carId",
     meta: {
       title: "Car details — Book this vehicle | Rentauto.ca",

@@ -55,6 +55,8 @@ const DashboardPayments = lazy(() => import("./pages/dashboard/Payments"));
 const DashboardSupport = lazy(() => import("./pages/dashboard/Support"));
 const DashboardNotifications = lazy(() => import("./pages/dashboard/Notifications"));
 const DashboardSecurity = lazy(() => import("./pages/dashboard/Security"));
+const Concierge = lazy(() => import("./pages/Concierge"));
+const TravelPlanner = lazy(() => import("./pages/TravelPlanner"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -198,6 +200,9 @@ const App = () => (
                 <Route path="/luxury-rentals" element={<LuxuryRentals />} />
                 <Route path="/safety" element={<Safety />} />
                 <Route path="/tracking" element={<Tracking />} />
+                <Route path="/concierge" element={<Concierge />} />
+                <Route path="/concierge/:threadId" element={<Concierge />} />
+                <Route path="/travel-planner" element={<TravelPlanner />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />

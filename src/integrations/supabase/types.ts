@@ -296,6 +296,68 @@ export type Database = {
         }
         Relationships: []
       }
+      concierge_messages: {
+        Row: {
+          client_message_id: string | null
+          created_at: string
+          id: string
+          message: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          client_message_id?: string | null
+          created_at?: string
+          id?: string
+          message: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          client_message_id?: string | null
+          created_at?: string
+          id?: string
+          message?: Json
+          role?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concierge_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "concierge_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      concierge_threads: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           car_id: string
@@ -724,6 +786,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      travel_itineraries: {
+        Row: {
+          arrival_at: string | null
+          created_at: string
+          departure_at: string | null
+          id: string
+          label: string
+          origin: string | null
+          passengers: number
+          plan: Json
+          preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arrival_at?: string | null
+          created_at?: string
+          departure_at?: string | null
+          id?: string
+          label: string
+          origin?: string | null
+          passengers?: number
+          plan?: Json
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arrival_at?: string | null
+          created_at?: string
+          departure_at?: string | null
+          id?: string
+          label?: string
+          origin?: string | null
+          passengers?: number
+          plan?: Json
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       trip_events: {
         Row: {
