@@ -5,9 +5,17 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ConciergeChat } from "./ConciergeChat";
 import { useConciergeActions, useConciergeThreads } from "@/hooks/use-concierge";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, Maximize2 } from "lucide-react";
+import { Route, Maximize2 } from "lucide-react";
 
-const HIDDEN_PREFIXES = ["/concierge", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"];
+const HIDDEN_PREFIXES = [
+  "/concierge",
+  "/travel-planner",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+];
 
 export function ConciergeLauncher() {
   const { user } = useAuth();
@@ -34,24 +42,25 @@ export function ConciergeLauncher() {
     <>
       <Button
         onClick={() => (user ? setOpen(true) : navigate(`/login?redirect=/concierge`))}
-        aria-label="Open the AI concierge"
-        className="fixed right-4 bottom-24 md:bottom-6 z-40 h-12 rounded-full shadow-lg gap-2 pl-4 pr-5"
+        aria-label="Open trip planning help"
+        variant="secondary"
+        className="fixed bottom-24 right-4 z-40 h-11 gap-2 rounded-full border border-border pl-4 pr-5 shadow-lg backdrop-blur md:bottom-6"
       >
-        <Sparkles className="h-4 w-4" />
-        <span className="text-sm font-semibold">Concierge</span>
+        <Route className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold">Plan my trip</span>
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-          <SheetHeader className="p-4 pb-2 flex-row items-center justify-between space-y-0">
+        <SheetContent side="right" className="flex w-full flex-col p-0 sm:max-w-md">
+          <SheetHeader className="flex-row items-center justify-between space-y-0 border-b border-border p-4 pb-3">
             <SheetTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" /> Rentauto Concierge
+              <Route className="h-4 w-4 text-primary" /> Trip assistant
             </SheetTitle>
             {threadId && (
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Open full concierge page"
+                aria-label="Open full trip planner"
                 onClick={() => {
                   setOpen(false);
                   navigate(`/concierge/${threadId}`);
@@ -62,10 +71,10 @@ export function ConciergeLauncher() {
             )}
           </SheetHeader>
           {threadId ? (
-            <ConciergeChat key={threadId} threadId={threadId} className="flex-1 min-h-0" />
+            <ConciergeChat key={threadId} threadId={threadId} compact className="min-h-0 flex-1" />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-              Starting…
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              Getting ready…
             </div>
           )}
         </SheetContent>
