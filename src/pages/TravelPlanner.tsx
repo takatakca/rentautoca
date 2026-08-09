@@ -1,19 +1,37 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { format, addDays } from "date-fns";
+import { format, addDays, differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConciergeActions } from "@/hooks/use-concierge";
 import { useToast } from "@/hooks/use-toast";
-import { Map, Loader2, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Loader2,
+  MapPinned,
+  Users,
+  Wallet,
+} from "lucide-react";
 
-const VIBES = ["Road trip", "Ski weekend", "Airport pickup", "Family visit", "City break", "Moving day"];
+const TRIP_TYPES = [
+  { key: "Road trip", hint: "Long highway stretches" },
+  { key: "Ski weekend", hint: "Winter tires, roof space" },
+  { key: "Airport pickup", hint: "YUL, YQB, YHU" },
+  { key: "Family visit", hint: "Comfort and seats" },
+  { key: "City break", hint: "Compact and easy parking" },
+  { key: "Moving day", hint: "Cargo space" },
+];
+
+const STEPS = ["Route", "Dates", "Travellers", "Details"] as const;
 
 export default function TravelPlanner() {
   const navigate = useNavigate();
@@ -21,6 +39,7 @@ export default function TravelPlanner() {
   const { toast } = useToast();
   const { createThread } = useConciergeActions();
 
+  const [step, setStep] = useState(0);
   const [origin, setOrigin] = useState("Montreal, QC");
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState(format(addDays(new Date(), 7), "yyyy-MM-dd"));
@@ -31,8 +50,16 @@ export default function TravelPlanner() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const days = useMemo(() => {
+    const d = differenceInCalendarDays(new Date(endDate), new Date(startDate));
+    return Number.isFinite(d) && d > 0 ? d : 0;
+  }, [startDate, endDate]);
+
   const toggleVibe = (v: string) =>
     setVibes((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
+
+  const canAdvance =
+    step === 0 ? origin.trim().length > 1 : step === 1 ? days > 0 : step === 2 ? passengers > 0 : true;
 
   const buildPrompt = () =>
     [
@@ -85,106 +112,224 @@ export default function TravelPlanner() {
   return (
     <div className="min-h-dvh bg-background">
       <Helmet>
-        <title>Travel Planner — Plan Your Trip | Rentauto.ca</title>
+        <title>Trip Builder — Plan Your Drive | Rentauto.ca</title>
         <meta
           name="description"
-          content="Tell Rentauto where you're going and our AI planner matches you with the right vehicle, an exact price and pickup timing across Canada."
+          content="Tell Rentauto where you're going and get matched with the right vehicle, an exact price and pickup timing across Canada."
         />
       </Helmet>
 
-      <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+      <div className="mx-auto max-w-3xl px-4 py-8">
         <header className="space-y-2">
-          <div className="flex items-center gap-2 text-primary">
-            <Map className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">Travel planner</span>
-          </div>
-          <h1 className="text-3xl font-bold">Plan the drive, we'll find the car</h1>
-          <p className="text-muted-foreground text-sm">
-            A few details and the concierge builds a plan with real vehicles and real prices.
-          </p>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+            <MapPinned className="h-3.5 w-3.5" /> Trip builder
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight">Plan the drive, we'll find the car</h1>
         </header>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="origin">Starting from</Label>
-            <Input id="origin" value={origin} onChange={(e) => setOrigin(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="destination">Going to</Label>
-            <Input
-              id="destination"
-              placeholder="Quebec City, Mont-Tremblant…"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="start">Pickup date</Label>
-            <Input id="start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="end">Return date</Label>
-            <Input id="end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pax">Passengers</Label>
-            <Input
-              id="pax"
-              type="number"
-              min={1}
-              max={9}
-              value={passengers}
-              onChange={(e) => setPassengers(Number(e.target.value) || 1)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="budget">Budget per day (CAD)</Label>
-            <Input
-              id="budget"
-              type="number"
-              min={0}
-              placeholder="Optional"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Trip type</Label>
-          <div className="flex flex-wrap gap-2">
-            {VIBES.map((v) => (
-              <Badge
-                key={v}
-                variant={vibes.includes(v) ? "default" : "outline"}
-                onClick={() => toggleVibe(v)}
-                className="cursor-pointer rounded-full px-3 py-1.5"
+        {/* Progress */}
+        <ol className="mt-6 flex items-center gap-2" aria-label="Progress">
+          {STEPS.map((s, i) => (
+            <li key={s} className="flex flex-1 items-center gap-2">
+              <span
+                className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+                  i < step
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : i === step
+                      ? "border-primary text-primary"
+                      : "border-border text-muted-foreground",
+                )}
               >
-                {v}
-              </Badge>
-            ))}
+                {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </span>
+              <span
+                className={cn(
+                  "hidden text-xs font-medium sm:inline",
+                  i === step ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {s}
+              </span>
+              {i < STEPS.length - 1 && <span className="h-px flex-1 bg-border" />}
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-6 grid gap-6 md:grid-cols-[1fr_260px]">
+          <div className="rounded-2xl border border-border bg-card p-5">
+            {step === 0 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Where are you going?</h2>
+                <div className="space-y-1.5">
+                  <Label htmlFor="origin">Picking up in</Label>
+                  <Input id="origin" value={origin} onChange={(e) => setOrigin(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="destination">Heading to (optional)</Label>
+                  <Input
+                    id="destination"
+                    placeholder="Quebec City, Mont-Tremblant…"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">When?</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="start">Pickup date</Label>
+                    <Input id="start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="end">Return date</Label>
+                    <Input id="end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {days > 0 ? `${days} day${days === 1 ? "" : "s"} of rental.` : "Return date must be after pickup."}
+                </p>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Who's travelling?</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pax">Passengers</Label>
+                    <Input
+                      id="pax"
+                      type="number"
+                      min={1}
+                      max={9}
+                      value={passengers}
+                      onChange={(e) => setPassengers(Number(e.target.value) || 1)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="budget">Budget per day (CAD)</Label>
+                    <Input
+                      id="budget"
+                      type="number"
+                      min={0}
+                      placeholder="Optional"
+                      value={budget}
+                      onChange={(e) => setBudget(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">What kind of trip?</h2>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {TRIP_TYPES.map((t) => {
+                    const active = vibes.includes(t.key);
+                    return (
+                      <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => toggleVibe(t.key)}
+                        aria-pressed={active}
+                        className={cn(
+                          "rounded-xl border p-3 text-left transition-colors",
+                          active ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/60",
+                        )}
+                      >
+                        <span className="text-sm font-medium">{t.key}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{t.hint}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="notes">Anything else?</Label>
+                  <Textarea
+                    id="notes"
+                    rows={3}
+                    placeholder="Winter tires, roof box, dog-friendly, child seat…"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center gap-2">
+              {step > 0 && (
+                <Button variant="outline" className="rounded-xl" onClick={() => setStep((s) => s - 1)}>
+                  <ArrowLeft className="mr-1 h-4 w-4" /> Back
+                </Button>
+              )}
+              {step < STEPS.length - 1 ? (
+                <Button
+                  className="ml-auto rounded-xl"
+                  disabled={!canAdvance}
+                  onClick={() => setStep((s) => s + 1)}
+                >
+                  Continue <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button className="ml-auto rounded-xl" disabled={submitting} onClick={submit}>
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Build my trip plan
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="notes">Anything else?</Label>
-          <Textarea
-            id="notes"
-            rows={3}
-            placeholder="Winter tires, roof box, dog-friendly, long highway stretches…"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+          {/* Summary */}
+          <aside className="h-fit rounded-2xl border border-border bg-secondary/30 p-4 md:sticky md:top-24">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Your trip
+            </h2>
+            <dl className="mt-3 space-y-2.5 text-sm">
+              <div className="flex items-start gap-2">
+                <MapPinned className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span>
+                  {origin || "—"}
+                  {destination ? ` → ${destination}` : ""}
+                </span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span>
+                  {startDate} → {endDate}
+                  {days > 0 ? ` · ${days}d` : ""}
+                </span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span>{passengers} passenger{passengers === 1 ? "" : "s"}</span>
+              </div>
+              {budget && (
+                <div className="flex items-start gap-2">
+                  <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span>Up to ${budget}/day</span>
+                </div>
+              )}
+              {vibes.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {vibes.map((v) => (
+                    <span key={v} className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px]">
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </dl>
+            <p className="mt-4 text-xs leading-snug text-muted-foreground">
+              We check live availability and price with the same engine used at checkout.
+            </p>
+          </aside>
         </div>
-
-        <Button onClick={submit} disabled={submitting} className="w-full h-12 rounded-xl">
-          {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
-          )}
-          Build my trip plan
-        </Button>
       </div>
     </div>
   );
