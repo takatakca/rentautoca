@@ -55,6 +55,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        overlay: {
+          DEFAULT: "hsl(var(--overlay))",
+          foreground: "hsl(var(--overlay-foreground))",
+          muted: "hsl(var(--overlay-muted))",
+        },
+
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

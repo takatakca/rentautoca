@@ -43,6 +43,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
+    /* Editorial image overlays — text placed on photography */
+    --overlay: 230 30% 6%;
+    --overlay-foreground: 0 0% 100%;
+    --overlay-muted: 220 20% 82%;
+
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 230 10% 26%;
     --sidebar-primary: 252 87% 64%;
