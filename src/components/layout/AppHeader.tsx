@@ -1,23 +1,39 @@
- import { Link, useNavigate } from "react-router-dom";
- import { Button } from "@/components/ui/button";
- import { useAuth } from "@/contexts/AuthContext";
- import { RoleGate } from "@/components/auth/RoleGate";
- import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
- } from "@/components/ui/dropdown-menu";
- import { Avatar, AvatarFallback } from "@/components/ui/avatar";
- import { Car, Menu, User, LogOut, LayoutDashboard, Shield } from "lucide-react";
- import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
- import { useState } from "react";
- 
- export function AppHeader() {
-   const { user, signOut, hasRole } = useAuth();
-   const navigate = useNavigate();
-   const [mobileOpen, setMobileOpen] = useState(false);
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { RoleGate } from "@/components/auth/RoleGate";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Car, Menu, User, LogOut, LayoutDashboard, Shield } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+
+export function AppHeader() {
+  const { user, signOut, hasRole } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Home has a full-bleed photographic hero: the header floats over it until scroll.
+  const overHero = pathname === "/";
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const transparent = overHero && !scrolled;
+
  
    const handleSignOut = async () => {
      await signOut();
