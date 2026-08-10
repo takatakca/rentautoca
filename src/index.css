@@ -94,6 +94,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
+    --overlay: 230 30% 4%;
+    --overlay-foreground: 0 0% 100%;
+    --overlay-muted: 220 15% 78%;
+
+
+
     --sidebar-background: 230 18% 9%;
     --sidebar-foreground: 220 20% 95%;
     --sidebar-primary: 252 87% 64%;
