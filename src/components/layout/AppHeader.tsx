@@ -52,26 +52,42 @@ export function AppHeader() {
    ];
  
    return (
-     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+     <header
+       className={cn(
+         "sticky top-0 z-50 w-full transition-colors duration-300",
+         overHero && "-mb-16",
+         transparent
+           ? "border-b border-transparent bg-transparent"
+           : "border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+       )}
+     >
        <div className="container flex h-16 items-center justify-between">
          <div className="flex items-center gap-6">
            <Link to="/" className="flex items-center gap-2">
-             <Car className="h-8 w-8 text-primary" />
-             <span className="text-xl font-bold text-foreground">Rentauto</span>
+             <Car className={cn("h-8 w-8", transparent ? "text-overlay-foreground" : "text-primary")} />
+             <span className={cn("text-xl font-bold", transparent ? "text-overlay-foreground" : "text-foreground")}>
+               Rentauto
+             </span>
            </Link>
-           
+
            <nav className="hidden md:flex items-center gap-4">
              {navLinks.map((link) => (
                <Link
                  key={link.to}
                  to={link.to}
-                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                 className={cn(
+                   "text-sm font-medium transition-colors",
+                   transparent
+                     ? "text-overlay-foreground/80 hover:text-overlay-foreground"
+                     : "text-muted-foreground hover:text-foreground"
+                 )}
                >
                  {link.label}
                </Link>
              ))}
            </nav>
          </div>
+
  
          <div className="flex items-center gap-4">
            {user ? (
