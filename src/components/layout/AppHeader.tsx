@@ -97,7 +97,7 @@ export function AppHeader() {
                    <Link
                      key={link.to}
                      to={link.to}
-                     className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                     className={cn("text-sm font-medium transition-colors", transparent ? "text-overlay-foreground/80 hover:text-overlay-foreground" : "text-muted-foreground hover:text-foreground")}
                    >
                      {link.label}
                    </Link>
@@ -105,7 +105,7 @@ export function AppHeader() {
                  <RoleGate allowedRoles={["host", "admin"]}>
                    <Link
                      to="/host"
-                     className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                     className={cn("text-sm font-medium transition-colors", transparent ? "text-overlay-foreground/80 hover:text-overlay-foreground" : "text-muted-foreground hover:text-foreground")}
                    >
                      Host Dashboard
                    </Link>
@@ -113,7 +113,7 @@ export function AppHeader() {
                  <RoleGate allowedRoles={["admin"]}>
                    <Link
                      to="/admin"
-                     className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                     className={cn("text-sm font-medium transition-colors", transparent ? "text-overlay-foreground/80 hover:text-overlay-foreground" : "text-muted-foreground hover:text-foreground")}
                    >
                      Admin
                    </Link>
