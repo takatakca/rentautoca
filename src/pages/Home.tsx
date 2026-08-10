@@ -5,12 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Plane, Shield, Smartphone, ArrowRight, CheckCircle2, Lock, Eye,
-  Search, KeyRound, Car as CarIcon, Flag, Heart, Bell, MapPin, Sparkles,
+  Plane, Shield, Smartphone, CheckCircle2, Lock, Eye,
+  Search, KeyRound, Car as CarIcon, Flag, Heart, Bell, MapPin,
 } from "lucide-react";
-import { SmartSearchConsole } from "@/components/marketing/SmartSearchConsole";
+import { EditorialHero } from "@/components/marketing/EditorialHero";
+import { DestinationTiles } from "@/components/marketing/DestinationTiles";
+import { ShowroomCategories } from "@/components/marketing/ShowroomCategories";
 import { CarRail } from "@/components/marketing/CarRail";
-import { CategoryDiscovery } from "@/components/marketing/CategoryDiscovery";
 import { OffersSection } from "@/components/marketing/OffersSection";
 import { TrackRentalCard } from "@/components/marketing/TrackRentalCard";
 import { useDiscoveryInventory, haversineKm, DiscoveryCar } from "@/hooks/use-discovery-inventory";
@@ -18,6 +19,10 @@ import { useNearbyLocation } from "@/hooks/use-nearby-location";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { exploreUrl } from "@/lib/search-state";
 import { CarCardGridSkeleton } from "@/components/ui/skeletons";
+import yulImg from "@/assets/loc-yul.jpg";
+import monthlyImg from "@/assets/monthly-dark.jpg";
+import evImg from "@/assets/ev.jpg";
+import hostImg from "@/assets/host.jpg";
 
 const FAQSection = lazy(() =>
   import("@/components/marketing/MarketingPage").then((m) => ({ default: m.FAQSection }))
@@ -73,7 +78,6 @@ export default function Home() {
     [cars]
   );
 
-  // Personalized: favorites + unread notifications (only when signed in)
   const { data: personal } = useQuery({
     queryKey: ["home-personal", user?.id],
     enabled: !!user,
@@ -109,80 +113,43 @@ export default function Home() {
 
   return (
     <div className="pb-24 md:pb-0 overflow-x-hidden">
-      {/* HERO — mobility command center */}
-      <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-accent/40 via-background to-background">
-        <div className="absolute inset-0 -z-10 opacity-40 pointer-events-none" aria-hidden="true">
-          <div className="absolute top-1/4 -left-32 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute top-0 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        </div>
+      <EditorialHero availableToday={isLoading ? undefined : availableToday.length} />
 
-        <div className="container py-8 md:py-16 lg:py-20">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8 lg:gap-12 items-start">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="text-[11px] md:text-xs font-semibold uppercase tracking-widest text-primary">
-                  Quebec mobility platform
-                </span>
-                {!isLoading && cars.length > 0 && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-card border border-border">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary motion-safe:animate-pulse" aria-hidden="true" />
-                    {availableToday.length} car{availableToday.length === 1 ? "" : "s"} available today
-                  </span>
-                )}
+      {/* SIGNED-IN STRIP */}
+      {user && (
+        <section className="container -mt-6 md:-mt-10 relative z-10">
+          <div className="grid gap-4 md:grid-cols-[1fr_minmax(0,380px)] items-start">
+            <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-lg shadow-foreground/5">
+              <p className="text-sm text-muted-foreground">{greeting}</p>
+              <p className="font-semibold text-lg">{displayName || "Welcome back"}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+                  <Link to="/dashboard"><Smartphone className="h-3.5 w-3.5" /> Dashboard</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+                  <Link to="/dashboard/notifications">
+                    <Bell className="h-3.5 w-3.5" /> Alerts{personal?.unread ? ` (${personal.unread})` : ""}
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+                  <Link to="/dashboard/favorites"><Heart className="h-3.5 w-3.5" /> Saved</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+                  <Link to="/dashboard/trips"><CarIcon className="h-3.5 w-3.5" /> Trips</Link>
+                </Button>
               </div>
-
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground max-w-3xl">
-                Your next car is already nearby.
-              </h1>
-              <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-2xl">
-                Search verified vehicles across Quebec, compare protection, book instantly, and manage your entire
-                trip from Rentauto.
-              </p>
-
-              <div className="mt-6 md:mt-8">
-                <SmartSearchConsole />
-              </div>
-
-              <p className="mt-4 text-xs text-muted-foreground flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                Ask in plain language or tap the microphone — speech stays on your device.
-              </p>
             </div>
-
-            <div className="w-full space-y-4">
-              <TrackRentalCard />
-              {user && (
-                <div className="rounded-2xl border border-border/60 bg-card p-5">
-                  <p className="text-sm text-muted-foreground">{greeting}</p>
-                  <p className="font-semibold text-lg">{displayName || "Welcome back"}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button asChild variant="outline" size="sm" className="rounded-full justify-start gap-1.5">
-                      <Link to="/dashboard"><Smartphone className="h-3.5 w-3.5" /> Dashboard</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="rounded-full justify-start gap-1.5">
-                      <Link to="/dashboard/notifications">
-                        <Bell className="h-3.5 w-3.5" /> Alerts{personal?.unread ? ` (${personal.unread})` : ""}
-                      </Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="rounded-full justify-start gap-1.5">
-                      <Link to="/dashboard/favorites"><Heart className="h-3.5 w-3.5" /> Saved</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="rounded-full justify-start gap-1.5">
-                      <Link to="/dashboard/trips"><CarIcon className="h-3.5 w-3.5" /> Trips</Link>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <TrackRentalCard />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* CATEGORY DISCOVERY */}
-      <CategoryDiscovery />
+      <DestinationTiles />
+
+      <ShowroomCategories />
 
       {isLoading && (
-        <div className="container pb-8">
+        <div className="container py-10">
           <CarCardGridSkeleton />
         </div>
       )}
@@ -210,7 +177,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* PERSONALIZED RAILS */}
       {recentCars.length > 0 && (
         <CarRail title="Continue browsing" subtitle="Vehicles you looked at recently." cars={recentCars} />
       )}
@@ -223,103 +189,141 @@ export default function Home() {
         />
       )}
 
-      {/* DEALS */}
       {!isLoading && <OffersSection cars={cars} />}
 
-      {/* RECOMMENDATION RAILS */}
       <CarRail title="Available this weekend" subtitle="No blocks on the calendar right now." cars={availableToday} seeAllHref={exploreUrl({})} />
       <CarRail title="Best value" subtitle="Lowest daily rates across active listings." cars={bestValue} seeAllHref={exploreUrl({ sort: "price_asc" })} />
 
-      {/* AIRPORT */}
-      {airportCars.length > 0 && (
-        <section className="border-y border-border/60 bg-card/30">
-          <div className="container py-10 md:py-14">
-            <div className="flex items-start gap-3 mb-2">
-              <span className="w-10 h-10 rounded-xl bg-accent text-accent-foreground flex items-center justify-center shrink-0">
-                <Plane className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Pickup at the airport</h2>
-                <p className="text-muted-foreground mt-1">
-                  Montréal-Trudeau (YUL) and Québec City Jean Lesage (YQB). Hosts meet you curb-side or in the
-                  designated lot — pickup instructions are on each listing.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="sm" className="rounded-full">
+      {/* AIRPORT STORY — full-bleed editorial */}
+      <section className="relative isolate my-4">
+        <img
+          src={yulImg}
+          alt="Traveller collecting a rental car at Montréal-Trudeau airport"
+          loading="lazy"
+          decoding="async"
+          width={1600}
+          height={1000}
+          className="absolute inset-0 -z-10 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 -z-10 bg-overlay/75 md:bg-gradient-to-r md:from-overlay/90 md:via-overlay/70 md:to-overlay/30" />
+        <div className="container py-16 md:py-24">
+          <div className="max-w-xl">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-overlay-muted">
+              <Plane className="h-4 w-4" aria-hidden="true" /> Airport
+            </p>
+            <h2 className="mt-3 text-3xl md:text-5xl font-bold tracking-tight text-overlay-foreground">
+              Land at YUL. Drive out in twenty minutes.
+            </h2>
+            <p className="mt-4 text-overlay-muted">
+              Hosts at Montréal-Trudeau and Québec City Jean Lesage meet you curb-side or in the designated lot.
+              No counter, no queue — pickup instructions live on every listing.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild size="lg" className="rounded-full">
                 <Link to={exploreUrl({ location: "YUL Airport", airport: true, category: "Airports" })}>YUL cars</Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Button asChild size="lg" variant="outline" className="rounded-full bg-overlay-foreground/10 text-overlay-foreground border-overlay-foreground/30 hover:bg-overlay-foreground/20 hover:text-overlay-foreground">
                 <Link to={exploreUrl({ location: "YQB Airport", airport: true, category: "Airports" })}>YQB cars</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="rounded-full">
-                <Link to="/airport-rentals">Airport rental guide</Link>
               </Button>
             </div>
           </div>
-          <CarRail title="Airport-ready vehicles" cars={airportCars} seeAllHref="/airport-rentals" />
-        </section>
-      )}
-
-      {/* MONTHLY */}
-      {monthlyCars.length > 0 && (
-        <section className="container py-10 md:py-14">
-          <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-accent/50 via-card to-card p-6 md:p-10">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Staying a month or longer?</h2>
-            <p className="mt-2 text-muted-foreground max-w-2xl">
-              Monthly-enabled hosts keep the same verified vehicle available for extended stays, with the included
-              kilometre allowance shown on every listing. Estimates below; your final total always comes from checkout.
-            </p>
-            <ul className="mt-5 grid gap-2 sm:grid-cols-3 text-sm">
-              <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Same car, no counter visits</li>
-              <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Included km per day on every listing</li>
-              <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Extend or end according to the host's policy</li>
-            </ul>
-            <Button asChild className="mt-6 rounded-full">
-              <Link to="/monthly-car-rentals">Explore monthly rentals</Link>
-            </Button>
-          </div>
-          <CarRail title="Monthly-eligible cars" cars={monthlyCars} seeAllHref="/monthly-car-rentals" />
-        </section>
-      )}
-
-      {/* EV */}
-      {evCars.length > 0 && (
-        <CarRail title="Electric favorites" subtitle="Charge at home, skip the pump." cars={evCars} seeAllHref="/electric-vehicles" />
-      )}
-
-      {/* HOW IT WORKS */}
-      <section className="border-y border-border/60 bg-card/30">
-        <div className="container py-12 md:py-16">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">How Rentauto works</h2>
-          <ol className="mt-8 grid gap-5 md:grid-cols-4">
-            {steps.map((s, i) => (
-              <li key={s.title} className="rounded-2xl border border-border/60 bg-card p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="w-10 h-10 rounded-xl bg-accent text-accent-foreground flex items-center justify-center">
-                    <s.icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <span className="text-xs font-semibold text-muted-foreground">Step {i + 1}</span>
-                </div>
-                <h3 className="font-semibold mb-1.5">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-6 text-sm text-muted-foreground">
-            Track and manage everything from your{" "}
-            <Link to="/dashboard" className="text-primary font-medium hover:underline">Rentauto dashboard</Link>.
-          </p>
         </div>
       </section>
 
-      {/* TRUST */}
-      <section className="container py-12 md:py-16">
+      {airportCars.length > 0 && (
+        <CarRail title="Airport-ready vehicles" subtitle="Hosts who deliver to the terminal." cars={airportCars} seeAllHref="/airport-rentals" />
+      )}
+
+      {/* MONTHLY + EV — split editorial */}
+      <section className="container py-12 md:py-20 grid gap-6 md:grid-cols-2">
+        <article className="relative isolate overflow-hidden rounded-3xl min-h-[380px] flex">
+          <img
+            src={monthlyImg}
+            alt="Premium sedan available for monthly rental"
+            loading="lazy"
+            decoding="async"
+            width={1600}
+            height={1008}
+            className="absolute inset-0 -z-10 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-overlay/95 via-overlay/65 to-overlay/25" />
+          <div className="mt-auto p-7 md:p-9">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-overlay-muted">Monthly</p>
+            <h2 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-overlay-foreground">
+              Staying a month or longer?
+            </h2>
+            <p className="mt-3 text-sm text-overlay-muted max-w-md">
+              Same verified car, no counter visits, included kilometres printed on every listing.
+            </p>
+            <Button asChild className="mt-5 rounded-full">
+              <Link to="/monthly-car-rentals">Explore monthly rentals</Link>
+            </Button>
+          </div>
+        </article>
+
+        <article className="relative isolate overflow-hidden rounded-3xl min-h-[380px] flex">
+          <img
+            src={evImg}
+            alt="Electric car charging at a public station"
+            loading="lazy"
+            decoding="async"
+            width={1600}
+            height={1008}
+            className="absolute inset-0 -z-10 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-overlay/95 via-overlay/60 to-overlay/10" />
+          <div className="mt-auto p-7 md:p-9">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-overlay-muted">Electric</p>
+            <h2 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-overlay-foreground">
+              Skip the pump entirely.
+            </h2>
+            <p className="mt-3 text-sm text-overlay-muted max-w-md">
+              EVs with charging notes from the host, plus Quebec's public network mapped on every listing.
+            </p>
+            <Button asChild className="mt-5 rounded-full">
+              <Link to="/electric-vehicles">Browse electric</Link>
+            </Button>
+          </div>
+        </article>
+      </section>
+
+      {evCars.length > 0 && (
+        <CarRail title="Electric favorites" subtitle="Charge at home, skip the pump." cars={evCars} seeAllHref="/electric-vehicles" />
+      )}
+      {monthlyCars.length > 0 && (
+        <CarRail title="Monthly-eligible cars" subtitle="Hosts open to long stays." cars={monthlyCars} seeAllHref="/monthly-car-rentals" />
+      )}
+
+      {/* HOW IT WORKS — numbered editorial narrative */}
+      <section className="border-y border-border/60 bg-secondary/40">
+        <div className="container py-14 md:py-20">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">How it works</p>
+            <h2 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">Four steps, keys in hand.</h2>
+          </div>
+          <ol className="mt-10 grid gap-8 md:grid-cols-4">
+            {steps.map((s, i) => (
+              <li key={s.title} className="border-t-2 border-foreground/10 pt-5">
+                <span className="block text-4xl md:text-5xl font-bold tracking-tight text-foreground/15">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h3 className="mt-3 flex items-center gap-2 font-semibold">
+                  <s.icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {s.title}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* TRUST BAND */}
+      <section className="container py-14 md:py-20">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Trust &amp; safety</p>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Built for confident driving</h2>
-          <p className="mt-2 text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Trust &amp; safety</p>
+          <h2 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">Built for confident driving</h2>
+          <p className="mt-3 text-muted-foreground">
             Protection plans, verified identities, photo trip records, secure payments and Quebec-based support.
           </p>
         </div>
@@ -344,51 +348,35 @@ export default function Home() {
 
       {/* HOST CTA */}
       {(!user || !hasRole("host")) && (
-        <section className="container pb-12 md:pb-16">
-          <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-accent/60 via-card to-card p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">For hosts</p>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+        <section className="relative isolate">
+          <img
+            src={hostImg}
+            alt="Host handing car keys to a guest in a Quebec driveway"
+            loading="lazy"
+            decoding="async"
+            width={1600}
+            height={1008}
+            className="absolute inset-0 -z-10 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-overlay/80 md:bg-gradient-to-r md:from-overlay/92 md:via-overlay/70 md:to-overlay/20" />
+          <div className="container py-16 md:py-24">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-overlay-muted">For hosts</p>
+              <h2 className="mt-3 text-3xl md:text-5xl font-bold tracking-tight text-overlay-foreground">
                 Your car can earn when you're not using it.
               </h2>
-              <p className="mt-3 text-muted-foreground">
-                List in minutes, control your availability, and follow every active rental from the host dashboard.
-                All host accounts are reviewed before going live.
-              </p>
-              <ul className="mt-5 space-y-2 text-sm">
-                <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" /> You set price, mileage and availability</li>
-                <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Verified guests, photo check-in, in-trip GPS</li>
-                <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Direct deposit payouts in CAD</li>
+              <ul className="mt-6 space-y-2 text-sm text-overlay-muted">
+                <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-overlay-foreground mt-0.5 shrink-0" /> You set price, mileage and availability</li>
+                <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-overlay-foreground mt-0.5 shrink-0" /> Verified guests, photo check-in, in-trip GPS</li>
+                <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-overlay-foreground mt-0.5 shrink-0" /> Direct deposit payouts in CAD</li>
               </ul>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-7 flex flex-wrap gap-3">
                 <Button asChild size="lg" className="rounded-full">
                   <Link to={user ? "/become-host" : "/signup"}>{user ? "Become a host" : "Get started"}</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="rounded-full">
+                <Button asChild size="lg" variant="outline" className="rounded-full bg-overlay-foreground/10 text-overlay-foreground border-overlay-foreground/30 hover:bg-overlay-foreground/20 hover:text-overlay-foreground">
                   <Link to="/for-hosts">Learn more</Link>
                 </Button>
-              </div>
-            </div>
-            <div className="hidden md:flex justify-center">
-              <div className="relative w-full max-w-xs aspect-[3/4] rounded-3xl bg-gradient-to-br from-primary/15 via-card to-card border border-border/60 p-6 flex flex-col">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Smartphone className="h-3.5 w-3.5" aria-hidden="true" /> Host dashboard
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground">Availability, trips, payouts and live rentals in one place.</p>
-                <div className="mt-6 space-y-2">
-                  <div className="rounded-lg bg-background/60 p-3 text-xs">
-                    <div className="font-medium">Set your own price</div>
-                    <div className="text-muted-foreground mt-0.5">Daily rate, included km, extras</div>
-                  </div>
-                  <div className="rounded-lg bg-background/60 p-3 text-xs">
-                    <div className="font-medium">Approve every booking</div>
-                    <div className="text-muted-foreground mt-0.5">Or switch on instant book</div>
-                  </div>
-                  <div className="rounded-lg bg-background/60 p-3 text-xs">
-                    <div className="font-medium">Track active rentals</div>
-                    <div className="text-muted-foreground mt-0.5">GPS only while a trip runs</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -396,15 +384,15 @@ export default function Home() {
       )}
 
       {/* FAQ */}
-      <div className="container max-w-5xl pb-12 md:pb-16">
+      <div className="container max-w-5xl py-14 md:py-20">
         <Suspense fallback={<div className="h-40" />}>
           <FAQSection items={faqs} />
         </Suspense>
       </div>
 
       {/* FINAL CTA */}
-      <section className="container max-w-5xl pb-12 md:pb-20">
-        <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-accent/60 via-card to-card p-8 md:p-12 text-center">
+      <section className="container max-w-5xl pb-14 md:pb-20">
+        <div className="rounded-3xl border border-border/60 bg-card p-8 md:p-12 text-center">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Your next trip starts here.</h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
             Search cars across Quebec, book in minutes, and drive away with confidence.
