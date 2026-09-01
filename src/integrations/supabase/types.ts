@@ -936,6 +936,7 @@ export type Database = {
       }
       trips: {
         Row: {
+          booking_reference: string | null
           car_id: string
           created_at: string
           currency: string
@@ -954,6 +955,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          booking_reference?: string | null
           car_id: string
           created_at?: string
           currency?: string
@@ -972,6 +974,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          booking_reference?: string | null
           car_id?: string
           created_at?: string
           currency?: string
@@ -1138,6 +1141,7 @@ export type Database = {
       }
     }
     Functions: {
+      generate_booking_reference: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
