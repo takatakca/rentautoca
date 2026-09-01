@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -7,87 +7,91 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CarCardGridSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Search, MapPin, CalendarDays, Car, Heart, Star,
-  Plane, Navigation, Building2, SlidersHorizontal
-} from "lucide-react";
-import { format, differenceInDays } from "date-fns";
-import { useFavorite } from "@/hooks/use-favorite";
+import { Search, CalendarDays, Car, SlidersHorizontal } from "lucide-react";
+import { format, differenceInCalendarDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { VehicleCard, PublicVehicle } from "@/components/vehicle/VehicleCard";
+import { FilterPanel } from "@/components/explore/FilterPanel";
+import {
+  EMPTY_FILTERS,
+  ExploreFilters,
+  SORT_LABELS,
+  SortKey,
+  activeFilterCount,
+  applyFilters,
+  sortCars,
+  VEHICLE_TYPES,
+  VehicleType,
+} from "@/components/explore/filter-state";
 
-const categories = [
-  { icon: Car, label: "All" },
-  { icon: Plane, label: "Airports" },
-  { icon: CalendarDays, label: "Monthly" },
-  { icon: MapPin, label: "Nearby" },
-  { icon: Navigation, label: "Delivered" },
-  { icon: Building2, label: "Cities" },
-];
-
-type SortKey = "newest" | "price_asc" | "price_desc" | "rating";
+type ExploreCar = PublicVehicle & { transmission?: string | null };
 
 export default function Explore() {
-  const [searchParams] = useSearchParams();
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [locationQuery, setLocationQuery] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
-  const [startOpen, setStartOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
-  const [sort, setSort] = useState<SortKey>("newest");
-  const [maxPrice, setMaxPrice] = useState<number | null>(null);
-  const [minSeats, setMinSeats] = useState<number | null>(null);
-  const [electricOnly, setElectricOnly] = useState(false);
+  const [datesOpen, setDatesOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>("recommended");
+  const [filters, setFilters] = useState<ExploreFilters>(EMPTY_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<ExploreFilters>(EMPTY_FILTERS);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Hydrate from URL query params on mount
+  /* Hydrate intent from the URL so homepage/voice search carries over intact. */
   useEffect(() => {
-    const loc = searchParams.get("location");
-    const s = searchParams.get("start");
-    const e = searchParams.get("end");
-    const cat = searchParams.get("category");
+    const p = searchParams;
+    const loc = p.get("location");
     if (loc) setLocationQuery(loc);
+    const s = p.get("start");
+    const e = p.get("end");
     if (s) { const d = new Date(s); if (!isNaN(d.getTime())) setStartDate(d); }
     if (e) { const d = new Date(e); if (!isNaN(d.getTime())) setEndDate(d); }
-    if (cat === "Monthly" || searchParams.get("monthly") === "1") setActiveCategory("Monthly");
-    if (cat === "Airports" || cat === "Airport" || searchParams.get("airport") === "1") setActiveCategory("Airports");
 
-    const price = Number(searchParams.get("maxPrice"));
-    if (Number.isFinite(price) && price > 0) setMaxPrice(price);
-    const seats = Number(searchParams.get("seats"));
-    if (Number.isFinite(seats) && seats > 0) setMinSeats(seats);
-    if (searchParams.get("electric") === "1" || cat === "Electric") setElectricOnly(true);
+    const cat = p.get("category");
+    const next: ExploreFilters = { ...EMPTY_FILTERS };
+    if (cat && (VEHICLE_TYPES as readonly string[]).includes(cat)) next.types = [cat as VehicleType];
+    if (cat === "Airports" || p.get("airport") === "1") next.airport = true;
+    if (cat === "Monthly" || p.get("monthly") === "1") next.monthly = true;
+    if (cat === "Electric" || p.get("electric") === "1") next.fuel = "electric";
+    if (p.get("instant") === "1") next.instant = true;
+    const maxPrice = Number(p.get("maxPrice"));
+    if (Number.isFinite(maxPrice) && maxPrice > 0) next.maxPrice = maxPrice;
+    const seats = Number(p.get("seats"));
+    if (Number.isFinite(seats) && seats > 0) next.seats = seats;
+    setFilters(next);
+    setDraftFilters(next);
 
-    const sortParam = searchParams.get("sort") as SortKey | null;
-    if (sortParam && ["newest", "price_asc", "price_desc", "rating"].includes(sortParam)) setSort(sortParam);
+    const sortParam = p.get("sort") as SortKey | null;
+    if (sortParam && sortParam in SORT_LABELS) setSort(sortParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const tripDays = startDate && endDate ? Math.max(1, differenceInCalendarDays(endDate, startDate)) : null;
 
-  const tripDays = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : null;
-
-  const { data: cars, isLoading } = useQuery({
-    queryKey: ["explore-cars", locationQuery, startDate?.toISOString(), endDate?.toISOString(), activeCategory],
-    queryFn: async () => {
+  const { data: cars, isLoading, isError, refetch } = useQuery({
+    queryKey: ["explore-cars", locationQuery, startDate?.toISOString(), endDate?.toISOString()],
+    queryFn: async (): Promise<ExploreCar[]> => {
       let q = supabase
         .from("cars")
-        .select("id, make, model, year, base_daily_price_cents, location_label, body_type, status, transmission, fuel_type, seats, airport_pickup_enabled, monthly_enabled")
+        .select(
+          "id, make, model, year, base_daily_price_cents, location_label, body_type, transmission, fuel_type, seats, airport_pickup_enabled, monthly_enabled, instant_book",
+        )
         .eq("status", "active")
-        .limit(48);
+        .limit(60);
 
       if (locationQuery.trim()) {
         const term = `%${locationQuery.trim()}%`;
         q = q.or(`location_label.ilike.${term},make.ilike.${term},model.ilike.${term},title.ilike.${term}`);
       }
-      if (activeCategory === "Airports") q = q.eq("airport_pickup_enabled", true);
-      if (activeCategory === "Monthly") q = q.eq("monthly_enabled", true);
 
-      const { data: carsData } = await q;
-      if (!carsData || carsData.length === 0) return [];
+      const { data: carsData, error } = await q;
+      if (error) throw error;
+      if (!carsData?.length) return [];
 
       const carIds = carsData.map((c) => c.id);
-
       const [photosRes, reviewsRes] = await Promise.all([
         supabase.from("car_photos").select("car_id, url").in("car_id", carIds).order("sort_order"),
         supabase.from("reviews").select("car_id, rating_overall").in("car_id", carIds),
@@ -98,19 +102,14 @@ export default function Explore() {
         if (!photoMap[p.car_id]) photoMap[p.car_id] = p.url;
       });
 
-      const ratingsMap: Record<string, { avg: number; count: number }> = {};
+      const agg: Record<string, { sum: number; n: number }> = {};
       (reviewsRes.data || []).forEach((r) => {
-        if (!ratingsMap[r.car_id]) ratingsMap[r.car_id] = { avg: 0, count: 0 };
-        ratingsMap[r.car_id].count++;
-        ratingsMap[r.car_id].avg += Number(r.rating_overall);
-      });
-      Object.values(ratingsMap).forEach((r) => {
-        r.avg = Math.round((r.avg / r.count) * 10) / 10;
+        agg[r.car_id] ||= { sum: 0, n: 0 };
+        agg[r.car_id].sum += Number(r.rating_overall);
+        agg[r.car_id].n += 1;
       });
 
-      // Availability overlap: a car is unavailable if any block overlaps
-      // selectedStart < block.end_at AND selectedEnd > block.start_at
-      let unavailableIds = new Set<string>();
+      const unavailable = new Set<string>();
       if (startDate && endDate) {
         const { data: blocks } = await supabase
           .from("availability_blocks")
@@ -118,231 +117,196 @@ export default function Explore() {
           .in("car_id", carIds)
           .lt("start_at", endDate.toISOString())
           .gt("end_at", startDate.toISOString());
-        (blocks || []).forEach((b) => unavailableIds.add(b.car_id));
+        (blocks || []).forEach((b) => unavailable.add(b.car_id));
       }
 
       return carsData
-        .filter((c) => !unavailableIds.has(c.id))
+        .filter((c) => !unavailable.has(c.id))
         .map((car) => ({
           ...car,
           photo_url: photoMap[car.id] || null,
-          rating: ratingsMap[car.id]?.avg || null,
-          trips: ratingsMap[car.id]?.count || 0,
+          rating: agg[car.id] ? Math.round((agg[car.id].sum / agg[car.id].n) * 10) / 10 : null,
+          trips: agg[car.id]?.n || 0,
         }));
     },
   });
 
-  const filteredCars = useMemo(() => {
-    let list = [...(cars || [])];
-    if (maxPrice) list = list.filter((c) => c.base_daily_price_cents <= maxPrice * 100);
-    if (minSeats) list = list.filter((c) => (c.seats ?? 0) >= minSeats);
-    if (electricOnly) list = list.filter((c) => /electric/i.test(c.fuel_type || ""));
-    switch (sort) {
-      case "price_asc": list.sort((a, b) => a.base_daily_price_cents - b.base_daily_price_cents); break;
-      case "price_desc": list.sort((a, b) => b.base_daily_price_cents - a.base_daily_price_cents); break;
-      case "rating": list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)); break;
-      default: break;
-    }
-    return list;
-  }, [cars, sort, maxPrice, minSeats, electricOnly]);
+  const results = useMemo(() => sortCars(applyFilters(cars || [], filters), sort), [cars, filters, sort]);
 
-  const reset = () => {
+  const syncUrl = (patch: Record<string, string | null>) => {
+    const p = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
+    setSearchParams(p, { replace: true });
+  };
+
+  const resetAll = () => {
     setLocationQuery("");
     setStartDate(undefined);
     setEndDate(undefined);
-    setActiveCategory("All");
-    setSort("newest");
-    setMaxPrice(null);
-    setMinSeats(null);
-    setElectricOnly(false);
+    setFilters(EMPTY_FILTERS);
+    setDraftFilters(EMPTY_FILTERS);
+    setSort("recommended");
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
+  const filterCount = activeFilterCount(filters);
+  const dateLabel =
+    startDate && endDate
+      ? `${format(startDate, "MMM d")} – ${format(endDate, "MMM d")}`
+      : startDate
+        ? `${format(startDate, "MMM d")} – Return`
+        : "Any dates";
+
+  const headline = locationQuery.trim() ? `Cars in ${locationQuery.trim()}` : "Cars available now";
+  const subline = [
+    startDate && endDate ? `${format(startDate, "MMM d")}–${format(endDate, "MMM d")}` : null,
+    isLoading ? null : `${results.length} available`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const filterButton = (
+    <Sheet
+      open={sheetOpen}
+      onOpenChange={(o) => {
+        setSheetOpen(o);
+        if (o) setDraftFilters(filters);
+      }}
+    >
+      <SheetTrigger asChild>
+        <Button variant="outline" className="h-10 gap-2">
+          <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+          Filters
+          {filterCount > 0 && (
+            <span className="ml-0.5 rounded-full bg-foreground px-1.5 text-xs text-background">{filterCount}</span>
+          )}
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border px-5 py-4 text-left">
+          <SheetTitle>Filters</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <FilterPanel value={draftFilters} onChange={setDraftFilters} />
+        </div>
+        <div className="flex items-center justify-between gap-3 border-t border-border px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button variant="ghost" onClick={() => setDraftFilters(EMPTY_FILTERS)}>
+            Clear all
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => {
+              setFilters(draftFilters);
+              setSheetOpen(false);
+            }}
+          >
+            Show {sortCars(applyFilters(cars || [], draftFilters), sort).length} cars
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
 
   return (
-    <div className="flex flex-col pb-24 md:pb-0 min-h-dvh">
-      <div className="px-4 pt-4 pb-2 space-y-3">
-        <h1 className="sr-only">Explore cars available to rent</h1>
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" aria-hidden="true" />
-          <Input
-            placeholder="City, make, model"
-            aria-label="Search by city, make, or model"
-            className="h-12 pl-12 rounded-full bg-card border-border"
-            value={locationQuery}
-            onChange={(e) => setLocationQuery(e.target.value)}
-          />
-        </div>
+    <div className="flex min-h-dvh flex-col pb-24 md:pb-0">
+      {/* Compact sticky search header */}
+      <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
+        <div className="container flex flex-col gap-3 py-3 md:flex-row md:items-center">
+          <div className="relative flex-1 md:max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input
+              placeholder="City, make or model"
+              aria-label="Search by city, make or model"
+              className="h-10 pl-9"
+              value={locationQuery}
+              onChange={(e) => {
+                setLocationQuery(e.target.value);
+                syncUrl({ location: e.target.value || null });
+              }}
+            />
+          </div>
 
-        <div className="flex gap-2">
-          <Popover open={startOpen} onOpenChange={setStartOpen}>
+          <Popover open={datesOpen} onOpenChange={setDatesOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="flex-1 justify-start text-left h-11 rounded-xl">
-                <CalendarDays className="h-4 w-4 mr-2 shrink-0" />
-                {startDate ? format(startDate, "MMM d") : "Pick-up"}
+              <Button variant="outline" className="h-10 justify-start gap-2 md:w-56">
+                <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{dateLabel}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={(d) => {
-                  setStartDate(d);
-                  if (d && endDate && endDate <= d) setEndDate(undefined);
-                  setStartOpen(false);
+                mode="range"
+                selected={{ from: startDate, to: endDate }}
+                onSelect={(range) => {
+                  setStartDate(range?.from);
+                  setEndDate(range?.to);
+                  syncUrl({
+                    start: range?.from ? range.from.toISOString() : null,
+                    end: range?.to ? range.to.toISOString() : null,
+                  });
+                  if (range?.from && range?.to) setDatesOpen(false);
                 }}
+                numberOfMonths={1}
                 disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                 className={cn("p-3 pointer-events-auto")}
               />
             </PopoverContent>
           </Popover>
 
-          <Popover open={endOpen} onOpenChange={setEndOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex-1 justify-start text-left h-11 rounded-xl">
-                <CalendarDays className="h-4 w-4 mr-2 shrink-0" />
-                {endDate ? format(endDate, "MMM d") : "Return"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={(d) => { setEndDate(d); setEndOpen(false); }}
-                disabled={(d) => d < (startDate || new Date(new Date().setHours(0, 0, 0, 0)))}
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-            <SelectTrigger className="h-11 w-11 rounded-xl shrink-0 px-0 justify-center" aria-label="Sort">
-              <SlidersHorizontal className="h-4 w-4" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="price_asc">Price: low to high</SelectItem>
-              <SelectItem value="price_desc">Price: high to low</SelectItem>
-              <SelectItem value="rating">Highest rated</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="px-4 py-2">
-        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-          {categories.map((cat) => (
-            <button
-              key={cat.label}
-              onClick={() => setActiveCategory(cat.label)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-                activeCategory === cat.label
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground bg-card border border-border"
-              }`}
+          <div className="flex items-center gap-2 md:ml-auto">
+            {filterButton}
+            <Select
+              value={sort}
+              onValueChange={(v) => {
+                setSort(v as SortKey);
+                syncUrl({ sort: v === "recommended" ? null : v });
+              }}
             >
-              <cat.icon className="h-4 w-4" />
-              {cat.label}
-            </button>
-          ))}
+              <SelectTrigger className="h-10 w-full md:w-48" aria-label="Sort results">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {Object.entries(SORT_LABELS).map(([k, label]) => (
+                  <SelectItem key={k} value={k}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {tripDays && (
-        <div className="px-4 py-2">
-          <p className="text-sm text-muted-foreground">
-            Showing cars available for{" "}
-            <span className="font-semibold text-foreground">
-              {tripDays} {tripDays === 1 ? "day" : "days"}
-            </span>
-            {locationQuery && (
-              <>
-                {" "}near <span className="font-semibold text-foreground">{locationQuery}</span>
-              </>
-            )}
-          </p>
-        </div>
-      )}
+      <div className="container py-6">
+        <header className="mb-5">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{headline}</h1>
+          {subline && <p className="mt-0.5 text-sm text-muted-foreground">{subline}</p>}
+        </header>
 
-      <div className="px-4 pb-8">
         {isLoading ? (
           <CarCardGridSkeleton count={6} />
-        ) : filteredCars.length === 0 ? (
+        ) : isError ? (
+          <EmptyState
+            icon={Car}
+            title="We couldn't load vehicles"
+            description="Something went wrong on our side. Try again in a moment."
+            action={{ label: "Retry", onClick: () => refetch() }}
+          />
+        ) : results.length === 0 ? (
           <EmptyState
             icon={Car}
             title="No cars match your search"
             description="Try a different city, widen your dates, or clear filters to see more options."
-            action={{ label: "Reset filters", onClick: reset }}
+            action={{ label: "Clear search", onClick: resetAll }}
           />
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground mb-3 mt-1">
-              {filteredCars.length} {filteredCars.length === 1 ? "car" : "cars"} available
-            </p>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCars.map((car) => (
-                <CarCard key={car.id} car={car} />
-              ))}
-            </div>
-          </>
+          <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {results.map((car, i) => (
+              <VehicleCard key={car.id} car={car} tripDays={tripDays} eager={i < 3} />
+            ))}
+          </div>
         )}
       </div>
     </div>
-  );
-}
-
-function CarCard({ car }: { car: any }) {
-  const { isFavorite, toggle } = useFavorite(car.id);
-  return (
-    <Link to={`/cars/${car.id}`} className="group block">
-      <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted mb-2">
-        {car.photo_url ? (
-          <img
-            src={car.photo_url}
-            alt={`${car.make} ${car.model}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
-            <Car className="h-10 w-10 text-muted-foreground/30" />
-          </div>
-        )}
-        <button
-          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(); }}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-foreground")} />
-        </button>
-        <div className="absolute bottom-2 left-2 flex gap-1">
-          {car.airport_pickup_enabled && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-sm flex items-center gap-1">
-              <Plane className="h-3 w-3" /> Airport
-            </span>
-          )}
-          {car.monthly_enabled && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-sm flex items-center gap-1">
-              <CalendarDays className="h-3 w-3" /> Monthly
-            </span>
-          )}
-        </div>
-      </div>
-      <h3 className="font-bold text-sm leading-tight">
-        {car.make} {car.model} {car.year}
-      </h3>
-      {car.rating ? (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-          <Star className="h-3 w-3 fill-primary text-primary" />
-          <span className="font-semibold text-foreground">{car.rating}</span>
-          <span>({car.trips} {car.trips === 1 ? "trip" : "trips"})</span>
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground mt-0.5">New listing</p>
-      )}
-      <p className="mt-1 text-sm font-semibold">
-        ${(car.base_daily_price_cents / 100).toFixed(0)}
-        <span className="font-normal text-muted-foreground">/day</span>
-      </p>
-    </Link>
   );
 }
