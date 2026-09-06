@@ -12,11 +12,14 @@ export interface PublicVehicle {
   make: string;
   model: string;
   year: number;
+  trim?: string | null;
   base_daily_price_cents: number;
   location_label?: string | null;
   body_type?: string | null;
   seats?: number | null;
   fuel_type?: string | null;
+  transmission?: string | null;
+  included_km_per_day?: number | null;
   photo_url?: string | null;
   rating?: number | null;
   trips?: number | null;
@@ -26,6 +29,9 @@ export interface PublicVehicle {
   available_today?: boolean | null;
   distance_km?: number | null;
 }
+
+export type VehicleCardVariant = "grid" | "rail" | "compact";
+
 
 function CardBadge({ children }: { children: React.ReactNode }) {
   return (
