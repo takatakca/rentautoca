@@ -12,11 +12,14 @@ export interface PublicVehicle {
   make: string;
   model: string;
   year: number;
+  trim?: string | null;
   base_daily_price_cents: number;
   location_label?: string | null;
   body_type?: string | null;
   seats?: number | null;
   fuel_type?: string | null;
+  transmission?: string | null;
+  included_km_per_day?: number | null;
   photo_url?: string | null;
   rating?: number | null;
   trips?: number | null;
@@ -26,6 +29,9 @@ export interface PublicVehicle {
   available_today?: boolean | null;
   distance_km?: number | null;
 }
+
+export type VehicleCardVariant = "grid" | "rail" | "compact";
+
 
 function CardBadge({ children }: { children: React.ReactNode }) {
   return (
@@ -51,22 +57,38 @@ export function VehicleCard({
   tripDays,
   className,
   eager,
+  variant = "grid",
+  footer,
+  hideFavorite,
 }: {
   car: PublicVehicle;
   /** When dates are selected, show an estimated trip total. */
   tripDays?: number | null;
   className?: string;
   eager?: boolean;
+  /** Layout density. Visual identity stays identical across variants. */
+  variant?: VehicleCardVariant;
+  /** Context actions (compare, select, remove) rendered under the card. */
+  footer?: React.ReactNode;
+  hideFavorite?: boolean;
 }) {
   const { isFavorite, toggle, loading } = useFavorite(car.id);
   const daily = car.base_daily_price_cents / 100;
   const total = tripDays ? daily * tripDays : null;
+  const compact = variant === "compact";
   const specs = [car.location_label || undefined, car.body_type || undefined, car.seats ? `${car.seats} seats` : undefined]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <article className={cn("group relative", className)}>
+    <article
+      className={cn(
+        "group relative",
+        variant === "rail" && "w-full",
+        compact && "w-[15.5rem] shrink-0",
+        className,
+      )}
+    >
       <Link to={`/cars/${car.id}`} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
         <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
           {car.photo_url ? (
@@ -90,11 +112,13 @@ export function VehicleCard({
         </div>
 
         <div className="pt-2.5">
-          <h3 className="font-semibold leading-tight tracking-tight truncate">
+          <h3 className={cn("font-semibold leading-tight tracking-tight truncate", compact && "text-sm")}>
             {car.year} {car.make} {car.model}
           </h3>
-          {specs && <p className="mt-0.5 truncate text-sm text-muted-foreground">{specs}</p>}
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          {specs && (
+            <p className={cn("mt-0.5 truncate text-muted-foreground", compact ? "text-xs" : "text-sm")}>{specs}</p>
+          )}
+          <p className={cn("mt-0.5 text-muted-foreground", compact ? "text-xs" : "text-sm")}>
             {car.rating != null ? (
               <span className="inline-flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-current text-foreground" aria-hidden="true" />
@@ -106,7 +130,7 @@ export function VehicleCard({
             )}
             {car.distance_km != null && <span> · {car.distance_km} km away</span>}
           </p>
-          <p className="mt-1.5 font-semibold">
+          <p className={cn("mt-1.5 font-semibold", compact && "text-sm")}>
             ${daily.toFixed(0)}
             <span className="font-normal text-muted-foreground">/day</span>
             {total != null && (
@@ -116,16 +140,21 @@ export function VehicleCard({
         </div>
       </Link>
 
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={loading}
-        aria-pressed={isFavorite}
-        aria-label={isFavorite ? `Remove ${car.make} ${car.model} from favorites` : `Save ${car.make} ${car.model} to favorites`}
-        className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm motion-safe:transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-foreground")} aria-hidden="true" />
-      </button>
+      {footer ? <div className="pt-2">{footer}</div> : null}
+
+      {!hideFavorite && (
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={loading}
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? `Remove ${car.make} ${car.model} from favorites` : `Save ${car.make} ${car.model} to favorites`}
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm motion-safe:transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-foreground")} aria-hidden="true" />
+        </button>
+      )}
     </article>
   );
 }
+
