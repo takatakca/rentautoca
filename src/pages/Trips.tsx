@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar, MapPin, Shield } from "lucide-react";
 import { format } from "date-fns";
+import { bookingRef } from "@/lib/dashboard-utils";
 
 interface TripRow {
   id: string;
@@ -20,6 +21,8 @@ interface TripRow {
   total_cents: number | null;
   pickup_location: string | null;
   pricing_breakdown: any;
+  created_at: string;
+  booking_reference: string | null;
   car: { make: string; model: string; year: number; title: string | null } | null;
   photo_url: string | null;
 }
@@ -58,7 +61,7 @@ export default function Trips() {
       setError(null);
       const { data: tripRows, error: tErr } = await supabase
         .from("trips")
-        .select("id, car_id, start_at, end_at, status, total_cents, pickup_location, pricing_breakdown")
+        .select("id, car_id, start_at, end_at, status, total_cents, pickup_location, pricing_breakdown, created_at, booking_reference")
         .eq("guest_id", user.id)
         .order("start_at", { ascending: false });
 
@@ -178,6 +181,9 @@ function TripCard({ t }: { t: TripRow }) {
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               {format(new Date(t.start_at), "MMM d")} → {format(new Date(t.end_at), "MMM d, yyyy")}
+            </p>
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
+              Booking {bookingRef(t.id, t.created_at, t.booking_reference)}
             </p>
             {t.pickup_location && (
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">

@@ -23,6 +23,7 @@ interface Row {
   total_cents: number | null;
   pickup_location: string | null;
   created_at: string;
+  booking_reference: string | null;
 }
 
 type Bucket = "upcoming" | "active" | "past" | "cancelled" | "drafts";
@@ -50,7 +51,7 @@ export default function DashboardTrips() {
     (async () => {
       const { data } = await supabase
         .from("trips")
-        .select("id, car_id, start_at, end_at, status, payment_status, total_cents, pickup_location, created_at")
+        .select("id, car_id, start_at, end_at, status, payment_status, total_cents, pickup_location, created_at, booking_reference")
         .eq("guest_id", user.id)
         .order("start_at", { ascending: false });
       if (cancelled) return;
@@ -87,7 +88,7 @@ export default function DashboardTrips() {
       const label = c ? `${c.year} ${c.make} ${c.model}` : "";
       return (
         label.toLowerCase().includes(needle) ||
-        bookingRef(t.id, t.created_at).toLowerCase().includes(needle) ||
+        bookingRef(t.id, t.created_at, t.booking_reference).toLowerCase().includes(needle) ||
         (t.pickup_location ?? "").toLowerCase().includes(needle)
       );
     });
@@ -145,7 +146,7 @@ export default function DashboardTrips() {
                       {format(new Date(t.start_at), "MMM d, HH:mm")} → {format(new Date(t.end_at), "MMM d, HH:mm")}
                     </p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span>{bookingRef(t.id, t.created_at)}</span>
+                      <span className="font-mono">Booking {bookingRef(t.id, t.created_at, t.booking_reference)}</span>
                       {(t.pickup_location || c?.location_label) && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" /> {t.pickup_location || c?.location_label}
