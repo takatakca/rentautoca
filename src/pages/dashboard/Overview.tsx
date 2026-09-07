@@ -37,6 +37,7 @@ interface TripRow {
   pickup_location: string | null;
   pricing_breakdown: any;
   created_at: string;
+  booking_reference: string | null;
 }
 
 interface CarRow {
@@ -88,7 +89,7 @@ export default function DashboardOverview() {
         supabase
           .from("trips")
           .select(
-            "id, car_id, start_at, end_at, status, payment_status, total_cents, pickup_location, pricing_breakdown, created_at",
+            "id, car_id, start_at, end_at, status, payment_status, total_cents, pickup_location, pricing_breakdown, created_at, booking_reference",
           )
           .eq("guest_id", user.id)
           .order("start_at", { ascending: true }),
@@ -282,7 +283,7 @@ export default function DashboardOverview() {
                     {TRIP_STATUS[nextTrip.status]?.label ?? nextTrip.status}
                   </StatusBadge>
                   <span className="text-xs text-muted-foreground">
-                    {bookingRef(nextTrip.id, nextTrip.created_at)}
+                    Booking {bookingRef(nextTrip.id, nextTrip.created_at, nextTrip.booking_reference)}
                   </span>
                 </div>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">

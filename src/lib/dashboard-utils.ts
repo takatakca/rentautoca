@@ -56,8 +56,12 @@ export function tripAction(status: string, tripId: string): { label: string; to:
   }
 }
 
-/** Customer-facing booking reference derived deterministically from the trip UUID. */
-export function bookingRef(tripId: string, createdAt?: string | null): string {
+/**
+ * Customer-facing booking reference. Prefers the server-generated reference
+ * stored on the trip; falls back to a deterministic value for legacy rows.
+ */
+export function bookingRef(tripId: string, createdAt?: string | null, reference?: string | null): string {
+  if (reference) return reference;
   const year = createdAt ? new Date(createdAt).getFullYear() : new Date().getFullYear();
   const digits = tripId.replace(/\D/g, "").slice(-6).padStart(6, "0");
   return `RA-${year}-${digits}`;

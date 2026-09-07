@@ -22,6 +22,7 @@ interface Row {
   currency: string;
   pricing_breakdown: any;
   created_at: string;
+  booking_reference: string | null;
 }
 
 export default function DashboardPayments() {
@@ -36,7 +37,7 @@ export default function DashboardPayments() {
     (async () => {
       const { data } = await supabase
         .from("trips")
-        .select("id, car_id, start_at, end_at, status, payment_status, total_cents, currency, pricing_breakdown, created_at")
+        .select("id, car_id, start_at, end_at, status, payment_status, total_cents, currency, pricing_breakdown, created_at, booking_reference")
         .eq("guest_id", user.id)
         .order("created_at", { ascending: false });
       if (cancelled) return;
@@ -117,8 +118,8 @@ export default function DashboardPayments() {
                     <div className="min-w-0">
                       <p className="truncate font-medium">
                         {c ? `${c.year} ${c.make} ${c.model}` : "Booking"}{" "}
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {bookingRef(r.id, r.created_at)}
+                        <span className="font-mono text-xs font-normal text-muted-foreground">
+                          {bookingRef(r.id, r.created_at, r.booking_reference)}
                         </span>
                       </p>
                       <p className="text-xs text-muted-foreground">
