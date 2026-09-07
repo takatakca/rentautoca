@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { LifeBuoy, Send } from "lucide-react";
 import { z } from "zod";
@@ -14,7 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { DashboardPageHeader, StatusBadge } from "@/components/dashboard/DashboardPageHeader";
 import { useToast } from "@/hooks/use-toast";
-import type { Tone } from "@/lib/dashboard-utils";
+import { bookingRef, type Tone } from "@/lib/dashboard-utils";
 
 const schema = z.object({
   subject: z.string().trim().min(4, "Subject must be at least 4 characters").max(150),
@@ -47,6 +48,40 @@ export default function DashboardSupport() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ subject: "", category: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [searchParams] = useSearchParams();
+  const tripId = searchParams.get("trip");
+  const [tripContext, setTripContext] = useState<{
+    reference: string;
+    vehicle: string;
+    dates: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!tripId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data: t } = await supabase
+        .from("trips")
+        .select("id, car_id, start_at, end_at, created_at, booking_reference")
+        .eq("id", tripId)
+        .maybeSingle();
+      if (cancelled || !t) return;
+      const { data: c } = await supabase
+        .from("cars")
+        .select("make, model, year")
+        .eq("id", t.car_id)
+        .maybeSingle();
+      if (cancelled) return;
+      setTripContext({
+        reference: bookingRef(t.id, t.created_at, t.booking_reference),
+        vehicle: c ? `${c.year} ${c.make} ${c.model}` : "Your rental",
+        dates: `${format(new Date(t.start_at), "MMM d, yyyy")} → ${format(new Date(t.end_at), "MMM d, yyyy")}`,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tripId, user]);
 
   const load = async () => {
     const { data } = await supabase
@@ -80,6 +115,7 @@ export default function DashboardSupport() {
       subject: parsed.data.subject,
       category: parsed.data.category,
       body: parsed.data.message,
+      trip_id: tripId,
     });
     setSaving(false);
     if (error) {
@@ -108,6 +144,14 @@ export default function DashboardSupport() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {tripContext && (
+              <div className="mb-4 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">About this trip</p>
+                <p className="mt-1 font-medium">{tripContext.vehicle}</p>
+                <p className="text-xs text-muted-foreground">{tripContext.dates}</p>
+                <p className="font-mono text-xs text-muted-foreground">Booking {tripContext.reference}</p>
+              </div>
+            )}
             <form onSubmit={submit} className="space-y-4" noValidate>
               <div className="space-y-1.5">
                 <Label htmlFor="subject">Subject</Label>
