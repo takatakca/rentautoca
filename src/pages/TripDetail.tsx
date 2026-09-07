@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut } from "lucide-react";
 import { format } from "date-fns";
+import { bookingRef } from "@/lib/dashboard-utils";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
 
 export default function TripDetail() {
@@ -98,8 +99,11 @@ export default function TripDetail() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {car ? `${car.make} ${car.model} ${car.year}` : "Vehicle"}
+            {car ? `${car.year} ${car.make} ${car.model}` : "Vehicle"}
           </CardTitle>
+          <p className="font-mono text-xs text-muted-foreground">
+            Booking {bookingRef(trip.id, trip.created_at, trip.booking_reference)}
+          </p>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex items-center gap-2">

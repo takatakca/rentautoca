@@ -11,6 +11,7 @@ import { SafeImage } from "@/components/ui/safe-image";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, MapPin, Shield, AlertTriangle, Loader2, Lock } from "lucide-react";
 import { format } from "date-fns";
+import { bookingRef } from "@/lib/dashboard-utils";
 
 export default function Checkout() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -128,7 +129,15 @@ export default function Checkout() {
       <Link to={`/cars/${trip.car_id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
-      <h1 className="text-2xl font-bold">Review and pay</h1>
+      <div>
+        <h1 className="text-2xl font-bold">Review and pay</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Booking reference{" "}
+          <span className="font-mono text-foreground">
+            {bookingRef(trip.id, trip.created_at, trip.booking_reference)}
+          </span>
+        </p>
+      </div>
 
       <Card>
         <CardContent className="p-4 flex gap-4">
