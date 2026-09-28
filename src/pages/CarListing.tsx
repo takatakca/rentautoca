@@ -2,32 +2,26 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useCarListing } from "@/hooks/use-car-listing";
 import { useTripQuote } from "@/hooks/use-trip-quote";
 import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DetailPageSkeleton } from "@/components/ui/skeletons";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CarImageCarousel } from "@/components/listing/CarImageCarousel";
-import { CarHeaderSummary } from "@/components/listing/CarHeaderSummary";
-import { CancellationPolicyCard } from "@/components/listing/CancellationPolicyCard";
-import { PaymentOptionsCard } from "@/components/listing/PaymentOptionsCard";
-import { KilometersIncludedCard } from "@/components/listing/KilometersIncludedCard";
-import { IncludedInPriceCard } from "@/components/listing/IncludedInPriceCard";
+import { PhotoGallery } from "@/components/listing/PhotoGallery";
+import { VehicleIdentity } from "@/components/listing/VehicleIdentity";
+import { PolicyAccordion } from "@/components/listing/PolicyAccordion";
+import { BookingPanel } from "@/components/listing/BookingPanel";
 import { RatingsSection } from "@/components/listing/RatingsSection";
-import { RulesOfRoadSection } from "@/components/listing/RulesOfRoadSection";
 import { VehicleFeaturesSection } from "@/components/listing/VehicleFeaturesSection";
 import { HostCardSection } from "@/components/listing/HostCardSection";
 import { ExtrasSection } from "@/components/listing/ExtrasSection";
 import { ProtectionPlanSelector } from "@/components/listing/ProtectionPlanSelector";
 import { StickyCheckoutBar } from "@/components/listing/StickyCheckoutBar";
 import { DisabledVehicleBanner } from "@/components/listing/DisabledVehicleBanner";
-import { RentalPolicyCard } from "@/components/listing/RentalPolicyCard";
-import { TrackingDisclosureCard } from "@/components/listing/TrackingDisclosureCard";
 import { FAQSection } from "@/components/listing/FAQSection";
-import { ArrowLeft, Share2, Heart, CalendarDays } from "lucide-react";
+import { CarRail } from "@/components/marketing/CarRail";
+import { useDiscoveryInventory } from "@/hooks/use-discovery-inventory";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { addDays, format } from "date-fns";
+import { addDays } from "date-fns";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +34,7 @@ export default function CarListing() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: car, isLoading, error } = useCarListing(carId);
+  const { data: inventory } = useDiscoveryInventory();
 
   // Trip dates: prefer ?start=&end= from search, otherwise default to next week
   const [startDate, setStartDate] = useState<Date>(() => {
@@ -50,8 +45,6 @@ export default function CarListing() {
     const e = searchParams.get("end");
     return e ? new Date(e) : addDays(new Date(), 10);
   });
-  const [startOpen, setStartOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [selectedExtras] = useState<string[]>([]);
@@ -293,7 +286,7 @@ export default function CarListing() {
       <div className="lg:hidden">
         <StickyCheckoutBar
           originalCents={quote?.base_price ?? baseTotalCents}
-          totalCents={quote?.total_after_tax ?? totalBeforeTax}
+          totalCents={totalBeforeTax}
           disabled={ctaDisabled}
           loading={quoteLoading || reserving}
           ctaLabel={ctaLabel}

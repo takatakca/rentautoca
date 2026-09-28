@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { CalendarDays, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -127,4 +127,3 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
   );
 }
 
-export { addDays };
