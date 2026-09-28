@@ -162,210 +162,153 @@ export default function CarListing() {
       .single();
     setReserving(false);
     if (insertErr) {
-      toast({ title: "Could not create booking", description: insertErr.message, variant: "destructive" });
+      toast({ title: "Could not start your booking", description: "Please try again in a moment.", variant: "destructive" });
       return;
     }
     toast({ title: "Reviewing your booking", description: "Almost done — confirm and pay." });
     navigate(`/checkout/${data.id}`);
   };
 
+  const title = `${car.year} ${car.make} ${car.model}`;
+  const city = car.location_label?.split(",")[0]?.trim() || "Canada";
+  const notice = isDisabled
+    ? "This vehicle is currently unavailable."
+    : datesUnavailable
+      ? "These dates aren't available — pick another range."
+      : !user
+        ? "You'll be asked to sign in."
+        : null;
+  const ctaLabel = !user ? "Sign in to continue" : reserving ? "Reserving…" : "Continue";
+  const ctaDisabled = isDisabled || datesUnavailable || !quote;
+  const onDatesChange = (s: Date, e: Date) => { setStartDate(s); setEndDate(e); };
+
+  const similar = (inventory || [])
+    .filter((c) => c.id !== car.id && (c.body_type === car.body_type || c.location_label === car.location_label))
+    .slice(0, 8);
+
   return (
-    <div className="min-h-dvh bg-background pb-32 relative overflow-x-hidden">
+    <div className="min-h-dvh bg-background pb-28 lg:pb-12 overflow-x-hidden">
       <Helmet>
-        <title>{`${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""}`.trim() + " — Rent on Rentauto.ca"}</title>
-        <meta name="description" content={`Rent the ${car.year ?? ""} ${car.make ?? ""} ${car.model ?? ""} in ${car.location_label ?? "Canada"} from $${Math.round((car.base_daily_price_cents ?? 0) / 100)}/day on Rentauto.ca.`.replace(/\s+/g, " ").trim()} />
+        <title>{`${title} Rental ${city} | Rentauto`}</title>
+        <meta name="description" content={`Rent this ${title} in ${city} with secure booking, protection options and flexible rental dates. From $${Math.round(car.base_daily_price_cents / 100)}/day.`} />
       </Helmet>
-      {/* Top navigation overlay */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Go back"
-          className="rounded-full bg-background/60 backdrop-blur-sm"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-5 w-5" />
+
+      <div className="mx-auto max-w-7xl px-4 pt-4 md:px-6">
+        <Button variant="ghost" size="sm" className="mb-3 -ml-2" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" /> Back
         </Button>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" aria-label="Share this car" className="rounded-full bg-background/60 backdrop-blur-sm">
-            <Share2 className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Save to favorites" className="rounded-full bg-background/60 backdrop-blur-sm">
-            <Heart className="h-5 w-5" />
-          </Button>
-        </div>
+        <PhotoGallery photos={car.photos} title={title} />
       </div>
 
-      <CarImageCarousel photos={car.photos} />
-      <CarHeaderSummary car={car} />
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 pt-8 md:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <main className="min-w-0 space-y-10">
+          <VehicleIdentity car={car} />
+          {isDisabled && <DisabledVehicleBanner />}
 
-      <div className="h-1 bg-primary" />
+          {car.description && (
+            <section>
+              <h2 className="mb-2 text-xl font-semibold">About this vehicle</h2>
+              <p className="whitespace-pre-line text-muted-foreground">{car.description}</p>
+            </section>
+          )}
 
-      {/* Editable trip dates */}
-      <div className="px-4 py-5">
-        <h2 className="text-xl font-bold mb-3">Your trip</h2>
-        <div className="flex gap-2">
-          <Popover open={startOpen} onOpenChange={setStartOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex-1 justify-start text-left h-12 rounded-xl">
-                <CalendarDays className="h-4 w-4 mr-2" />
-                <span className="truncate">{format(startDate, "EEE, MMM d")}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={(d) => { if (d) { setStartDate(d); if (d >= endDate) setEndDate(addDays(d, 3)); } setStartOpen(false); }}
-                disabled={(d) => d < new Date()}
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-          <Popover open={endOpen} onOpenChange={setEndOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex-1 justify-start text-left h-12 rounded-xl">
-                <CalendarDays className="h-4 w-4 mr-2" />
-                <span className="truncate">{format(endDate, "EEE, MMM d")}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={(d) => { if (d) setEndDate(d); setEndOpen(false); }}
-                disabled={(d) => d <= startDate}
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Pickup: <span className="text-foreground">{car.location_label || "TBD"}</span>
-        </p>
-        {datesUnavailable && (
-          <p className="text-sm text-destructive mt-2">These dates aren't available — please pick another range.</p>
-        )}
+          <section>
+            <h2 className="mb-3 text-xl font-semibold">Vehicle information</h2>
+            <dl className="divide-y divide-border border-y border-border text-sm">
+              <InfoRow label="Included kilometres" value={`${car.included_km_per_day} km/day · ${includedKmTotal} km this trip`} />
+              <InfoRow label="Extra kilometre" value={`$${((quote?.extra_km_price ?? car.extra_km_price_cents) / 100).toFixed(2)}/km`} />
+              <InfoRow label="Pickup" value={car.location_label || "Shared after booking"} />
+              {car.consumption_l_per_100km ? <InfoRow label="Consumption" value={`${car.consumption_l_per_100km} L/100 km`} /> : null}
+            </dl>
+          </section>
+
+          <VehicleFeaturesSection car={car} />
+          <ExtrasSection extras={car.extras} />
+
+          <div className="-mx-4 md:mx-0">
+            <ProtectionPlanSelector selectedPlanId={selectedPlanId} onSelect={setSelectedPlanId} days={tripDays} />
+          </div>
+
+          <HostCardSection host={car.host} />
+
+          <RatingsSection
+            ratingAvg={car.rating_avg}
+            ratingCount={car.rating_count}
+            subRatings={car.sub_ratings}
+            reviews={car.reviews}
+          />
+
+          <section>
+            <h2 className="mb-2 text-xl font-semibold">Policies</h2>
+            <PolicyAccordion rules={car.rules} cancellation={quote?.cancellation_policy_snapshot ?? car.cancellation_policy} />
+          </section>
+
+          <FAQSection />
+        </main>
+
+        <aside className="hidden lg:block" aria-label="Booking">
+          <div className="sticky top-24">
+            <BookingPanel
+              dailyCents={car.base_daily_price_cents}
+              startDate={startDate}
+              endDate={endDate}
+              onDatesChange={onDatesChange}
+              pickupLabel={car.location_label}
+              quote={quote}
+              quoteLoading={quoteLoading}
+              notice={notice}
+              ctaLabel={ctaLabel}
+              disabled={ctaDisabled}
+              busy={reserving}
+              onContinue={handleReserve}
+            />
+          </div>
+        </aside>
       </div>
 
-      {isDisabled && <DisabledVehicleBanner />}
-
-      <div className="h-1 bg-primary" />
-      <CancellationPolicyCard policy={quote?.cancellation_policy_snapshot ?? car.cancellation_policy} />
-
-      <div className="h-1 bg-primary" />
-      <PaymentOptionsCard />
-
-      <div className="h-1 bg-primary" />
-      <KilometersIncludedCard
-        includedKm={includedKmTotal}
-        extraKmPriceCents={quote?.extra_km_price ?? car.extra_km_price_cents}
-      />
-
-      <div className="h-1 bg-primary" />
-      <IncludedInPriceCard />
-
-      <div className="h-1 bg-primary" />
-      <ProtectionPlanSelector
-        selectedPlanId={selectedPlanId}
-        onSelect={setSelectedPlanId}
-        days={tripDays}
-      />
-
-      <div className="bg-secondary/50">
-        <RatingsSection
-          ratingAvg={car.rating_avg}
-          ratingCount={car.rating_count}
-          subRatings={car.sub_ratings}
-          reviews={car.reviews}
+      {/* Mobile: full panel inline, plus sticky action */}
+      <div className="mx-auto max-w-7xl px-4 pt-8 lg:hidden" id="book">
+        <BookingPanel
+          dailyCents={car.base_daily_price_cents}
+          startDate={startDate}
+          endDate={endDate}
+          onDatesChange={onDatesChange}
+          pickupLabel={car.location_label}
+          quote={quote}
+          quoteLoading={quoteLoading}
+          notice={notice}
+          ctaLabel={ctaLabel}
+          disabled={ctaDisabled}
+          busy={reserving}
+          onContinue={handleReserve}
         />
       </div>
 
-      <div className="h-1 bg-primary" />
-      <VehicleFeaturesSection car={car} />
-
-      <div className="h-1 bg-primary" />
-      <RulesOfRoadSection rules={car.rules} />
-
-      <div className="bg-secondary/50">
-        <HostCardSection host={car.host} />
-      </div>
-
-      <div className="h-1 bg-primary" />
-      <ExtrasSection extras={car.extras} />
-
-      <div className="h-1 bg-primary" />
-      <RentalPolicyCard />
-
-      <div className="h-1 bg-primary" />
-      <TrackingDisclosureCard />
-
-      <div className="h-1 bg-primary" />
-      <FAQSection />
-
-      {quote && (
-        <div className="px-4 py-4 space-y-2 text-sm border-t border-border">
-          <h3 className="font-bold text-base">Price breakdown</h3>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">${(car.base_daily_price_cents / 100).toFixed(0)}/day × {quote.days} days</span>
-            <span>${(quote.base_price / 100).toFixed(2)}</span>
-          </div>
-          {quote.discounts > 0 && (
-            <div className="flex justify-between text-success">
-              <span>Multi-day discount ({quote.discount_percent}%)</span>
-              <span>-${(quote.discounts / 100).toFixed(2)}</span>
-            </div>
-          )}
-          {quote.protection_total > 0 && quote.protection_snapshot && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{quote.protection_snapshot.name} protection × {quote.days} days</span>
-              <span>${(quote.protection_total / 100).toFixed(2)}</span>
-            </div>
-          )}
-          {quote.extras_breakdown.map((ex) => (
-            <div key={ex.name} className="flex justify-between">
-              <span className="text-muted-foreground">{ex.name}</span>
-              <span>${(ex.price_cents / 100).toFixed(2)}</span>
-            </div>
-          ))}
-          <div className="flex justify-between border-t border-border pt-2">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>${(quote.total_before_tax / 100).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Taxes (est.)</span>
-            <span>${(quote.taxes / 100).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-base pt-1 border-t border-border">
-            <span>Total</span>
-            <span>${(quote.total_after_tax / 100).toFixed(2)} CAD</span>
-          </div>
+      {similar.length > 0 && (
+        <div className="mx-auto max-w-7xl pt-12">
+          <CarRail title="Similar vehicles nearby" cars={similar} tripDays={tripDays} />
         </div>
       )}
 
-      {(() => {
-        const reasons: string[] = [];
-        if (isDisabled) reasons.push("This vehicle is currently unavailable.");
-        else if (datesUnavailable) reasons.push("Pick different dates — these are taken.");
-        else if (quoteLoading) reasons.push("Calculating your quote…");
-        else if (!user) reasons.push("You'll be asked to sign in.");
-        const ctaLabel = !user ? "Sign in to reserve" : reserving ? "Reserving…" : "Reserve";
-        return (
-          <>
-            {reasons.length > 0 && (
-              <p className="px-4 pb-2 text-xs text-muted-foreground" aria-live="polite">{reasons[0]}</p>
-            )}
-            <StickyCheckoutBar
-              originalCents={baseTotalCents}
-              totalCents={totalBeforeTax}
-              disabled={isDisabled || datesUnavailable || !quote}
-              loading={quoteLoading || reserving}
-              ctaLabel={ctaLabel}
-              onReserve={handleReserve}
-            />
-          </>
-        );
-      })()}
+      <div className="lg:hidden">
+        <StickyCheckoutBar
+          originalCents={quote?.base_price ?? baseTotalCents}
+          totalCents={quote?.total_after_tax ?? totalBeforeTax}
+          disabled={ctaDisabled}
+          loading={quoteLoading || reserving}
+          ctaLabel={ctaLabel}
+          onReserve={handleReserve}
+        />
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 py-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium">{value}</dd>
     </div>
   );
 }
