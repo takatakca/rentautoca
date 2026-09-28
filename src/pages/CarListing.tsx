@@ -180,7 +180,7 @@ export default function CarListing() {
     .slice(0, 8);
 
   return (
-    <div className="min-h-dvh bg-background pb-28 lg:pb-12 overflow-x-hidden">
+    <div className="min-h-dvh bg-background pb-44 md:pb-28 lg:pb-12 overflow-x-hidden">
       <Helmet>
         <title>{`${title} Rental ${city} | Rentauto`}</title>
         <meta name="description" content={`Rent this ${title} in ${city} with secure booking, protection options and flexible rental dates. From $${Math.round(car.base_daily_price_cents / 100)}/day.`} />
