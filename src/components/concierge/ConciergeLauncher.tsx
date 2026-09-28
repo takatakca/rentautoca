@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Route, Maximize2 } from "lucide-react";
 
 const HIDDEN_PREFIXES = [
+  "/cars/",
   "/concierge",
   "/travel-planner",
   "/login",
