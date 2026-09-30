@@ -49,7 +49,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies on GitHub runner
-        run: npm ci --legacy-peer-deps --no-audit --no-fund
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Build production frontend
         run: npm run build
