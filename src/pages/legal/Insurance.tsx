@@ -23,8 +23,7 @@ export default function Insurance() {
         Quebec has a public automobile insurance regime for bodily injury and a
         separate private automobile insurance system. Vehicle owners must
         maintain the private insurance required for their vehicle and use.
-        Rentauto does not replace a host's underlying legal or insurance
-        obligations.
+        Rentauto does not replace a host's underlying legal or insurance obligations.
       </p>
 
       <h2>Launch status</h2>
