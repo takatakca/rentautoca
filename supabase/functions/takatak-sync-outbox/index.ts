@@ -52,14 +52,19 @@ Deno.serve(async (req) => {
   const targetUrl = Deno.env.get("TAKATAK_RENTAUTO_SYNC_URL");
   const clientId = Deno.env.get("TAKATAK_RENTAUTO_SYNC_CLIENT_ID");
   const webhookSecret = Deno.env.get("TAKATAK_RENTAUTO_SYNC_WEBHOOK_SECRET");
+  const runnerSecret = Deno.env.get("TAKATAK_SYNC_RUNNER_SECRET");
 
   if (!supabaseUrl || !serviceKey) {
     console.error("[takatak-sync] Supabase service configuration missing");
     return json({ error: "Service unavailable" }, 503);
   }
 
-  const bearer = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!bearer || !(await constantTimeEqual(bearer, serviceKey))) {
+  const suppliedRunnerSecret = req.headers.get("x-sync-runner-secret") ?? "";
+  if (
+    !runnerSecret ||
+    !suppliedRunnerSecret ||
+    !(await constantTimeEqual(suppliedRunnerSecret, runnerSecret))
+  ) {
     return json({ error: "Unauthorized" }, 401);
   }
 
