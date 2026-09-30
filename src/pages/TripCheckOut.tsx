@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ export default function CheckOut() {
   const { toast } = useToast();
 
   const [step, setStep] = useState(0);
-  const [trip, setTrip] = useState<any>(null);
+  const [trip, setTrip] = useState<Tables<"trips"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [returnConfirmed, setReturnConfirmed] = useState(false);
   const [exteriorFiles, setExteriorFiles] = useState<File[]>([]);
