@@ -50,14 +50,14 @@ export default function CarListing() {
   const [selectedExtras] = useState<string[]>([]);
   const [reserving, setReserving] = useState(false);
 
-  // Default protection plan = Silver (standard tier)
+  // Default protection plan = Silver
   const { data: defaultSilver } = useQuery({
     queryKey: ["default-silver-plan"],
     queryFn: async () => {
       const { data } = await supabase
         .from("protection_plans")
         .select("id")
-        .eq("tier", "standard")
+        .eq("tier", "silver")
         .eq("is_active", true)
         .maybeSingle();
       return data?.id ?? null;
@@ -120,7 +120,7 @@ export default function CarListing() {
     setReserving(true);
 
     const { data, error: bookingError } = await supabase.functions.invoke(
-      "create-booking-draft",
+      "rentauto-create-booking-draft",
       {
         body: {
           carId: carId!,
