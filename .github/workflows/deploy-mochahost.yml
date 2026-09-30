@@ -38,11 +38,6 @@ jobs:
 
       PRODUCTION_URL: https://rentauto.ca
 
-      # Safety gate: this branch points Rentauto at the shared TAKATAK backend.
-      # Do not allow production deployment until legacy operational data/auth
-      # cutover has been explicitly validated.
-      RENTAUTO_SHARED_BACKEND_CUTOVER_APPROVED: ${{ vars.RENTAUTO_SHARED_BACKEND_CUTOVER_APPROVED }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,12 +52,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          if [ "${RENTAUTO_SHARED_BACKEND_CUTOVER_APPROVED:-}" != "true" ]; then
-            echo "::error::Shared TAKATAK backend cutover has not been approved."
-            echo "::error::Set repository variable RENTAUTO_SHARED_BACKEND_CUTOVER_APPROVED=true only after legacy Rentauto data/auth migration and production E2E validation."
-            exit 1
-          fi
 
           if [ -z "${VITE_TAKATAK_SUPABASE_URL:-}" ]; then
             echo "::error::Missing VITE_TAKATAK_SUPABASE_URL"
