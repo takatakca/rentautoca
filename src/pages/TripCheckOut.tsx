@@ -62,7 +62,7 @@ export default function CheckOut() {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const path = `${tripId}/check-out/${kind}-${Date.now()}-${i}.${f.name.split(".").pop() || "jpg"}`;
-      const { error } = await supabase.storage.from("trip-photos").upload(path, f);
+      const { error } = await supabase.storage.from("rentauto-trip-photos").upload(path, f);
       if (!error) urls.push(path);
     }
     return urls;
@@ -77,7 +77,7 @@ export default function CheckOut() {
     try {
       const extUrls = await uploadFiles(exteriorFiles, "exterior");
       const intUrls = await uploadFiles(interiorFiles, "interior");
-      const { error } = await supabase.functions.invoke("trip-transition", {
+      const { error } = await supabase.functions.invoke("rentauto-trip-transition", {
         body: {
           action: "complete_check_out",
           trip_id: tripId,
