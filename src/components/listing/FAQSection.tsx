@@ -2,11 +2,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const FAQS = [
   { q: "How do I pick up the car?", a: "After you book, you'll meet your host at the pickup location. Complete the in-app check-in (photos + odometer + fuel) to start your trip." },
-  { q: "What if I need to cancel?", a: "Free cancellation up to 24 hours before your trip. See the cancellation policy section above for full details." },
-  { q: "Is insurance included?", a: "Every trip includes a protection plan you select at checkout. You can also bring your own insurance if it covers peer-to-peer rentals in Quebec." },
-  { q: "Can I extend my trip?", a: "Yes — message your host through the app at least 4 hours before your scheduled return to request an extension." },
-  { q: "What happens if I return late?", a: "A grace period of 15 minutes applies. After that, hourly late fees apply, then a full extra day after 3 hours." },
-  { q: "Is the vehicle tracked?", a: "Tracking only runs while your trip is active (between check-in and check-out). See the tracking disclosure above." },
+  { q: "What if I need to cancel?", a: "The cancellation terms that apply to your trip are shown before payment and stored with the booking." },
+  { q: "What protection applies to my trip?", a: "The checkout will show the protection option and contractual terms that actually apply before you pay. Pre-launch plan names or examples are not insurance promises." },
+  { q: "Can I extend my trip?", a: "Request an extension through the trip screen. The host must confirm and the vehicle must remain available." },
+  { q: "What happens if I return late?", a: "Your booking shows the applicable return and late-return terms. Contact the host through the trip screen as early as possible if your return time may change." },
+  { q: "Is the vehicle tracked?", a: "If the listing discloses tracking, location collection is limited to the active rental window. See the tracking disclosure for details." },
 ];
 
 export function FAQSection() {
