@@ -44,10 +44,10 @@ const steps = [
 const faqs = [
   { q: "Where does Rentauto operate?", a: "We're focused on Quebec — Montreal, Quebec City, Laval, Longueuil, Gatineau, Sherbrooke — with active expansion across Canada. You can browse and book in CAD." },
   { q: "Do I need to be 21 to rent?", a: "Most listings require drivers to be at least 21 with a valid Canadian or international driver's licence held for 12+ months. Some hosts allow 19+ with a young-driver fee." },
-  { q: "Is insurance included?", a: "Every booking includes a protection plan with liability coverage and damage protection. You can upgrade to Silver or Gold for lower deductibles and added benefits like roadside assistance." },
+  { q: "Is insurance included?", a: "The protection terms available for a trip are shown before payment. Rentauto will not represent a specific insurer, limit, deductible, or roadside benefit until that production program is active." },
   { q: "How does pickup work?", a: "You meet the host at the agreed location (home, office, or airport curb-side), do a quick walk-around with photos in the app, and drive off. Return is the same in reverse." },
   { q: "Does voice search send my audio anywhere?", a: "No. Voice search uses your browser's built-in speech recognition. Rentauto never uploads recordings, and you can always type instead." },
-  { q: "What if there's an issue during my trip?", a: "Report incidents directly from the trip screen. Silver and Gold plans include 24/7 roadside assistance. Our support team is reachable at support@rentauto.ca." },
+  { q: "What if there's an issue during my trip?", a: "Report incidents directly from the trip screen and follow the assistance instructions attached to your booking. Our support team is reachable at support@rentauto.ca." },
 ];
 
 const MONTREAL = { lat: 45.5019, lng: -73.5674 };
@@ -324,7 +324,7 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Trust &amp; safety</p>
           <h2 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">Built for confident driving</h2>
           <p className="mt-3 text-muted-foreground">
-            Protection plans, verified identities, photo trip records, secure payments and Quebec-based support.
+            Trip protection disclosures, verified identities, photo trip records, secure payments and Quebec-based support.
           </p>
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-3">
