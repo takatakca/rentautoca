@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    name: Build and deploy rentauto.ca
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -27,19 +28,17 @@ jobs:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
-
       VITE_APP_URL: https://rentauto.ca
 
       MOCHAHOST_HOST: ${{ secrets.MOCHAHOST_HOST }}
       MOCHAHOST_USER: ${{ secrets.MOCHAHOST_USER }}
-      MOCHAHOST_PORT: ${{ secrets.MOCHAHOST_PORT }}
-
-      MOCHAHOST_APP_PATH: ${{ vars.MOCHAHOST_APP_PATH }}
+      MOCHAHOST_PORT: ${{ secrets.MOCHAHOST_PORT || '22' }}
+      MOCHAHOST_APP_PATH: ${{ vars.MOCHAHOST_APP_PATH || '/home/bolonca/rentauto_node' }}
 
       PRODUCTION_URL: https://rentauto.ca
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Use Node.js 22
@@ -48,7 +47,51 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies on GitHub runner
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${VITE_SUPABASE_URL:-}" ]; then
+            echo "::error::Missing GitHub secret VITE_SUPABASE_URL"
+            exit 1
+          fi
+
+          if [ -z "${VITE_SUPABASE_PUBLISHABLE_KEY:-}" ]; then
+            echo "::error::Missing GitHub secret VITE_SUPABASE_PUBLISHABLE_KEY"
+            exit 1
+          fi
+
+          if [ -z "${VITE_SUPABASE_PROJECT_ID:-}" ]; then
+            echo "::error::Missing GitHub secret VITE_SUPABASE_PROJECT_ID"
+            exit 1
+          fi
+
+          if [ -z "${MOCHAHOST_HOST:-}" ]; then
+            echo "::error::Missing GitHub secret MOCHAHOST_HOST"
+            exit 1
+          fi
+
+          if [ -z "${MOCHAHOST_USER:-}" ]; then
+            echo "::error::Missing GitHub secret MOCHAHOST_USER"
+            exit 1
+          fi
+
+          if [ -z "${MOCHAHOST_PORT:-}" ]; then
+            echo "::error::MOCHAHOST_PORT is empty"
+            exit 1
+          fi
+
+          if [ -z "${MOCHAHOST_APP_PATH:-}" ]; then
+            echo "::error::MOCHAHOST_APP_PATH is empty"
+            exit 1
+          fi
+
+          echo "Configuration values are present."
+          echo "Deployment path: $MOCHAHOST_APP_PATH"
+          echo "SSH port: $MOCHAHOST_PORT"
+
+      - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Build production frontend
@@ -58,70 +101,133 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f dist/index.html
+
+          if [ ! -f dist/index.html ]; then
+            echo "::error::dist/index.html was not created."
+            exit 1
+          fi
+
           echo "$GITHUB_SHA" > REVISION
 
-      - name: Create one release archive
+          echo "Production build verified."
+          echo "Revision: $GITHUB_SHA"
+
+      - name: Create release archive
         shell: bash
         run: |
           set -euo pipefail
+
+          rm -rf .deploy
           mkdir -p .deploy/release
+
           cp -a dist .deploy/release/dist
           cp REVISION .deploy/release/REVISION
-          tar -C .deploy/release -czf ".deploy/rentauto-${GITHUB_SHA}.tar.gz" .
+
+          tar \
+            -C .deploy/release \
+            -czf ".deploy/rentauto-${GITHUB_SHA}.tar.gz" \
+            .
+
+          test -f ".deploy/rentauto-${GITHUB_SHA}.tar.gz"
+
+          echo "Release archive created successfully."
 
       - name: Configure SSH
-          shell: bash
-          env:
-            MOCHAHOST_SSH_KEY: ${{ secrets.MOCHAHOST_SSH_KEY }}
-          run: |
-            set -euo pipefail
-        
-            mkdir -p ~/.ssh
-            chmod 700 ~/.ssh
-        
-            printf '%s\n' "$MOCHAHOST_SSH_KEY" > ~/.ssh/id_ed25519
-            chmod 600 ~/.ssh/id_ed25519
-        
-            echo "Checking private SSH key..."
-            ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
-            echo "Private SSH key is valid."
-        
-            ssh-keyscan \
-              -p "$MOCHAHOST_PORT" \
-              -H "$MOCHAHOST_HOST" \
-              >> ~/.ssh/known_hosts
-        
-            chmod 600 ~/.ssh/known_hosts
+        shell: bash
+        env:
+          MOCHAHOST_SSH_KEY: ${{ secrets.MOCHAHOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${MOCHAHOST_SSH_KEY:-}" ]; then
+            echo "::error::Missing GitHub secret MOCHAHOST_SSH_KEY"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$MOCHAHOST_SSH_KEY" \
+            | tr -d '\r' \
+            > ~/.ssh/rentauto_deploy_key
+
+          chmod 600 ~/.ssh/rentauto_deploy_key
+
+          echo "Checking private SSH key..."
+
+          if ! ssh-keygen -y \
+            -f ~/.ssh/rentauto_deploy_key \
+            >/dev/null 2>&1; then
+
+            echo "::error::MOCHAHOST_SSH_KEY is not a valid private SSH key."
+            exit 1
+          fi
+
+          echo "Private SSH key is valid."
+
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+          echo "Reading MochaHost SSH host key..."
+
+          ssh-keyscan \
+            -p "$MOCHAHOST_PORT" \
+            -H "$MOCHAHOST_HOST" \
+            >> ~/.ssh/known_hosts
+
+          echo "SSH configuration completed."
+
+      - name: Test SSH connection
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Testing SSH connection to MochaHost..."
+
+          ssh \
+            -i ~/.ssh/rentauto_deploy_key \
+            -p "$MOCHAHOST_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+            "echo 'SSH connection successful'; whoami"
 
       - name: Upload release archive
         shell: bash
         run: |
           set -euo pipefail
 
+          echo "Preparing remote deployment folders..."
+
           ssh \
-            -i ~/.ssh/id_ed25519 \
+            -i ~/.ssh/rentauto_deploy_key \
             -p "$MOCHAHOST_PORT" \
+            -o BatchMode=yes \
             "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
             "mkdir -p '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'"
 
+          echo "Uploading Rentauto release..."
+
           scp \
-            -i ~/.ssh/id_ed25519 \
+            -i ~/.ssh/rentauto_deploy_key \
             -P "$MOCHAHOST_PORT" \
+            -o BatchMode=yes \
             ".deploy/rentauto-${GITHUB_SHA}.tar.gz" \
             "$MOCHAHOST_USER@$MOCHAHOST_HOST:$MOCHAHOST_APP_PATH/incoming/"
 
-      - name: Activate, restart, health-check, rollback on failure
+          echo "Release uploaded successfully."
+
+      - name: Activate release
         shell: bash
         run: |
           set -euo pipefail
 
           ssh \
-            -i ~/.ssh/id_ed25519 \
+            -i ~/.ssh/rentauto_deploy_key \
             -p "$MOCHAHOST_PORT" \
+            -o BatchMode=yes \
             "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
             "bash -s -- '$MOCHAHOST_APP_PATH' '$GITHUB_SHA' '$PRODUCTION_URL'" <<'REMOTE'
-
           set -euo pipefail
 
           APP_PATH="$1"
@@ -133,18 +239,31 @@ jobs:
           ARCHIVE="incoming/rentauto-${SHA}.tar.gz"
           RELEASE_DIR="releases/${SHA}"
 
+          echo "Application path: $APP_PATH"
+          echo "Deploying revision: $SHA"
+
+          if [ ! -f "$ARCHIVE" ]; then
+            echo "ERROR: Release archive does not exist: $ARCHIVE"
+            exit 1
+          fi
+
           rm -rf "$RELEASE_DIR"
           mkdir -p "$RELEASE_DIR"
 
           tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
 
-          test -f "$RELEASE_DIR/dist/index.html"
+          if [ ! -f "$RELEASE_DIR/dist/index.html" ]; then
+            echo "ERROR: dist/index.html is missing from new release."
+            exit 1
+          fi
 
           OLD=""
 
           if [ -f CURRENT ]; then
             OLD="$(tr -d '\r\n' < CURRENT)"
           fi
+
+          echo "Previous revision: ${OLD:-none}"
 
           if [ -n "$OLD" ]; then
             printf '%s\n' "$OLD" > PREVIOUS.new
@@ -155,57 +274,84 @@ jobs:
           mv CURRENT.new CURRENT
 
           mkdir -p tmp
+
+          echo "Restarting Passenger..."
           touch tmp/restart.txt
+
+          echo "Waiting for application health check..."
 
           ok=0
 
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in 1 2 3 4 5 6 7 8; do
+            echo "Health check attempt $attempt..."
 
             if curl \
               --fail \
               --silent \
               --show-error \
               --max-time 15 \
-              "$PRODUCTION_URL/healthz" >/dev/null; then
+              "$PRODUCTION_URL/healthz" \
+              >/dev/null; then
 
               ok=1
               break
-
             fi
 
             sleep 3
           done
 
           if [ "$ok" -ne 1 ]; then
-
-            echo "Health check failed for $SHA; rolling back."
+            echo "ERROR: Health check failed for revision $SHA."
+            echo "Starting automatic rollback."
 
             if [ -n "$OLD" ] && [ -d "releases/$OLD" ]; then
-
               printf '%s\n' "$OLD" > CURRENT.new
               mv CURRENT.new CURRENT
 
               touch tmp/restart.txt
+              sleep 5
 
-              sleep 3
+              echo "Rolled back to revision: $OLD"
 
               curl \
                 --fail \
                 --silent \
                 --show-error \
                 --max-time 15 \
-                "$PRODUCTION_URL/healthz" >/dev/null || true
-
+                "$PRODUCTION_URL/healthz" \
+                >/dev/null || true
+            else
+              echo "No previous release was available for rollback."
             fi
 
             exit 1
-
           fi
+
+          echo "Health check successful."
+          echo "Revision $SHA is now live."
 
           rm -f "$ARCHIVE"
 
-          ls -1dt releases/* 2>/dev/null |
-            tail -n +6 |
-            xargs -r rm -rf
+          ls -1dt releases/* 2>/dev/null \
+            | tail -n +6 \
+            | xargs -r rm -rf
 
+          echo "Deployment completed successfully."
           REMOTE
+
+      - name: Verify live website
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Checking live Rentauto website..."
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --max-time 20 \
+            "$PRODUCTION_URL/healthz"
+
+          echo
+          echo "rentauto.ca deployment completed successfully."
