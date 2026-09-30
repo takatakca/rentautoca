@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Car, Pencil, Power, PowerOff, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Car, FileText, Pencil, Plus, Power, PowerOff } from "lucide-react";
 
 interface HostCar {
   id: string; title: string; make: string; model: string; year: number;
@@ -72,7 +72,12 @@ export default function HostCars() {
       <Link to="/host" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back to dashboard
       </Link>
-      <h1 className="text-3xl font-bold">Your vehicles</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold">Your vehicles</h1>
+        <Button asChild>
+          <Link to="/host/cars/new"><Plus className="h-4 w-4" /> Add vehicle</Link>
+        </Button>
+      </div>
 
       {loading ? (
         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
@@ -81,7 +86,7 @@ export default function HostCars() {
           icon={Car}
           title="No vehicles yet"
           description="List your first vehicle to start earning on Rentauto."
-          action={{ label: "Start onboarding", href: "/host/onboarding" }}
+          action={{ label: "Add your first vehicle", href: "/host/cars/new" }}
         />
       ) : (
         cars.map((c) => (
@@ -99,6 +104,12 @@ export default function HostCars() {
                 <Button variant="outline" size="sm" onClick={() => toggle(c.id, c.status)}>
                   {c.status === "active" ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                   <span className="hidden sm:inline">{c.status === "active" ? "Pause" : "Activate"}</span>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to={`/host/cars/${c.id}/documents`}>
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Documents</span>
+                  </Link>
                 </Button>
                 <Button asChild size="sm">
                   <Link to={`/host/cars/${c.id}/edit`}><Pencil className="h-4 w-4" /><span className="hidden sm:inline">Edit</span></Link>
