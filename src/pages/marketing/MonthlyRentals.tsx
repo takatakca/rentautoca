@@ -13,7 +13,7 @@ const items = [
 const faqs = [
   { q: "How many kilometres are included monthly?", a: "Most monthly listings include 2,000–4,000 km. The exact allowance shows on each listing along with any overage rate." },
   { q: "Can I extend my rental?", a: "Yes. Request an extension through the trip screen and the host will confirm if the calendar allows it." },
-  { q: "Is insurance included for the full month?", a: "Yes. Your selected Protection Plan covers the entire booked period." },
+  { q: "Is insurance included for the full month?", a: "The checkout shows the protection terms, if any, that apply to the entire booked period before you pay." },
 ];
 
 export default function MonthlyRentals() {
