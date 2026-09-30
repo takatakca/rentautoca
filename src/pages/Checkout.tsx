@@ -12,6 +12,39 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, MapPin, Shield, AlertTriangle, Loader2, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { bookingRef } from "@/lib/dashboard-utils";
+import type { Tables } from "@/integrations/supabase/types";
+
+type TripRow = Tables<"trips">;
+type CarRow = Pick<
+  Tables<"cars">,
+  "id" | "make" | "model" | "year" | "title" | "location_label" | "host_id"
+>;
+type PublicHost = Pick<
+  Tables<"profiles_public">,
+  "display_name" | "first_name" | "avatar_url" | "rating_avg"
+>;
+
+type ProtectionSnapshot = {
+  name?: string;
+  price_per_day_cents?: number;
+  deductible_cents?: number;
+};
+
+type PricingBreakdown = {
+  days?: number;
+  base_price?: number;
+  discounts?: number;
+  discount_percent?: number;
+  protection_total?: number;
+  taxes?: number;
+  total_after_tax?: number;
+  protection_snapshot?: ProtectionSnapshot | null;
+};
+
+function readPricingBreakdown(value: TripRow["pricing_breakdown"]): PricingBreakdown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as PricingBreakdown;
+}
 
 export default function Checkout() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -20,10 +53,10 @@ export default function Checkout() {
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [trip, setTrip] = useState<any>(null);
-  const [car, setCar] = useState<any>(null);
+  const [trip, setTrip] = useState<TripRow | null>(null);
+  const [car, setCar] = useState<CarRow | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
-  const [host, setHost] = useState<any>(null);
+  const [host, setHost] = useState<PublicHost | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -59,10 +92,10 @@ export default function Checkout() {
       if ((blocks || []).length > 0) setUnavailable(true);
 
       if (c?.host_id) {
-        const { data: h } = await supabase.from("profiles_public" as any)
+        const { data: h } = await supabase.from("profiles_public")
           .select("display_name, first_name, avatar_url, rating_avg")
           .eq("id", c.host_id).maybeSingle();
-        setHost(h as any);
+        setHost(h);
       }
       setLoading(false);
     })();
@@ -76,7 +109,7 @@ export default function Checkout() {
         body: { tripId: trip.id, returnPath: `/trips/${trip.id}` },
       });
       if (error) {
-        const msg = (error as any).message || "Could not start payment";
+        const msg = error.message || "Could not start payment";
         if (msg.includes("PAYMENT_NOT_CONFIGURED") || msg.toLowerCase().includes("not configured")) {
           setPaymentNotConfigured(true);
         } else if (msg.toLowerCase().includes("no longer available")) {
@@ -120,7 +153,7 @@ export default function Checkout() {
     );
   }
 
-  const pricing = trip.pricing_breakdown || {};
+  const pricing = readPricingBreakdown(trip.pricing_breakdown);
   const protection = pricing.protection_snapshot;
   const totalCents = trip.total_cents || pricing.total_after_tax || 0;
 
