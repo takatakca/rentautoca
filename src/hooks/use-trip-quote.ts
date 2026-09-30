@@ -35,7 +35,7 @@ interface QuoteParams {
 }
 
 async function fetchQuote(params: QuoteParams): Promise<TripQuote> {
-  const { data, error } = await supabase.functions.invoke("quote-trip", {
+  const { data, error } = await supabase.functions.invoke("rentauto-quote-trip", {
     body: {
       carId: params.carId,
       startAt: params.startAt,
