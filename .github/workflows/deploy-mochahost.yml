@@ -228,17 +228,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          ssh -tt \
-            -i ~/.ssh/rentauto_deploy_key \
-            -p "$MOCHAHOST_PORT" \
-            -o BatchMode=yes \
-            "$MOCHAHOST_USER@$MOCHAHOST_HOST" <<REMOTE
-          set -euo pipefail
-
-          APP_PATH='$MOCHAHOST_APP_PATH'
-          SHA='$GITHUB_SHA'
-          PRODUCTION_URL='$PRODUCTION_URL'
-
+          {
+            printf 'set -euo pipefail\n'
+            printf 'APP_PATH=%q\n' "$MOCHAHOST_APP_PATH"
+            printf 'SHA=%q\n' "$GITHUB_SHA"
+            printf 'PRODUCTION_URL=%q\n' "$PRODUCTION_URL"
+            cat <<'REMOTE'
           cd "$APP_PATH"
 
           ARCHIVE="incoming/rentauto-${SHA}.tar.gz"
@@ -342,7 +337,13 @@ jobs:
             | xargs -r rm -rf
 
           echo "Deployment completed successfully."
+          exit
           REMOTE
+          } | ssh -tt \
+                -i ~/.ssh/rentauto_deploy_key \
+                -p "$MOCHAHOST_PORT" \
+                -o BatchMode=yes \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST"
 
       - name: Verify live website
         shell: bash
