@@ -25,7 +25,7 @@ const KNOWLEDGE: Record<string, string> = {
   ev_charging:
     "Rentauto EV listings show battery range and charge type. Level 2 chargers (240V) add roughly 30-50 km of range per hour; DC fast chargers reach 80% in 20-40 minutes. In Quebec the Circuit Electrique network is the largest. Guests return EVs at the same charge level they received, or pay a recharge fee set by the host.",
   insurance:
-    "Every Rentauto trip includes a protection plan chosen at checkout. Plans differ by deductible and coverage of collision, third-party liability and theft. Personal auto insurance and credit card coverage may not extend to peer-to-peer rentals in Quebec, so the platform plan is the primary coverage during the trip.",
+    "Rentauto's checkout is designed to present the protection option and contractual terms that actually apply to a trip before payment. Do not infer insurer, liability limits, deductibles, roadside benefits, or primary-coverage status from pre-launch plan names or examples.",
   gps_privacy:
     "Vehicles may carry a GPS device, disclosed on the listing. Location is only recorded while a trip is active: pings are dropped before check-in and after check-out. Hosts see location for their own active rentals only, and guests can see the same live map from their trip page.",
   cancellation:
