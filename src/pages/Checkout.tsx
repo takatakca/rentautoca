@@ -105,7 +105,7 @@ export default function Checkout() {
     if (!trip) return;
     setPaying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+      const { data, error } = await supabase.functions.invoke("rentauto-create-checkout-session", {
         body: { tripId: trip.id, returnPath: `/trips/${trip.id}` },
       });
       if (error) {
