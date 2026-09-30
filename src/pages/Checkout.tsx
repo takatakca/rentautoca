@@ -73,7 +73,7 @@ export default function Checkout() {
     setPaying(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: { tripId: trip.id, returnUrl: `${window.location.origin}/trips/${trip.id}` },
+        body: { tripId: trip.id, returnPath: `/trips/${trip.id}` },
       });
       if (error) {
         const msg = (error as any).message || "Could not start payment";
