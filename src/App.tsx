@@ -27,7 +27,9 @@ const Messages = lazy(() => import("./pages/Messages"));
 const HostDashboard = lazy(() => import("./pages/HostDashboard"));
 const HostOnboarding = lazy(() => import("./pages/HostOnboarding"));
 const HostCars = lazy(() => import("./pages/HostCars"));
+const HostCarNew = lazy(() => import("./pages/HostCarNew"));
 const HostCarEdit = lazy(() => import("./pages/HostCarEdit"));
+const HostVehicleDocuments = lazy(() => import("./pages/HostVehicleDocuments"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const AdminLaunchChecklist = lazy(() => import("./pages/AdminLaunchChecklist"));
 const BecomeHost = lazy(() => import("./pages/BecomeHost"));
@@ -151,7 +153,9 @@ const App = () => (
                   }
                 />
                 <Route path="/host/cars" element={<ProtectedRoute requiredRole="host"><HostCars /></ProtectedRoute>} />
+                <Route path="/host/cars/new" element={<ProtectedRoute requiredRole="host"><HostCarNew /></ProtectedRoute>} />
                 <Route path="/host/cars/:id/edit" element={<ProtectedRoute requiredRole="host"><HostCarEdit /></ProtectedRoute>} />
+                <Route path="/host/cars/:id/documents" element={<ProtectedRoute requiredRole="host"><HostVehicleDocuments /></ProtectedRoute>} />
                 <Route
                   path="/admin"
                   element={
