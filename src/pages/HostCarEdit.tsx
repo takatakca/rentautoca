@@ -201,13 +201,13 @@ export default function HostCarEdit() {
     if (!car) return;
     setUploading(true);
     const path = `${car.id}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("vehicle-photos").upload(path, file, { upsert: false });
+    const { error: upErr } = await supabase.storage.from("rentauto-vehicle-photos").upload(path, file, { upsert: false });
     if (upErr) {
       toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from("rentauto-vehicle-photos").getPublicUrl(path);
     const { data, error } = await supabase
       .from("car_photos")
       .insert({ car_id: car.id, url: urlData.publicUrl, sort_order: photos.length })
