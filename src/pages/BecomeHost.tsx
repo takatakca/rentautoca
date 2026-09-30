@@ -32,13 +32,12 @@ export default function BecomeHost() {
         if (!active) return;
         setApplicationStatus(data?.status ?? null);
         setCheckingApplication(false);
-        if (data?.status === "approved") void refreshRoles();
       });
 
     return () => {
       active = false;
     };
-  }, [user, refreshRoles]);
+  }, [user]);
 
   if (!user) {
     navigate("/login?redirect=/become-host");
