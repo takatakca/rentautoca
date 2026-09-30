@@ -13,7 +13,7 @@ const benefits = [
 ];
 
 const faqs = [
-  { q: "Do I need commercial insurance?", a: "Every Rentauto trip includes a Protection Plan that covers physical damage and liability during the rental window. You still need a valid personal auto policy when the car is not being rented." },
+  { q: "Do I need commercial insurance?", a: "Hosts must maintain the insurance required for their vehicle and use. Any Rentauto trip protection that is active will be disclosed with its actual terms before a guest pays." },
   { q: "Who picks up the car?", a: "You do, or you can offer delivery (curb-side, airport, or door) for an additional fee that you set." },
   { q: "How do payouts work?", a: "After a trip completes and the dispute window closes, your share is paid out via Stripe Connect to your Canadian bank account, typically within 1–3 business days." },
   { q: "Can I host more than one car?", a: "Yes. Manage multiple listings, calendars, and pricing from one host dashboard." },

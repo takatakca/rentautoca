@@ -15,7 +15,7 @@ const steps = [
 const faqs = [
   { q: "How long does approval take?", a: "Most trip requests are accepted within an hour during business hours. Instant Book listings confirm immediately." },
   { q: "When does payment happen?", a: "Your card is authorized at booking and charged once the host confirms. Refunds follow our cancellation policy." },
-  { q: "What's a Protection Plan?", a: "It's the insurance bundle attached to every trip. Basic, Silver, and Gold tiers differ in deductible and roadside benefits." },
+  { q: "What's a Protection Plan?", a: "It's the trip protection selection shown at checkout. The applicable terms are presented before payment; pre-launch plan names and examples are not insurance promises." },
   { q: "What if the car is dirty or low on fuel?", a: "Capture it in your pickup photos and contact support. We use the photo evidence to resolve fuel and cleaning disputes fairly." },
 ];
 

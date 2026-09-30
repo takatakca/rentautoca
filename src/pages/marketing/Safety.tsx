@@ -5,11 +5,11 @@ import {
 
 const items = [
   { icon: <IdCard className="h-5 w-5" />, title: "Verified identities", body: "Every guest provides a government ID and driver's licence verified before booking." },
-  { icon: <ShieldCheck className="h-5 w-5" />, title: "Protection on every trip", body: "Each rental includes a Protection Plan covering liability and physical damage." },
+  { icon: <ShieldCheck className="h-5 w-5" />, title: "Protection on every trip", body: "Protection terms are shown before payment and are activated only when supported by the applicable production insurance arrangement." },
   { icon: <Camera className="h-5 w-5" />, title: "Pickup & return photos", body: "Time-stamped photos and odometer/fuel readings document the car's condition at both ends." },
   { icon: <MapPin className="h-5 w-5" />, title: "In-trip GPS (when enabled)", body: "If the host has installed a tracker, GPS is only active during the active rental window." },
   { icon: <AlertTriangle className="h-5 w-5" />, title: "Incident reporting", body: "Report damage, accidents, or late returns directly from the trip screen in seconds." },
-  { icon: <Phone className="h-5 w-5" />, title: "24/7 roadside (Silver/Gold)", body: "Silver and Gold plans include around-the-clock roadside assistance anywhere in Canada." },
+  { icon: <Phone className="h-5 w-5" />, title: "24/7 roadside (Silver/Gold)", body: "Assistance details, when included with a production protection option, are shown in the trip-specific terms before payment." },
 ];
 
 const faqs = [
@@ -33,7 +33,7 @@ export default function Safety() {
       <FAQSection items={faqs} />
       <FinalCTA
         title="Book with confidence"
-        body="Every trip is backed by a Protection Plan, verified users, and clear safety workflows."
+        body="Every trip uses verified-user, inspection and safety workflows; applicable protection terms are disclosed before payment."
         primary={{ label: "Browse cars", to: "/explore" }}
         secondary={{ label: "Insurance & protection", to: "/insurance" }}
       />
