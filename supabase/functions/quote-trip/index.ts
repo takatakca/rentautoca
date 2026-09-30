@@ -1,168 +1,96 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { buildTripQuote, TripQuoteError } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function messageFor(code: string): string {
+  switch (code) {
+    case "DATES_NOT_AVAILABLE":
+    case "DATES_TEMPORARILY_HELD":
+      return "Dates not available";
+    case "VEHICLE_NOT_FOUND":
+      return "Car not found";
+    case "VEHICLE_NOT_AVAILABLE":
+      return "Vehicle is not available";
+    case "INVALID_TRIP_DATES":
+      return "Trip dates are invalid";
+    case "TRIP_DURATION_TOO_LONG":
+      return "Trip duration is too long";
+    case "INVALID_EXTRA_SELECTION":
+      return "One or more extras are unavailable";
+    case "INVALID_PROTECTION_PLAN":
+      return "Protection plan is unavailable";
+    default:
+      return code.startsWith("INVALID_")
+        ? "Quote request is invalid"
+        : "Unable to calculate quote";
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
-    const { carId, startAt, endAt, selectedExtras, protectionPlanId } = await req.json();
+    const body = await req.json();
+    const carId = typeof body?.carId === "string" ? body.carId : "";
+    const startAt = typeof body?.startAt === "string" ? body.startAt : "";
+    const endAt = typeof body?.endAt === "string" ? body.endAt : "";
+    const selectedExtras = Array.isArray(body?.selectedExtras)
+      ? body.selectedExtras
+      : [];
+    const protectionPlanId =
+      typeof body?.protectionPlanId === "string" ? body.protectionPlanId : null;
 
-    if (!carId || !startAt || !endAt) {
-      return new Response(JSON.stringify({ error: "carId, startAt, endAt required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
+    const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
-    // Fetch car
-    const { data: car, error: carErr } = await supabase
-      .from("cars")
-      .select("*")
-      .eq("id", carId)
-      .single();
-
-    if (carErr || !car) {
-      return new Response(JSON.stringify({ error: "Car not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (car.status !== "active") {
-      return new Response(JSON.stringify({ error: "Vehicle is not available" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check availability
-    const { data: blocks } = await supabase
-      .from("availability_blocks")
-      .select("id")
-      .eq("car_id", carId)
-      .lt("start_at", endAt)
-      .gt("end_at", startAt)
-      .limit(1);
-
-    if (blocks && blocks.length > 0) {
-      return new Response(JSON.stringify({ error: "Dates not available" }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Calculate days
-    const start = new Date(startAt);
-    const end = new Date(endAt);
-    const diffMs = end.getTime() - start.getTime();
-    const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-    const basePrice = car.base_daily_price_cents * days;
-
-    // Extras
-    let extrasTotal = 0;
-    const extrasBreakdown: { name: string; price_cents: number }[] = [];
-    if (selectedExtras && selectedExtras.length > 0) {
-      const { data: extras } = await supabase
-        .from("car_extras")
-        .select("*")
-        .eq("car_id", carId)
-        .eq("is_active", true)
-        .in("id", selectedExtras);
-
-      for (const extra of extras || []) {
-        const cost = extra.pricing_type === "per_day" ? extra.price_cents * days : extra.price_cents;
-        extrasTotal += cost;
-        extrasBreakdown.push({ name: extra.name, price_cents: cost });
-      }
-    }
-
-    // Weekly discount (5% for 3+ days, 10% for 7+ days)
-    let discountPercent = 0;
-    if (days >= 7) discountPercent = 10;
-    else if (days >= 3) discountPercent = 5;
-    const discounts = Math.round(basePrice * discountPercent / 100);
-
-    // Protection plan (Basic / Silver / Gold)
-    let protectionTotal = 0;
-    let protectionSnapshot: Record<string, unknown> | null = null;
-    if (protectionPlanId) {
-      const { data: plan } = await supabase
-        .from("protection_plans")
-        .select("id, name, tier, price_per_day_cents, deductible_cents")
-        .eq("id", protectionPlanId)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (plan) {
-        protectionTotal = plan.price_per_day_cents * days;
-        protectionSnapshot = {
-          id: plan.id,
-          name: plan.name,
-          tier: plan.tier,
-          price_per_day_cents: plan.price_per_day_cents,
-          deductible_cents: plan.deductible_cents,
-          total_cents: protectionTotal,
-        };
-      }
-    }
-
-    const subtotal = basePrice + extrasTotal + protectionTotal - discounts;
-
-    // Quebec GST (5%) + QST (9.975%) as default; simplified
-    const gstRate = 0.05;
-    const qstRate = 0.09975;
-    const taxes = Math.round(subtotal * (gstRate + qstRate));
-
-    const totalBeforeTax = subtotal;
-    const totalAfterTax = subtotal + taxes;
-    const includedKmTotal = car.included_km_per_day * days;
-
-    // Cancellation policy snapshot
-    const { data: policyLink } = await supabase
-      .from("car_policies")
-      .select("cancellation_policies(name, summary, rules)")
-      .eq("car_id", carId)
-      .limit(1)
-      .maybeSingle();
-
-    const quote = {
-      days,
-      base_price: basePrice,
-      extras_total: extrasTotal,
-      extras_breakdown: extrasBreakdown,
-      protection_total: protectionTotal,
-      protection_snapshot: protectionSnapshot,
-      discounts,
-      discount_percent: discountPercent,
-      taxes,
-      total_before_tax: totalBeforeTax,
-      total_after_tax: totalAfterTax,
-      included_km_total: includedKmTotal,
-      extra_km_price: car.extra_km_price_cents,
-      currency: car.currency,
-      cancellation_policy_snapshot: (policyLink as any)?.cancellation_policies || null,
-    };
+    const quote = await buildTripQuote(admin, {
+      carId,
+      startAt,
+      endAt,
+      selectedExtras,
+      protectionPlanId,
+    });
 
     return new Response(JSON.stringify(quote), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  } catch (cause) {
+    if (cause instanceof TripQuoteError) {
+      return new Response(
+        JSON.stringify({ error: messageFor(cause.code), code: cause.code }),
+        {
+          status: cause.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    console.error("[quote-trip] Quote calculation failed");
+    return new Response(
+      JSON.stringify({ error: "Unable to calculate quote", code: "QUOTE_FAILED" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

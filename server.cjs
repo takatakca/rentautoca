@@ -18,6 +18,24 @@ const express = require("express");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Baseline production security headers. Keep this intentionally conservative:
+// Rentauto loads payment/auth resources from external providers, so a full
+// connect-src/img-src CSP is maintained separately and should be rolled out
+// only after browser verification.
+app.disable("x-powered-by");
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(self), microphone=(self), geolocation=(self), payment=(self)"
+  );
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
 const DIST_DIR = path.join(__dirname, "dist");
 const INDEX_HTML = path.join(DIST_DIR, "index.html");
 

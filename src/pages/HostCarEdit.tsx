@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,9 +27,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-type CarRow = any;
+type CarRow = Tables<"cars">;
 type Photo = { id: string; url: string; sort_order: number };
-type Extra = any;
+type Extra = Tables<"car_extras">;
 type Policy = { id: string; name: string };
 type Block = { id: string; start_at: string; end_at: string; type: string };
 type Device = {
@@ -107,8 +108,8 @@ export default function HostCarEdit() {
       setSelectedPolicy(cp?.cancellation_policy_id ?? null);
       setBlocks((ab as Block[]) || []);
       setDevice((dev as Device) || null);
-    } catch (e: any) {
-      setLoadError(e?.message ?? "Failed to load vehicle.");
+    } catch (e: unknown) {
+      setLoadError(e instanceof Error ? e.message : "Failed to load vehicle.");
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export default function HostCarEdit() {
 
   const isDirty = useMemo(() => {
     if (!car || !initialCar) return false;
-    const keys = [
+    const keys: (keyof CarRow)[] = [
       "title",
       "description",
       "status",
@@ -201,13 +202,13 @@ export default function HostCarEdit() {
     if (!car) return;
     setUploading(true);
     const path = `${car.id}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("vehicle-photos").upload(path, file, { upsert: false });
+    const { error: upErr } = await supabase.storage.from("rentauto-vehicle-photos").upload(path, file, { upsert: false });
     if (upErr) {
       toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from("rentauto-vehicle-photos").getPublicUrl(path);
     const { data, error } = await supabase
       .from("car_photos")
       .insert({ car_id: car.id, url: urlData.publicUrl, sort_order: photos.length })

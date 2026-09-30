@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ export default function CheckIn() {
   const { toast } = useToast();
 
   const [step, setStep] = useState(0);
-  const [trip, setTrip] = useState<any>(null);
+  const [trip, setTrip] = useState<Tables<"trips"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [pickupConfirmed, setPickupConfirmed] = useState(false);
   const [exteriorFiles, setExteriorFiles] = useState<File[]>([]);
@@ -71,7 +72,7 @@ export default function CheckIn() {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const path = `${tripId}/check-in/${kind}-${Date.now()}-${i}.${f.name.split(".").pop() || "jpg"}`;
-      const { error } = await supabase.storage.from("trip-photos").upload(path, f, { upsert: false });
+      const { error } = await supabase.storage.from("rentauto-trip-photos").upload(path, f, { upsert: false });
       if (!error) urls.push(path);
     }
     return urls;
@@ -88,9 +89,9 @@ export default function CheckIn() {
       const intUrls = await uploadFiles(interiorFiles, "interior");
       // start_check_in (confirmed -> check_in_pending) if needed
       if (trip.status === "confirmed") {
-        await supabase.functions.invoke("trip-transition", { body: { action: "start_check_in", trip_id: tripId } });
+        await supabase.functions.invoke("rentauto-trip-transition", { body: { action: "start_check_in", trip_id: tripId } });
       }
-      const { error } = await supabase.functions.invoke("trip-transition", {
+      const { error } = await supabase.functions.invoke("rentauto-trip-transition", {
         body: {
           action: "complete_check_in",
           trip_id: tripId,

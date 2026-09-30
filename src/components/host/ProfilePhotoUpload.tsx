@@ -36,7 +36,7 @@ export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploa
     const filePath = `${user.id}/avatar.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("profile-photos")
+      .from("rentauto-profile-photos")
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
@@ -46,7 +46,7 @@ export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploa
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from("profile-photos")
+      .from("rentauto-profile-photos")
       .getPublicUrl(filePath);
 
     // Add cache-busting query param

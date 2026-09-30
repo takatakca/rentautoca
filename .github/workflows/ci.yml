@@ -1,0 +1,68 @@
+name: Rentauto CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - "codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentauto-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, changed-file lint, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint changed TypeScript files
+        shell: bash
+        run: |
+          git fetch origin main --depth=1
+          mapfile -t FILES < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.ts' '*.tsx' | grep -E '^(src|supabase)/' || true)
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "No changed TypeScript files to lint."
+            exit 0
+          fi
+          printf 'Linting changed files:\n%s\n' "${FILES[*]}"
+          npx eslint "${FILES[@]}"
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ci-public-placeholder
+          VITE_SUPABASE_PROJECT_ID: ci-project
+          VITE_APP_URL: https://rentauto.ca
+        run: npm run build
+
+      - name: Full repository lint debt report
+        continue-on-error: true
+        run: npm run lint

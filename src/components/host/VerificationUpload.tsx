@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +8,27 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+type VerificationRow = Tables<"host_verifications">;
+
 interface VerificationUploadProps {
-  data: Record<string, any> | null;
+  data: Partial<VerificationRow> | null;
   onSaved: () => Promise<void>;
 }
 
 type DocType = "id_front" | "id_back" | "selfie";
+type VerificationUrlField = "id_front_url" | "id_back_url" | "selfie_url";
+type VerificationUpdate = Partial<
+  Pick<
+    VerificationRow,
+    "id_front_url" | "id_back_url" | "selfie_url" | "verification_status"
+  >
+>;
+
+const DOC_URL_FIELDS: Record<DocType, VerificationUrlField> = {
+  id_front: "id_front_url",
+  id_back: "id_back_url",
+  selfie: "selfie_url",
+};
 
 const DOC_LABELS: Record<DocType, string> = {
   id_front: "Government ID (Front)",
@@ -54,7 +70,7 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
     const filePath = `${user.id}/${docType}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("ids-private")
+      .from("rentauto-ids-private")
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
@@ -63,7 +79,7 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
       return;
     }
 
-    const urlField = `${docType}_url`;
+    const urlField = DOC_URL_FIELDS[docType];
 
     // Check if verification record already exists
     const { data: existing } = await supabase
@@ -72,7 +88,8 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const updateObj: Record<string, any> = { [urlField]: filePath };
+    const updateObj: VerificationUpdate = {};
+    updateObj[urlField] = filePath;
 
     // Auto-set to pending when all docs are present
     if (existing) {

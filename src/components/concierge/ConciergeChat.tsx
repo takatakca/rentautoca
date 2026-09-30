@@ -39,7 +39,10 @@ export function ConciergeChat({ threadId, seedPrompt, className, compact }: Conc
   const transport = useMemo(
     () =>
       new DefaultChatTransport<UIMessage>({
-        api: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/concierge`,
+        api: `${
+          import.meta.env.VITE_TAKATAK_SUPABASE_URL ||
+          "https://pcjfahhlozsseqqevimi.supabase.co"
+        }/functions/v1/rentauto-concierge`,
         headers: async () => {
           const { data } = await supabase.auth.getSession();
           return {
@@ -158,14 +161,19 @@ export function ConciergeChat({ threadId, seedPrompt, className, compact }: Conc
                     }
                     if (part.type?.startsWith("tool-")) {
                       const name = part.type.replace("tool-", "");
-                      const state = (part as { state?: string }).state;
+                      const toolPart = part as {
+                        state?: string;
+                        input?: unknown;
+                        output?: unknown;
+                      };
+                      const state = toolPart.state;
                       if (state === "output-available") {
                         return (
                           <ConciergeToolResult
                             key={i}
                             toolName={name}
-                            input={(part as any).input}
-                            output={(part as any).output}
+                            input={toolPart.input}
+                            output={toolPart.output}
                           />
                         );
                       }

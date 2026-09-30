@@ -50,14 +50,14 @@ export default function CarListing() {
   const [selectedExtras] = useState<string[]>([]);
   const [reserving, setReserving] = useState(false);
 
-  // Default protection plan = Silver (standard tier)
+  // Default protection plan = Silver
   const { data: defaultSilver } = useQuery({
     queryKey: ["default-silver-plan"],
     queryFn: async () => {
       const { data } = await supabase
         .from("protection_plans")
         .select("id")
-        .eq("tier", "standard")
+        .eq("tier", "silver")
         .eq("is_active", true)
         .maybeSingle();
       return data?.id ?? null;
@@ -119,47 +119,38 @@ export default function CarListing() {
     if (!quote) return;
     setReserving(true);
 
-    // Final availability overlap check before insert
-    const { data: overlap } = await supabase
-      .from("availability_blocks")
-      .select("id")
-      .eq("car_id", carId!)
-      .lt("start_at", endDate.toISOString())
-      .gt("end_at", startDate.toISOString())
-      .limit(1);
-    if (overlap && overlap.length > 0) {
-      setReserving(false);
+    const { data, error: bookingError } = await supabase.functions.invoke(
+      "rentauto-create-booking-draft",
+      {
+        body: {
+          carId: carId!,
+          startAt: startDate.toISOString(),
+          endAt: endDate.toISOString(),
+          selectedExtras,
+          protectionPlanId: selectedPlanId,
+          pickupLocation: car.location_label,
+          returnLocation: car.location_label,
+        },
+      },
+    );
+
+    setReserving(false);
+    const tripId = data && typeof data.tripId === "string" ? data.tripId : null;
+
+    if (bookingError || !tripId) {
       toast({
-        title: "Dates no longer available",
-        description: "Please pick different dates.",
+        title: "Could not start your booking",
+        description: "Please choose another date range or try again in a moment.",
         variant: "destructive",
       });
       return;
     }
 
-    const { data, error: insertErr } = await supabase
-      .from("trips")
-      .insert({
-        car_id: carId!,
-        guest_id: user.id,
-        start_at: startDate.toISOString(),
-        end_at: endDate.toISOString(),
-        status: "draft",
-        currency: quote.currency,
-        total_cents: quote.total_after_tax,
-        pickup_location: car.location_label,
-        return_location: car.location_label,
-        pricing_breakdown: quote as any,
-      })
-      .select("id")
-      .single();
-    setReserving(false);
-    if (insertErr) {
-      toast({ title: "Could not start your booking", description: "Please try again in a moment.", variant: "destructive" });
-      return;
-    }
-    toast({ title: "Reviewing your booking", description: "Almost done — confirm and pay." });
-    navigate(`/checkout/${data.id}`);
+    toast({
+      title: "Reviewing your booking",
+      description: "Your vehicle is temporarily held while you confirm and pay.",
+    });
+    navigate(`/checkout/${tripId}`);
   };
 
   const title = `${car.year} ${car.make} ${car.model}`;

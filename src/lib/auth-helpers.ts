@@ -44,30 +44,78 @@ export function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label:
  */
 export async function ensureProfile(user: User): Promise<void> {
   try {
-    const md = (user.user_metadata || {}) as Record<string, any>;
-    const fullName: string | undefined = md.full_name || md.name || md.display_name;
-    const firstName = md.first_name || (fullName ? fullName.split(" ")[0] : undefined);
-    const lastName = md.last_name || (fullName ? fullName.split(" ").slice(1).join(" ") || null : undefined);
-    const avatarUrl = md.avatar_url || md.picture || null;
+    const { error: bootstrapError } = await supabase.functions.invoke(
+      "rentauto-bootstrap-account",
+      { body: {} },
+    );
+
+    if (bootstrapError) {
+      console.warn("Rentauto account bootstrap failed", bootstrapError.message);
+      return;
+    }
+
+    const md = (user.user_metadata || {}) as Record<string, unknown>;
+    const fullName =
+      typeof md.full_name === "string"
+        ? md.full_name
+        : typeof md.name === "string"
+          ? md.name
+          : typeof md.display_name === "string"
+            ? md.display_name
+            : undefined;
+    const firstName =
+      typeof md.first_name === "string"
+        ? md.first_name
+        : fullName
+          ? fullName.split(" ")[0]
+          : undefined;
+    const lastName =
+      typeof md.last_name === "string"
+        ? md.last_name
+        : fullName
+          ? fullName.split(" ").slice(1).join(" ") || undefined
+          : undefined;
+    const avatarUrl =
+      typeof md.avatar_url === "string"
+        ? md.avatar_url
+        : typeof md.picture === "string"
+          ? md.picture
+          : undefined;
 
     const { data: existing } = await supabase
       .from("profiles")
-      .select("id, display_name, first_name, avatar_url")
+      .select("id, display_name, first_name, last_name, avatar_url")
       .eq("id", user.id)
       .maybeSingle();
 
-    const patch: Record<string, any> = {};
-    if (fullName && !existing?.display_name) patch.display_name = fullName;
-    if (firstName && !existing?.first_name) patch.first_name = firstName;
-    if (lastName !== undefined && lastName && !existing) patch.last_name = lastName;
-    if (avatarUrl && !existing?.avatar_url) patch.avatar_url = avatarUrl;
+    if (!existing) return;
 
-    if (!existing) {
-      await supabase.from("profiles").upsert({ id: user.id, ...patch });
-    } else if (Object.keys(patch).length > 0) {
-      await supabase.from("profiles").update(patch).eq("id", user.id);
+    const patch: {
+      display_name?: string;
+      first_name?: string;
+      last_name?: string;
+      avatar_url?: string;
+    } = {};
+
+    if (fullName && !existing.display_name) patch.display_name = fullName;
+    if (firstName && !existing.first_name) patch.first_name = firstName;
+    if (lastName && !existing.last_name) patch.last_name = lastName;
+    if (avatarUrl && !existing.avatar_url) patch.avatar_url = avatarUrl;
+
+    if (Object.keys(patch).length > 0) {
+      const { error } = await supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", user.id);
+
+      if (error) {
+        console.warn("Rentauto profile metadata sync failed", error.message);
+      }
     }
-  } catch (e) {
-    console.warn("ensureProfile failed", e);
+  } catch (error) {
+    console.warn(
+      "ensureProfile failed",
+      error instanceof Error ? error.message : error,
+    );
   }
 }

@@ -25,3 +25,9 @@ verify_jwt = false
 [functions.trip-transition]
 verify_jwt = false
 
+
+[functions.takatak-sync-outbox]
+verify_jwt = false
+
+[functions.create-booking-draft]
+verify_jwt = false
