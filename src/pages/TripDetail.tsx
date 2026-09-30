@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +11,7 @@ import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut } 
 import { format } from "date-fns";
 import { bookingRef } from "@/lib/dashboard-utils";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
+import { TripReviewCard } from "@/components/trips/TripReviewCard";
 
 export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -159,23 +161,32 @@ export default function TripDetail() {
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           {pricing.days != null && (
-            <Row label={`${pricing.days} day${pricing.days === 1 ? "" : "s"} × $${((pricing.daily_rate_cents || 0) / 100).toFixed(0)}`}
-                 value={`$${((pricing.base_total_cents || 0) / 100).toFixed(2)}`} />
+            <Row label={`${pricing.days} day${pricing.days === 1 ? "" : "s"} × ${((pricing.daily_rate_cents || 0) / 100).toFixed(0)}`}
+                 value={`${((pricing.base_total_cents || 0) / 100).toFixed(2)}`} />
           )}
           {pricing.protection_total_cents != null && (
-            <Row label="Protection" value={`$${(pricing.protection_total_cents / 100).toFixed(2)}`} />
+            <Row label="Protection" value={`${(pricing.protection_total_cents / 100).toFixed(2)}`} />
           )}
           {pricing.taxes_cents != null && (
-            <Row label="Taxes (est.)" value={`$${(pricing.taxes_cents / 100).toFixed(2)}`} />
+            <Row label="Taxes (est.)" value={`${(pricing.taxes_cents / 100).toFixed(2)}`} />
           )}
           <div className="border-t border-border my-2" />
           <Row
             label="Total"
-            value={`$${((trip.total_cents || pricing.total_cents || 0) / 100).toFixed(2)} ${trip.currency || "CAD"}`}
+            value={`${((trip.total_cents || pricing.total_cents || 0) / 100).toFixed(2)} ${trip.currency || "CAD"}`}
             bold
           />
         </CardContent>
       </Card>
+
+      {trip.guest_id === user?.id && car ? (
+        <TripReviewCard
+          tripId={trip.id}
+          carId={car.id}
+          reviewerId={user.id}
+          tripStatus={trip.status}
+        />
+      ) : null}
     </div>
   );
 }
