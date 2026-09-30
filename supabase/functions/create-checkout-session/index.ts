@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
     const userId = claims.claims.sub as string;
 
-    const { tripId, returnUrl } = await req.json();
+    const { tripId, returnPath, returnUrl } = await req.json();
     if (!tripId) {
       return new Response(JSON.stringify({ error: "tripId required" }), {
         status: 400,
@@ -105,13 +105,56 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const stripe = new Stripe(stripeKey);
-    const origin = req.headers.get("origin") || Deno.env.get("PUBLIC_APP_URL") || "https://rentautoca.lovable.app";
-    const successUrl = returnUrl
-      ? `${returnUrl}?payment=success&session_id={CHECKOUT_SESSION_ID}`
-      : `${origin}/trips/${trip.id}?payment=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = returnUrl
-      ? `${returnUrl}?payment=cancelled`
-      : `${origin}/checkout/${trip.id}?payment=cancelled`;
+    const publicAppUrl = Deno.env.get("PUBLIC_APP_URL") || "https://rentauto.ca";
+    const canonicalOrigin = new URL(publicAppUrl).origin;
+
+    const requestOrigin = req.headers.get("origin");
+    const allowedOrigins = new Set([
+      canonicalOrigin,
+      ...(requestOrigin ? [requestOrigin] : []),
+    ]);
+
+    function resolveReturnTarget(): string {
+      if (typeof returnPath === "string" && returnPath.startsWith("/") && !returnPath.startsWith("//")) {
+        return new URL(returnPath, canonicalOrigin).toString();
+      }
+
+      // Backward compatibility while the frontend and Edge Function may deploy separately.
+      if (typeof returnUrl === "string") {
+        try {
+          const candidate = new URL(returnUrl);
+          if (
+            (candidate.protocol === "https:" || candidate.protocol === "http:") &&
+            allowedOrigins.has(candidate.origin)
+          ) {
+            return candidate.toString();
+          }
+        } catch {
+          // Fall through to the canonical Rentauto trip route.
+        }
+      }
+
+      return new URL(`/trips/${trip.id}`, canonicalOrigin).toString();
+    }
+
+    const returnTarget = resolveReturnTarget();
+    const success = new URL(returnTarget);
+    success.searchParams.set("payment", "success");
+    success.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
+
+    const cancel = new URL(
+      returnTarget.includes(`/trips/${trip.id}`)
+        ? `/checkout/${trip.id}`
+        : returnTarget,
+      canonicalOrigin,
+    );
+    cancel.searchParams.set("payment", "cancelled");
+
+    const successUrl = success.toString().replace(
+      "%7BCHECKOUT_SESSION_ID%7D",
+      "{CHECKOUT_SESSION_ID}",
+    );
+    const cancelUrl = cancel.toString();
 
     const productName = car ? `${car.year} ${car.make} ${car.model}` : "Rentauto booking";
 
