@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 type VerificationRow = Tables<"host_verifications">;
 
 interface VerificationUploadProps {
-  data: VerificationRow | null;
+  data: Partial<VerificationRow> | null;
   onSaved: () => Promise<void>;
 }
 
