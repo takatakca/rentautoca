@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Tables } from "@/integrations/supabase/types";
 
 export interface CompletionSection {
   id: string;
@@ -13,10 +14,10 @@ export interface CompletionSection {
 }
 
 export interface HostCompletionData {
-  profile: Record<string, any> | null;
-  verification: Record<string, any> | null;
-  preferences: Record<string, any> | null;
-  stripeAccount: Record<string, any> | null;
+  profile: Tables<"profiles"> | null;
+  verification: Tables<"host_verifications"> | null;
+  preferences: Tables<"host_preferences"> | null;
+  stripeAccount: Tables<"stripe_accounts"> | null;
 }
 
 export interface HostCompletion {
