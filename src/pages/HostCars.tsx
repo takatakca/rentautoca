@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ export default function HostCars() {
   const [cars, setCars] = useState<HostCar[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const { data: carRows } = await supabase
@@ -39,9 +39,9 @@ export default function HostCars() {
     }
     setCars((carRows || []).map((c) => ({ ...c, photo_url: photoMap[c.id] ?? null })));
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { void load(); }, [load]);
 
   const toggle = async (id: string, status: string) => {
     const next = status === "active" ? "paused" : "active";
