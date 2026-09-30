@@ -25,9 +25,10 @@ jobs:
     timeout-minutes: 20
 
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+      # Browser-safe shared TAKATAK Supabase project. Server secrets remain in Supabase.
+      VITE_TAKATAK_SUPABASE_URL: https://pcjfahhlozsseqqevimi.supabase.co
+      VITE_TAKATAK_SUPABASE_PUBLISHABLE_KEY: sb_publishable_DKcKo_UMmp1cix9vVTr0fA_TFW4ryk0
+      VITE_TAKATAK_SUPABASE_PROJECT_ID: pcjfahhlozsseqqevimi
       VITE_APP_URL: https://rentauto.ca
 
       MOCHAHOST_HOST: ${{ secrets.MOCHAHOST_HOST }}
@@ -52,18 +53,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -z "${VITE_SUPABASE_URL:-}" ]; then
-            echo "::error::Missing GitHub secret VITE_SUPABASE_URL"
+          if [ -z "${VITE_TAKATAK_SUPABASE_URL:-}" ]; then
+            echo "::error::Missing VITE_TAKATAK_SUPABASE_URL"
             exit 1
           fi
 
-          if [ -z "${VITE_SUPABASE_PUBLISHABLE_KEY:-}" ]; then
-            echo "::error::Missing GitHub secret VITE_SUPABASE_PUBLISHABLE_KEY"
+          if [ -z "${VITE_TAKATAK_SUPABASE_PUBLISHABLE_KEY:-}" ]; then
+            echo "::error::Missing VITE_TAKATAK_SUPABASE_PUBLISHABLE_KEY"
             exit 1
           fi
 
-          if [ -z "${VITE_SUPABASE_PROJECT_ID:-}" ]; then
-            echo "::error::Missing GitHub secret VITE_SUPABASE_PROJECT_ID"
+          if [ -z "${VITE_TAKATAK_SUPABASE_PROJECT_ID:-}" ]; then
+            echo "::error::Missing VITE_TAKATAK_SUPABASE_PROJECT_ID"
             exit 1
           fi
 
