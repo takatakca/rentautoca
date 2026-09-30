@@ -34,7 +34,7 @@ export function useStripeConnect(): UseStripeConnectReturn {
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("stripe-status", {
+      const { data, error: fnError } = await supabase.functions.invoke("rentauto-stripe-status", {
         method: "GET",
       });
 
@@ -58,12 +58,10 @@ export function useStripeConnect(): UseStripeConnectReturn {
     setError(null);
 
     try {
-      const returnUrl = `${window.location.origin}/host`;
-      const refreshUrl = `${window.location.origin}/host`;
-
-      const { data, error: fnError } = await supabase.functions.invoke("stripe-onboard", {
-        body: { return_url: returnUrl, refresh_url: refreshUrl },
-      });
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "rentauto-stripe-onboard",
+        { body: {} },
+      );
 
       if (fnError) throw new Error(fnError.message);
       if (data?.onboarding_url) {
@@ -83,7 +81,7 @@ export function useStripeConnect(): UseStripeConnectReturn {
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("stripe-dashboard", {
+      const { data, error: fnError } = await supabase.functions.invoke("rentauto-stripe-dashboard", {
         method: "GET",
       });
 
