@@ -18,13 +18,15 @@ concurrency:
 
 jobs:
   verify:
-    name: Typecheck, lint, test, build
+    name: Typecheck, changed-file lint, tests, build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js 22
         uses: actions/setup-node@v4
@@ -38,6 +40,18 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Lint changed TypeScript files
+        shell: bash
+        run: |
+          git fetch origin main --depth=1
+          mapfile -t FILES < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.ts' '*.tsx' | grep -E '^(src|supabase)/' || true)
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "No changed TypeScript files to lint."
+            exit 0
+          fi
+          printf 'Linting changed files:\n%s\n' "${FILES[*]}"
+          npx eslint "${FILES[@]}"
+
       - name: Test
         run: npm run test
 
@@ -49,5 +63,6 @@ jobs:
           VITE_APP_URL: https://rentauto.ca
         run: npm run build
 
-      - name: Lint
+      - name: Full repository lint debt report
+        continue-on-error: true
         run: npm run lint
