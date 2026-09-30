@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ export default function HostCars() {
   const [cars, setCars] = useState<HostCar[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const { data: carRows } = await supabase
@@ -39,15 +39,32 @@ export default function HostCars() {
     }
     setCars((carRows || []).map((c) => ({ ...c, photo_url: photoMap[c.id] ?? null })));
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { void load(); }, [load]);
 
   const toggle = async (id: string, status: string) => {
     const next = status === "active" ? "paused" : "active";
     const { error } = await supabase.from("cars").update({ status: next }).eq("id", id);
-    if (error) toast({ title: "Could not update", description: error.message, variant: "destructive" });
-    else { toast({ title: `Vehicle ${next}` }); load(); }
+    if (error) {
+      const readinessMessages: Record<string, string> = {
+        host_role_required: "Host approval is required before publishing.",
+        host_application_not_approved: "Your host application must be approved before publishing.",
+        host_identity_not_verified: "Complete identity verification before publishing.",
+        host_payouts_not_ready: "Complete Stripe payout setup before publishing.",
+        vehicle_core_details_incomplete: "Complete the vehicle details, price, and location before publishing.",
+        vehicle_documents_not_verified: "Verified registration and insurance documents are required before publishing.",
+        vehicle_photo_required: "Add at least one vehicle photo before publishing.",
+        vehicle_cancellation_policy_required: "Choose a cancellation policy before publishing.",
+      };
+      const description =
+        Object.entries(readinessMessages).find(([code]) => error.message.includes(code))?.[1] ??
+        "This vehicle is not ready to publish yet. Review the listing and host setup requirements.";
+      toast({ title: "Cannot publish vehicle", description, variant: "destructive" });
+    } else {
+      toast({ title: `Vehicle ${next}` });
+      load();
+    }
   };
 
   return (
