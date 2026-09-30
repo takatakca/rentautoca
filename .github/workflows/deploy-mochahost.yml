@@ -185,13 +185,16 @@ jobs:
 
           echo "Testing SSH connection to MochaHost..."
 
-          ssh \
-            -i ~/.ssh/rentauto_deploy_key \
-            -p "$MOCHAHOST_PORT" \
-            -o BatchMode=yes \
-            -o ConnectTimeout=15 \
-            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
-            "echo 'SSH connection successful'; whoami"
+          printf '%s\n' \
+            "echo 'SSH connection successful'" \
+            "whoami" \
+            "exit" \
+            | ssh -tt \
+                -i ~/.ssh/rentauto_deploy_key \
+                -p "$MOCHAHOST_PORT" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=15 \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST"
 
       - name: Upload release archive
         shell: bash
@@ -200,12 +203,14 @@ jobs:
 
           echo "Preparing remote deployment folders..."
 
-          ssh \
-            -i ~/.ssh/rentauto_deploy_key \
-            -p "$MOCHAHOST_PORT" \
-            -o BatchMode=yes \
-            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
-            "mkdir -p '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'"
+          printf '%s\n' \
+            "mkdir -p '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'" \
+            "exit" \
+            | ssh -tt \
+                -i ~/.ssh/rentauto_deploy_key \
+                -p "$MOCHAHOST_PORT" \
+                -o BatchMode=yes \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST"
 
           echo "Uploading Rentauto release..."
 
@@ -223,17 +228,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          ssh \
+          ssh -tt \
             -i ~/.ssh/rentauto_deploy_key \
             -p "$MOCHAHOST_PORT" \
             -o BatchMode=yes \
-            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
-            "bash -s -- '$MOCHAHOST_APP_PATH' '$GITHUB_SHA' '$PRODUCTION_URL'" <<'REMOTE'
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST" <<REMOTE
           set -euo pipefail
 
-          APP_PATH="$1"
-          SHA="$2"
-          PRODUCTION_URL="$3"
+          APP_PATH='$MOCHAHOST_APP_PATH'
+          SHA='$GITHUB_SHA'
+          PRODUCTION_URL='$PRODUCTION_URL'
 
           cd "$APP_PATH"
 
