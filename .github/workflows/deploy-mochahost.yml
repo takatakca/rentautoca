@@ -1,3 +1,42 @@
+name: Deploy rentauto.ca to MochaHost
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "supabase/**"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rentauto-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+
+      VITE_APP_URL: https://rentauto.ca
+
+      MOCHAHOST_HOST: ${{ secrets.MOCHAHOST_HOST }}
+      MOCHAHOST_USER: ${{ secrets.MOCHAHOST_USER }}
+      MOCHAHOST_PORT: ${{ secrets.MOCHAHOST_PORT }}
+
+      MOCHAHOST_APP_PATH: ${{ vars.MOCHAHOST_APP_PATH }}
+
+      PRODUCTION_URL: https://rentauto.ca
 
     steps:
       - name: Checkout
@@ -47,9 +86,16 @@
         shell: bash
         run: |
           set -euo pipefail
-          ssh -p "$MOCHAHOST_PORT" "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -p "$MOCHAHOST_PORT" \
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
             "mkdir -p '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'"
-          scp -P "$MOCHAHOST_PORT" \
+
+          scp \
+            -i ~/.ssh/id_ed25519 \
+            -P "$MOCHAHOST_PORT" \
             ".deploy/rentauto-${GITHUB_SHA}.tar.gz" \
             "$MOCHAHOST_USER@$MOCHAHOST_HOST:$MOCHAHOST_APP_PATH/incoming/"
 
@@ -57,23 +103,37 @@
         shell: bash
         run: |
           set -euo pipefail
-          ssh -p "$MOCHAHOST_PORT" "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -p "$MOCHAHOST_PORT" \
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
             "bash -s -- '$MOCHAHOST_APP_PATH' '$GITHUB_SHA' '$PRODUCTION_URL'" <<'REMOTE'
+
           set -euo pipefail
+
           APP_PATH="$1"
           SHA="$2"
           PRODUCTION_URL="$3"
+
           cd "$APP_PATH"
 
           ARCHIVE="incoming/rentauto-${SHA}.tar.gz"
           RELEASE_DIR="releases/${SHA}"
+
           rm -rf "$RELEASE_DIR"
           mkdir -p "$RELEASE_DIR"
+
           tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
+
           test -f "$RELEASE_DIR/dist/index.html"
 
           OLD=""
-          if [ -f CURRENT ]; then OLD="$(tr -d '\r\n' < CURRENT)"; fi
+
+          if [ -f CURRENT ]; then
+            OLD="$(tr -d '\r\n' < CURRENT)"
+          fi
+
           if [ -n "$OLD" ]; then
             printf '%s\n' "$OLD" > PREVIOUS.new
             mv PREVIOUS.new PREVIOUS
@@ -81,30 +141,59 @@
 
           printf '%s\n' "$SHA" > CURRENT.new
           mv CURRENT.new CURRENT
+
           mkdir -p tmp
           touch tmp/restart.txt
 
           ok=0
+
           for attempt in 1 2 3 4 5 6; do
-            if curl --fail --silent --show-error --max-time 15 "$PRODUCTION_URL/healthz" >/dev/null; then
+
+            if curl \
+              --fail \
+              --silent \
+              --show-error \
+              --max-time 15 \
+              "$PRODUCTION_URL/healthz" >/dev/null; then
+
               ok=1
               break
+
             fi
+
             sleep 3
           done
 
           if [ "$ok" -ne 1 ]; then
+
             echo "Health check failed for $SHA; rolling back."
+
             if [ -n "$OLD" ] && [ -d "releases/$OLD" ]; then
+
               printf '%s\n' "$OLD" > CURRENT.new
               mv CURRENT.new CURRENT
+
               touch tmp/restart.txt
+
               sleep 3
-              curl --fail --silent --show-error --max-time 15 "$PRODUCTION_URL/healthz" >/dev/null || true
+
+              curl \
+                --fail \
+                --silent \
+                --show-error \
+                --max-time 15 \
+                "$PRODUCTION_URL/healthz" >/dev/null || true
+
             fi
+
             exit 1
+
           fi
 
           rm -f "$ARCHIVE"
-          ls -1dt releases/* 2>/dev/null | tail -n +6 | xargs -r rm -rf
+
+          ls -1dt releases/* 2>/dev/null |
+            tail -n +6 |
+            xargs -r rm -rf
+
           REMOTE
