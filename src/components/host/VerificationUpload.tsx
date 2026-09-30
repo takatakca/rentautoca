@@ -54,7 +54,7 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
     const filePath = `${user.id}/${docType}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("ids-private")
+      .from("rentauto-ids-private")
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
