@@ -74,6 +74,7 @@ export function useHostCompletion(): HostCompletion {
   const hasStripe = !!(s?.charges_enabled && s?.payouts_enabled);
   const hasPrefs = !!pref;
   const hasEmergency = !!(pref?.emergency_contact_name && pref?.emergency_contact_phone);
+  const requiredReady = hasBasicInfo && hasLocation && isVerified && hasStripe;
 
   const sections: CompletionSection[] = [
     {
@@ -139,8 +140,8 @@ export function useHostCompletion(): HostCompletion {
   return {
     sections,
     percentage,
-    canPublish: percentage >= 50,
-    canAcceptBookings: percentage >= 80,
+    canPublish: requiredReady,
+    canAcceptBookings: requiredReady,
     data,
     isLoading,
     refresh: fetchAll,
