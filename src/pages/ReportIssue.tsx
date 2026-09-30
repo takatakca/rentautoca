@@ -48,7 +48,7 @@ export default function ReportIssue() {
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const path = `${tripId}/incidents/${Date.now()}-${i}.${f.name.split(".").pop() || "jpg"}`;
-        const { error } = await supabase.storage.from("trip-photos").upload(path, f);
+        const { error } = await supabase.storage.from("rentauto-trip-photos").upload(path, f);
         if (!error) urls.push(path);
       }
       const { error } = await supabase.from("trip_incidents").insert({
