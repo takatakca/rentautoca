@@ -71,7 +71,7 @@ export default function CheckIn() {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const path = `${tripId}/check-in/${kind}-${Date.now()}-${i}.${f.name.split(".").pop() || "jpg"}`;
-      const { error } = await supabase.storage.from("trip-photos").upload(path, f, { upsert: false });
+      const { error } = await supabase.storage.from("rentauto-trip-photos").upload(path, f, { upsert: false });
       if (!error) urls.push(path);
     }
     return urls;
@@ -88,9 +88,9 @@ export default function CheckIn() {
       const intUrls = await uploadFiles(interiorFiles, "interior");
       // start_check_in (confirmed -> check_in_pending) if needed
       if (trip.status === "confirmed") {
-        await supabase.functions.invoke("trip-transition", { body: { action: "start_check_in", trip_id: tripId } });
+        await supabase.functions.invoke("rentauto-trip-transition", { body: { action: "start_check_in", trip_id: tripId } });
       }
-      const { error } = await supabase.functions.invoke("trip-transition", {
+      const { error } = await supabase.functions.invoke("rentauto-trip-transition", {
         body: {
           action: "complete_check_in",
           trip_id: tripId,
