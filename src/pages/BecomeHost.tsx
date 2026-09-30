@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,11 +8,37 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Car, DollarSign, Shield, Loader2, CheckCircle, Clock } from "lucide-react";
 
 export default function BecomeHost() {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [checkingApplication, setCheckingApplication] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setCheckingApplication(false);
+      return;
+    }
+
+    let active = true;
+    void supabase
+      .from("host_applications")
+      .select("status")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return;
+        setApplicationStatus(data?.status ?? null);
+        setCheckingApplication(false);
+        if (data?.status === "approved") void refreshRoles();
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user, refreshRoles]);
 
   if (!user) {
     navigate("/login?redirect=/become-host");
@@ -42,21 +68,50 @@ export default function BecomeHost() {
     );
   }
 
-  const applied = Boolean((user.user_metadata as any)?.host_intent);
+  const applied = applicationStatus === "pending" || applicationStatus === "approved";
 
   const handleApply = async () => {
     setError(null);
     setLoading(true);
-    // Record host application intent only. Role escalation to "host" is
-    // performed server-side by an admin after review (RLS blocks client writes
-    // to user_roles).
-    const { error: metaErr } = await supabase.auth.updateUser({
-      data: { host_intent: true, host_applied_at: new Date().toISOString() },
-    });
+
+    const { data, error: applicationError } = await supabase.functions.invoke(
+      "rentauto-host-application",
+      { body: {} },
+    );
+
     setLoading(false);
-    if (metaErr) return setError(metaErr.message);
+
+    if (applicationError) {
+      setError("We could not submit your host application. Please try again.");
+      return;
+    }
+
+    const nextStatus =
+      data &&
+      typeof data === "object" &&
+      "application" in data &&
+      data.application &&
+      typeof data.application === "object" &&
+      "status" in data.application &&
+      typeof data.application.status === "string"
+        ? data.application.status
+        : "pending";
+
+    setApplicationStatus(nextStatus);
     setSubmitted(true);
+
+    if (nextStatus === "approved") {
+      await refreshRoles();
+    }
   };
+
+  if (checkingApplication) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (submitted || applied) {
     return (
@@ -68,9 +123,9 @@ export default function BecomeHost() {
             </div>
             <CardTitle className="text-2xl">Application received</CardTitle>
             <CardDescription>
-              Your host application must be reviewed before you can publish vehicles.
-              We'll email you when your account is approved. In the meantime, you can
-              keep browsing and booking cars as a guest.
+              Your host application is queued for review. Approval unlocks the host
+              setup area; identity verification and payout setup are still required
+              before a vehicle can be published.
             </CardDescription>
           </CardHeader>
           <CardFooter className="justify-center">
@@ -86,7 +141,7 @@ export default function BecomeHost() {
        <div className="text-center mb-8">
          <h1 className="text-4xl font-bold mb-4">Become a Rentauto Host</h1>
          <p className="text-lg text-muted-foreground">
-           Turn your car into a money-making machine. List your vehicle and earn when you're not using it.
+           Apply to list your vehicle, manage availability, and receive bookings through Rentauto.
          </p>
        </div>
  
@@ -101,7 +156,7 @@ export default function BecomeHost() {
            </CardHeader>
            <CardContent>
              <p className="text-muted-foreground text-sm">
-               Average hosts earn $500+ per month. You set your own prices and availability.
+               Set your own availability and pricing, then track confirmed rental earnings from your host dashboard.
              </p>
            </CardContent>
          </Card>
@@ -114,7 +169,7 @@ export default function BecomeHost() {
            </CardHeader>
            <CardContent>
              <p className="text-muted-foreground text-sm">
-               Every trip includes liability insurance and damage protection for your vehicle.
+               Protection details are shown on each confirmed booking so hosts and guests can review the applicable terms.
              </p>
            </CardContent>
          </Card>
