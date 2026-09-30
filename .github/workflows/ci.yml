@@ -38,9 +38,6 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Lint
-        run: npm run lint
-
       - name: Test
         run: npm run test
 
@@ -51,3 +48,6 @@ jobs:
           VITE_SUPABASE_PROJECT_ID: ci-project
           VITE_APP_URL: https://rentauto.ca
         run: npm run build
+
+      - name: Lint
+        run: npm run lint
