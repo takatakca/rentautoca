@@ -1,0 +1,110 @@
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies on GitHub runner
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+
+      - name: Build production frontend
+        run: npm run build
+
+      - name: Verify production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          echo "$GITHUB_SHA" > REVISION
+
+      - name: Create one release archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .deploy/release
+          cp -a dist .deploy/release/dist
+          cp REVISION .deploy/release/REVISION
+          tar -C .deploy/release -czf ".deploy/rentauto-${GITHUB_SHA}.tar.gz" .
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          MOCHAHOST_SSH_KEY: ${{ secrets.MOCHAHOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$MOCHAHOST_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$MOCHAHOST_PORT" -H "$MOCHAHOST_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$MOCHAHOST_PORT" "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+            "mkdir -p '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'"
+          scp -P "$MOCHAHOST_PORT" \
+            ".deploy/rentauto-${GITHUB_SHA}.tar.gz" \
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST:$MOCHAHOST_APP_PATH/incoming/"
+
+      - name: Activate, restart, health-check, rollback on failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$MOCHAHOST_PORT" "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+            "bash -s -- '$MOCHAHOST_APP_PATH' '$GITHUB_SHA' '$PRODUCTION_URL'" <<'REMOTE'
+          set -euo pipefail
+          APP_PATH="$1"
+          SHA="$2"
+          PRODUCTION_URL="$3"
+          cd "$APP_PATH"
+
+          ARCHIVE="incoming/rentauto-${SHA}.tar.gz"
+          RELEASE_DIR="releases/${SHA}"
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+          tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
+          test -f "$RELEASE_DIR/dist/index.html"
+
+          OLD=""
+          if [ -f CURRENT ]; then OLD="$(tr -d '\r\n' < CURRENT)"; fi
+          if [ -n "$OLD" ]; then
+            printf '%s\n' "$OLD" > PREVIOUS.new
+            mv PREVIOUS.new PREVIOUS
+          fi
+
+          printf '%s\n' "$SHA" > CURRENT.new
+          mv CURRENT.new CURRENT
+          mkdir -p tmp
+          touch tmp/restart.txt
+
+          ok=0
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 15 "$PRODUCTION_URL/healthz" >/dev/null; then
+              ok=1
+              break
+            fi
+            sleep 3
+          done
+
+          if [ "$ok" -ne 1 ]; then
+            echo "Health check failed for $SHA; rolling back."
+            if [ -n "$OLD" ] && [ -d "releases/$OLD" ]; then
+              printf '%s\n' "$OLD" > CURRENT.new
+              mv CURRENT.new CURRENT
+              touch tmp/restart.txt
+              sleep 3
+              curl --fail --silent --show-error --max-time 15 "$PRODUCTION_URL/healthz" >/dev/null || true
+            fi
+            exit 1
+          fi
+
+          rm -f "$ARCHIVE"
+          ls -1dt releases/* 2>/dev/null | tail -n +6 | xargs -r rm -rf
+          REMOTE
