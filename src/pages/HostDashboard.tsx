@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { SafeImage } from "@/components/ui/safe-image";
-import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu, MessageCircle, type LucideIcon } from "lucide-react";
+import { Car, Calendar, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu, MessageCircle, type LucideIcon } from "lucide-react";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BookingRequestsCard } from "@/components/host/BookingRequestsCard";
 import { StripeStatusCard } from "@/components/host/StripeStatusCard";
+import { HostEarningsCard } from "@/components/host/HostEarningsCard";
 import { useHostCompletion } from "@/hooks/use-host-completion";
 import { format } from "date-fns";
 
@@ -30,7 +31,6 @@ export default function HostDashboard() {
   const { user } = useAuth();
   const [cars, setCars] = useState<HostCar[]>([]);
   const [bookings, setBookings] = useState<HostBooking[]>([]);
-  const [earnings, setEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
   const [fleetHealth, setFleetHealth] = useState({ withoutPhotos: 0, withoutDevices: 0, paused: 0 });
 
@@ -73,9 +73,6 @@ export default function HostDashboard() {
         (carRows || []).forEach((c) => { carLabels[c.id] = `${c.year} ${c.make} ${c.model}`; });
         const list = (tripRows || []).map((t) => ({ ...t, car_label: carLabels[t.car_id] || "Vehicle" }));
         setBookings(list);
-        const earned = list.filter((t) => ["confirmed", "completed"].includes(t.status))
-          .reduce((s, t) => s + (t.total_cents || 0), 0);
-        setEarnings(earned);
       }
       setLoading(false);
     })();
@@ -115,12 +112,12 @@ export default function HostDashboard() {
         </Card>
       )}
 
-      <div className="grid sm:grid-cols-3 gap-6">
-        <StatCard icon={DollarSign} label="Total earnings" value={`$${(earnings / 100).toFixed(2)} CAD`} sub="Confirmed + completed" />
+      <div className="grid sm:grid-cols-2 gap-6">
         <StatCard icon={Car} label="Active listings" value={String(activeCars)} sub={`${cars.length} total`} />
-        <StatCard icon={Calendar} label="Upcoming bookings" value={String(upcoming.length)} sub="Next 90 days" />
+        <StatCard icon={Calendar} label="Upcoming bookings" value={String(upcoming.length)} sub="Upcoming active bookings" />
       </div>
 
+      <HostEarningsCard />
       <StripeStatusCard />
       <BookingRequestsCard />
 
