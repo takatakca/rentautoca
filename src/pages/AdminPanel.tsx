@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu, ShieldCheck, Scale, WalletCards, LifeBuoy, type LucideIcon } from "lucide-react";
+import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu, ShieldCheck, Scale, WalletCards, LifeBuoy, RotateCcw, type LucideIcon } from "lucide-react";
 
 type ActiveTrackingSession = {
   id: string;
@@ -99,6 +99,9 @@ export default function AdminPanel() {
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/payouts"><WalletCards className="h-4 w-4" />Payouts</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/cancellations"><RotateCcw className="h-4 w-4" />Cancellations</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/support"><LifeBuoy className="h-4 w-4" />Support</Link>

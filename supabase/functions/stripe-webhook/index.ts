@@ -433,6 +433,27 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "refund.updated":
+      case "refund.failed": {
+        const refund = event.data.object as Stripe.Refund;
+        const { error: cancellationSyncError } = await rentauto.rpc(
+          "sync_trip_cancellation_refund",
+          {
+            p_stripe_refund_id: refund.id,
+            p_refund_status: String(refund.status ?? "pending"),
+            p_failure_reason:
+              typeof refund.failure_reason === "string"
+                ? refund.failure_reason
+                : null,
+          },
+        );
+
+        if (cancellationSyncError) {
+          throw new Error("cancellation_refund_sync_failed");
+        }
+        break;
+      }
+
       case "charge.dispute.created":
       case "charge.dispute.updated":
       case "charge.dispute.closed": {

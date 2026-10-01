@@ -47,28 +47,41 @@ Supabase Edge Runtime (Deno). JWT verification per function is configured in
   - `account.updated` → updates `stripe_accounts.charges_enabled / payouts_enabled`.
   - `account.application.deauthorized` → clears row.
   - `checkout.session.completed` → trip `confirmed`, inserts `availability_blocks`.
-  - `checkout.session.expired` / `async_payment_failed` → trip → `draft`.
-  - `payment_intent.succeeded|failed`, `charge.dispute.created` → logged.
+  - `checkout.session.expired` / `async_payment_failed` → atomic checkout failure; trip `cancelled`, payment `failed`, hold released.
+  - `charge.refunded` → refund totals/payment projection synchronized.
+  - `refund.updated|failed` → cancellation refund state synchronized.
+  - `charge.dispute.created|updated|closed` → dispute + settlement hold/reversal state synchronized.
+  - `payment_intent.succeeded|failed` → booking state remains authoritative from Checkout session events.
 - **Idempotency:** `stripe_webhook_events` table deduplicates by `stripe_event_id`.
 
 ---
 
 ## `trip-transition`
 
-- **Purpose:** Drive the trip state machine (check-in, check-out, cancel).
+- **Purpose:** Drive the physical trip lifecycle only.
 - **Auth:** Bearer JWT required.
-- **Input:** `{ tripId, action: "check_in"|"check_out"|"cancel",
-  payload: { photos?, odometer?, fuel_level?, notes? } }`.
-- **Output:** `{ trip, event }`.
-- **Side effects:**
-  - `check_in` → status `active`, opens `trip_tracking_sessions`,
-    inserts `trip_events.type = "check_in"`.
-  - `check_out` → status `completed`, closes tracking session,
-    inserts `trip_events.type = "check_out"`.
-  - `cancel` → status `cancelled`, removes availability block, triggers
-    refund per policy (handled async by Stripe webhook).
-- **Errors:** `403` not guest/host, `409` invalid transition.
-- **Security:** Role-gated server-side; client cannot bypass status order.
+- **Actions:** `start_check_in`, `complete_check_in`,
+  `start_check_out`, `complete_check_out`.
+- **Authority:** PostgreSQL validates the participant, driver verification,
+  mandatory handoff evidence, odometer/fuel data, and trip status order.
+- **Cancellation is not handled here.** Use `rentauto-cancel-trip` so policy
+  evaluation, Stripe refund idempotency, settlement holds and audit records
+  remain atomic.
+
+---
+
+## `rentauto-cancel-trip`
+
+- **Purpose:** Preview and execute pre-trip cancellation/refund workflows.
+- **Auth:** Bearer JWT required.
+- **Participant actions:** `preview`, `cancel`.
+- **Admin actions:** `list`, `resolve`, `retry`.
+- **Behavior:** Uses the immutable policy snapshot saved on the booking.
+  Explicit covered rules can auto-refund; undefined cases enter
+  `manual_review`. Paid refunds use Stripe idempotency keys stored in
+  `trip_cancellations`.
+- **Safety:** The vehicle remains reserved until a required refund is safely
+  confirmed. Active/completed/disputed trips cannot use normal cancellation.
 
 ---
 
@@ -76,13 +89,12 @@ Supabase Edge Runtime (Deno). JWT verification per function is configured in
 
 - **Purpose:** Receive GPS pings from registered devices.
 - **Auth:** Public (`verify_jwt = false`), but requires
-  `x-tracking-secret: <TRACKING_PROVIDER_SECRET>` header.
+  `x-tracking-secret: <RENTAUTO_TRACKING_PROVIDER_SECRET>` header.
 - **Input:** `{ device_id, lat, lng, speed_kmh?, heading?, recorded_at }`.
 - **Output:** `200 { stored: true|false }`.
 - **Behavior:** Looks up `vehicle_tracking_devices`, finds the **active**
   `trip_tracking_sessions` row for that car. If none active → drops the ping.
-  If active → inserts a `trip_tracking_pings` row and updates last-seen on
-  the session for Realtime subscribers.
+  If active → inserts a `vehicle_location_events` row and updates device last-seen.
 - **Security:** Shared secret + active-session gate enforce that location is
   only stored while a trip is in progress (privacy by design).
 

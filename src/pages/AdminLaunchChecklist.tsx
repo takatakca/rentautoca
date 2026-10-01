@@ -30,7 +30,7 @@ const GROUPS: Group[] = [
       { id: "vite-app-url", label: "VITE_APP_URL set to deployed domain" },
       { id: "public-app-url", label: "PUBLIC_APP_URL secret set" },
       { id: "supabase-auth-urls", label: "Supabase Auth Site URL + redirect URLs include deployed domain" },
-      { id: "tracking-secret", label: "TRACKING_PROVIDER_SECRET set" },
+      { id: "tracking-secret", label: "RENTAUTO_TRACKING_PROVIDER_SECRET set" },
     ],
   },
   {
@@ -39,9 +39,9 @@ const GROUPS: Group[] = [
     items: [
       { id: "stripe-secret", label: "STRIPE_SECRET_KEY (live) set" },
       { id: "stripe-webhook-secret", label: "STRIPE_WEBHOOK_SECRET matches live endpoint" },
-      { id: "stripe-webhook-events", label: "Webhook subscribed to checkout/account/dispute events" },
+      { id: "stripe-webhook-events", label: "Webhook subscribed to checkout/account/refund/dispute events" },
       { id: "stripe-test-success", label: "Test card 4242 booking → trip confirmed" },
-      { id: "stripe-test-decline", label: "Test card 0002 booking → trip back to draft" },
+      { id: "stripe-test-decline", label: "Declined/failed checkout → trip cancelled/failed and hold released" },
       { id: "stripe-live-1cad", label: "Live $1 booking succeeded and was refunded" },
     ],
   },
@@ -100,9 +100,10 @@ const GROUPS: Group[] = [
     id: "failures",
     title: "Failure paths",
     items: [
-      { id: "cancel-flex", label: "Cancellation under Flexible policy: full refund" },
-      { id: "cancel-strict", label: "Cancellation within 24h: partial/no refund per policy" },
-      { id: "host-cancel", label: "Host cancellation: guest full refund + 20% credit" },
+      { id: "cancel-auto", label: "Guest cancellation inside saved auto-refund rule → Stripe refund succeeds" },
+      { id: "cancel-review", label: "Guest cancellation outside explicit rule → manual review; booking stays reserved" },
+      { id: "host-cancel", label: "Host cancellation of paid booking → full Stripe refund" },
+      { id: "refund-failure", label: "Failed/pending refund remains blocked and visible in admin cancellation queue" },
       { id: "incident", label: "Incident report creates trip_incidents row; admin sees it" },
       { id: "dispute", label: "Stripe dispute event logs to stripe_webhook_events" },
     ],
@@ -127,7 +128,9 @@ function loadState(): State {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    return {};
+  }
   return {};
 }
 
@@ -137,7 +140,9 @@ export default function AdminLaunchChecklist() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {}
+    } catch {
+      return;
+    }
   }, [state]);
 
   const allItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
