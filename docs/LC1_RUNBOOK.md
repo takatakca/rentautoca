@@ -44,7 +44,7 @@ Track progress live at **`/admin/launch-checklist`**.
 - [ ] Book the host's car with test card `4242 4242 4242 4242`
 - [ ] Trip flips `pending_payment → confirmed`
 - [ ] `availability_blocks` row exists for the date range
-- [ ] Repeat with decline card `4000 0000 0000 0002` → trip → `draft`
+- [ ] Repeat with decline card `4000 0000 0000 0002` → trip `cancelled`, payment `failed`, hold released
 - [ ] Repeat with 3DS card `4000 0025 0000 3155` → trip → `confirmed`
 
 ## 4. Live $1 booking (30 min)
@@ -65,7 +65,7 @@ Track progress live at **`/admin/launch-checklist`**.
 
 ## 6. Tracking (during trip)
 
-- [ ] Provider posts to `tracking-ingest` with shared secret
+- [ ] Provider posts to `rentauto-tracking-ingest` with `RENTAUTO_TRACKING_PROVIDER_SECRET`
 - [ ] `LiveLocationCard` on `TripDetail` updates in realtime
 - [ ] Drive ≥ 5 km → verify multiple pings stored
 - [ ] Stop the device temporarily → no pings stored; no errors
@@ -88,9 +88,10 @@ Track progress live at **`/admin/launch-checklist`**.
 
 ## 9. Failure paths (1 hour)
 
-- [ ] Cancel pre-pickup (Flexible policy) → full refund
-- [ ] Cancel within 24h (Standard policy) → 50% refund
-- [ ] Host cancels → guest refund + 20% credit
+- [ ] Guest cancels inside the saved automatic rule → exact Stripe refund shown in preview
+- [ ] Guest cancels outside an explicit saved rule → manual review; booking remains reserved
+- [ ] Host cancels a paid pre-trip booking → full Stripe refund
+- [ ] Pending/failed refund appears in `/admin/cancellations` and does not release availability
 - [ ] Incident report (`/trips/:id/report-issue`) → row in `trip_incidents`
 - [ ] Admin sees incident in `/admin`
 
