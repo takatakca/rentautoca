@@ -5,6 +5,7 @@ export interface CarListing {
   id: string;
   host_id: string;
   status: string;
+  instant_book: boolean;
   title: string;
   make: string;
   model: string;
