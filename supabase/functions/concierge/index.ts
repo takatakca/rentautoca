@@ -30,7 +30,7 @@ const KNOWLEDGE: Record<string, string> = {
   gps_privacy:
     "Vehicles may carry a GPS device, disclosed on the listing. Location is only recorded while a trip is active: pings are dropped before check-in and after check-out. Hosts see location for their own active rentals only, and guests can see the same live map from their trip page.",
   cancellation:
-    "Each listing carries a cancellation policy shown before payment and snapshotted onto the booking. Free-cancellation windows are measured from the trip start time. After the window closes a partial charge applies, and no-shows are non-refundable.",
+    "Each listing carries a cancellation policy shown before payment and snapshotted onto the booking. Rentauto uses that saved policy to preview any automatic refund before cancellation. If the saved rule does not explicitly cover the timing or payment state, the request goes to manual review instead of guessing a fee or refund amount.",
   host_ratings:
     "Host ratings average guest reviews across cleanliness, maintenance, communication, convenience and listing accuracy. All Star hosts maintain high ratings, fast responses and very few cancellations.",
   checkout:
