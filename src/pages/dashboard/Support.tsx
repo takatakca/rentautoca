@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { LifeBuoy, Send } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ const TICKET_TONE: Record<string, Tone> = {
 export default function DashboardSupport() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<Tables<"support_tickets">[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ subject: "", category: "", message: "" });
