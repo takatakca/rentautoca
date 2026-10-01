@@ -90,9 +90,9 @@ export default function Checkout() {
         { data: blocks },
         driverResult,
       ] = await Promise.all([
-        supabase.from("cars").select("id, make, model, year, title, location_label, host_id").eq("id", t.car_id).maybeSingle(),
+        supabase.from("cars_accessible").select("id, make, model, year, title, location_label, host_id").eq("id", t.car_id).maybeSingle(),
         supabase.from("car_photos").select("url").eq("car_id", t.car_id).order("sort_order").limit(1).maybeSingle(),
-        supabase.from("availability_blocks").select("id").eq("car_id", t.car_id).lt("start_at", t.end_at).gt("end_at", t.start_at).limit(1),
+        supabase.from("availability_public").select("id").eq("car_id", t.car_id).lt("start_at", t.end_at).gt("end_at", t.start_at).limit(1),
         supabase.functions.invoke("rentauto-driver-verification", {
           body: { action: "status" },
         }),
