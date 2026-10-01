@@ -6,7 +6,7 @@ interface Props {
 
 export function CancellationPolicyCard({ policy }: Props) {
   const name = policy?.name || "Free cancellation";
-  const summary = policy?.summary || "Full refund within 24 hours of booking. More flexible options available at checkout.";
+  const summary = policy?.summary || "Full refund within 24 hours of booking. Other timings require manual review.";
 
   return (
     <div className="px-4 py-6">
