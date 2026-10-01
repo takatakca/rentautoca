@@ -1234,6 +1234,84 @@ export type Database = {
       }
     }
     Views: {
+      availability_public: {
+        Row: {
+          car_id: string
+          end_at: string
+          start_at: string
+        }
+        Relationships: []
+      }
+      cars_accessible: {
+        Row: {
+          airport_pickup_enabled: boolean
+          base_daily_price_cents: number
+          body_type: string | null
+          category: string
+          consumption_l_per_100km: number | null
+          created_at: string
+          currency: string
+          description: string | null
+          doors: number
+          extra_km_price_cents: number
+          features: Json | null
+          fuel_type: string
+          host_id: string
+          id: string
+          included_km_per_day: number
+          instant_book: boolean
+          lat: number | null
+          lng: number | null
+          location_label: string | null
+          make: string
+          model: string
+          monthly_enabled: boolean
+          rules: Json | null
+          seats: number
+          status: string
+          title: string
+          tracking_consent_required: boolean
+          transmission: string
+          trim: string | null
+          year: number
+        }
+        Relationships: []
+      }
+      cars_public: {
+        Row: {
+          airport_pickup_enabled: boolean
+          base_daily_price_cents: number
+          body_type: string | null
+          category: string
+          consumption_l_per_100km: number | null
+          created_at: string
+          currency: string
+          description: string | null
+          doors: number
+          extra_km_price_cents: number
+          features: Json | null
+          fuel_type: string
+          host_id: string
+          id: string
+          included_km_per_day: number
+          instant_book: boolean
+          lat: number | null
+          lng: number | null
+          location_label: string | null
+          make: string
+          model: string
+          monthly_enabled: boolean
+          rules: Json | null
+          seats: number
+          status: string
+          title: string
+          tracking_consent_required: boolean
+          transmission: string
+          trim: string | null
+          year: number
+        }
+        Relationships: []
+      }
       profiles_public: {
         Row: {
           avatar_url: string | null
