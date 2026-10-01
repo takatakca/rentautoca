@@ -61,11 +61,21 @@ export default function CarListing() {
       );
       if (error) throw error;
       const response = (data ?? {}) as {
-        verification?: { status?: string } | null;
+        verification?: {
+          status?: string;
+          licenseExpiresOn?: string | null;
+        } | null;
         error?: string;
       };
       if (response.error) throw new Error(response.error);
-      return response.verification?.status ?? "not_started";
+
+      const status = response.verification?.status ?? "not_started";
+      const expiresOn = response.verification?.licenseExpiresOn ?? null;
+      const today = new Date().toISOString().slice(0, 10);
+      if (status === "approved" && (!expiresOn || expiresOn < today)) {
+        return "expired";
+      }
+      return status;
     },
     staleTime: 30_000,
   });
@@ -142,11 +152,15 @@ export default function CarListing() {
         title:
           driverEligibility === "pending"
             ? "Driver verification is under review"
-            : "Verify your driver licence to book",
+            : driverEligibility === "expired"
+              ? "Your driver licence verification expired"
+              : "Verify your driver licence to book",
         description:
           driverEligibility === "pending"
             ? "Rentauto must approve your licence before you can reserve and pay."
-            : "Complete driver verification once, then return to this vehicle.",
+            : driverEligibility === "expired"
+              ? "Upload a current licence before starting a new booking."
+              : "Complete driver verification once, then return to this vehicle.",
       });
       navigate("/dashboard/documents?focus=driver");
       return;
@@ -214,8 +228,10 @@ export default function CarListing() {
           ? "Checking driver eligibility…"
           : driverEligibility === "pending"
             ? "Your driver verification is under review."
-            : driverEligibility !== "approved"
-              ? "Driver verification is required before booking."
+            : driverEligibility === "expired"
+              ? "Your verified driver licence has expired."
+              : driverEligibility !== "approved"
+                ? "Driver verification is required before booking."
               : null;
   const ctaLabel = !user
     ? "Sign in to continue"
@@ -223,8 +239,10 @@ export default function CarListing() {
       ? "Checking driver…"
       : driverEligibility === "pending"
         ? "View verification"
-        : driverEligibility !== "approved"
-          ? "Verify driver to book"
+        : driverEligibility === "expired"
+          ? "Renew driver verification"
+          : driverEligibility !== "approved"
+            ? "Verify driver to book"
           : reserving
             ? "Reserving…"
             : "Continue";
