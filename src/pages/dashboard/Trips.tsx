@@ -60,7 +60,7 @@ export default function DashboardTrips() {
       const ids = [...new Set(list.map((t) => t.car_id))];
       if (ids.length) {
         const [c, p] = await Promise.all([
-          supabase.from("cars").select("id, make, model, year, location_label").in("id", ids),
+          supabase.from("cars_accessible").select("id, make, model, year, location_label").in("id", ids),
           supabase.from("car_photos").select("car_id, url").in("car_id", ids).order("sort_order"),
         ]);
         if (cancelled) return;
