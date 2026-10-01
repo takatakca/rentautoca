@@ -29,3 +29,20 @@ ALTER FUNCTION rentauto.has_role(rentauto.app_role, uuid)
 
 ALTER FUNCTION rentauto.update_profile_compat()
   SET search_path = '';
+
+ALTER FUNCTION public.rentauto_quote_trip(
+  uuid,
+  timestamptz,
+  timestamptz,
+  uuid[],
+  uuid
+) SET search_path = '';
+
+ALTER FUNCTION rentauto.compute_trip_quote(
+  uuid,
+  timestamptz,
+  timestamptz,
+  uuid[],
+  uuid,
+  uuid
+) SET search_path = '';
