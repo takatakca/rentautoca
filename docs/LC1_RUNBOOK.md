@@ -89,7 +89,7 @@ Track progress live at **`/admin/launch-checklist`**.
 ## 9. Failure paths (1 hour)
 
 - [ ] Guest cancels inside the saved automatic rule → exact Stripe refund shown in preview
-- [ ] Guest cancels outside an explicit saved rule → manual review; booking remains reserved
+- [ ] Guest cancels outside an explicit saved rule → manual review; booking remains reserved until admin either denies or approves a full refund
 - [ ] Host cancels a paid pre-trip booking → full Stripe refund
 - [ ] Pending/failed refund appears in `/admin/cancellations` and does not release availability
 - [ ] Incident report (`/trips/:id/report-issue`) → row in `trip_incidents`
