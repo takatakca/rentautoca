@@ -35,6 +35,7 @@ const AdminLaunchChecklist = lazy(() => import("./pages/AdminLaunchChecklist"));
 const AdminVehicleReviews = lazy(() => import("./pages/AdminVehicleReviews"));
 const AdminTripIncidents = lazy(() => import("./pages/AdminTripIncidents"));
 const AdminSettlements = lazy(() => import("./pages/AdminSettlements"));
+const AdminSupport = lazy(() => import("./pages/AdminSupport"));
 const BecomeHost = lazy(() => import("./pages/BecomeHost"));
 const Profile = lazy(() => import("./pages/Profile"));
 const CarListing = lazy(() => import("./pages/CarListing"));
@@ -196,6 +197,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRole="admin">
                       <AdminSettlements />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/support"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminSupport />
                     </ProtectedRoute>
                   }
                 />
