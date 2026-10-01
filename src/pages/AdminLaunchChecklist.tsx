@@ -128,7 +128,9 @@ function loadState(): State {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    return {};
+  }
   return {};
 }
 
@@ -138,7 +140,9 @@ export default function AdminLaunchChecklist() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {}
+    } catch {
+      return;
+    }
   }, [state]);
 
   const allItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
