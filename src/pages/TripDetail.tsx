@@ -13,6 +13,7 @@ import { bookingRef } from "@/lib/dashboard-utils";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
 import { TripReviewCard } from "@/components/trips/TripReviewCard";
 import { TripEvidenceCard } from "@/components/trips/TripEvidenceCard";
+import { TripCancellationCard } from "@/components/trips/TripCancellationCard";
 
 export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -206,24 +207,40 @@ export default function TripDetail() {
           <CardTitle className="text-base">Pricing</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
-          {pricing.days != null && (
-            <Row label={`${pricing.days} day${pricing.days === 1 ? "" : "s"} × ${((pricing.daily_rate_cents || 0) / 100).toFixed(0)}`}
-                 value={`${((pricing.base_total_cents || 0) / 100).toFixed(2)}`} />
+          {pricing.base_price != null && (
+            <Row
+              label={`Base rental${pricing.days ? ` (${pricing.days} day${pricing.days === 1 ? "" : "s"})` : ""}`}
+              value={`$${(Number(pricing.base_price) / 100).toFixed(2)}`}
+            />
           )}
-          {pricing.protection_total_cents != null && (
-            <Row label="Protection" value={`${(pricing.protection_total_cents / 100).toFixed(2)}`} />
+          {Number(pricing.extras_total || 0) > 0 && (
+            <Row label="Extras" value={`$${(Number(pricing.extras_total) / 100).toFixed(2)}`} />
           )}
-          {pricing.taxes_cents != null && (
-            <Row label="Taxes (est.)" value={`${(pricing.taxes_cents / 100).toFixed(2)}`} />
+          {Number(pricing.protection_total || 0) > 0 && (
+            <Row label="Protection" value={`$${(Number(pricing.protection_total) / 100).toFixed(2)}`} />
+          )}
+          {Number(pricing.discounts || 0) > 0 && (
+            <Row label="Discount" value={`−$${(Number(pricing.discounts) / 100).toFixed(2)}`} />
+          )}
+          {pricing.taxes != null && (
+            <Row label="Taxes" value={`$${(Number(pricing.taxes) / 100).toFixed(2)}`} />
           )}
           <div className="border-t border-border my-2" />
           <Row
             label="Total"
-            value={`${((trip.total_cents || pricing.total_cents || 0) / 100).toFixed(2)} ${trip.currency || "CAD"}`}
+            value={`$${((trip.total_cents || pricing.total_after_tax || 0) / 100).toFixed(2)} ${trip.currency || "CAD"}`}
             bold
           />
         </CardContent>
       </Card>
+
+      <TripCancellationCard
+        tripId={trip.id}
+        tripStatus={trip.status}
+        currentUserId={user?.id}
+        guestId={trip.guest_id}
+        hostId={car?.host_id}
+      />
 
       <TripEvidenceCard tripId={trip.id} />
 
