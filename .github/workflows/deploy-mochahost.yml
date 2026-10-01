@@ -223,6 +223,82 @@ jobs:
 
           echo "Release uploaded successfully."
 
+      - name: Inspect remote Passenger runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            printf 'set -euo pipefail\n'
+            printf 'APP_PATH=%q\n' "$MOCHAHOST_APP_PATH"
+            printf 'PRODUCTION_URL=%q\n' "$PRODUCTION_URL"
+            cat <<'REMOTE'
+          cd "$APP_PATH"
+
+          echo "=== RENTAUTO SAFE RUNTIME DIAGNOSTICS ==="
+          echo "Current revision:"
+          if [ -f CURRENT ]; then cat CURRENT; else echo "(missing CURRENT)"; fi
+
+          echo "Previous revision:"
+          if [ -f PREVIOUS ]; then cat PREVIOUS; else echo "(missing PREVIOUS)"; fi
+
+          echo "Application root entries:"
+          find . -maxdepth 1 -mindepth 1             ! -name '.env'             ! -name '.env.*'             -printf '%f\n'             | sort
+
+          echo "Candidate Passenger entrypoints:"
+          for candidate in app.js server.cjs server.js index.js; do
+            if [ -f "$candidate" ]; then
+              echo "--- $candidate ---"
+              stat -c 'size=%s modified=%y' "$candidate" || true
+              node --check "$candidate" || true
+              grep -nE 'CURRENT|PREVIOUS|healthz|releases|REVISION|express|listen|process\.env|dist' "$candidate"                 | head -n 120                 || true
+            fi
+          done
+
+          echo "Current release structure:"
+          if [ -f CURRENT ]; then
+            current="$(tr -d '\r\n' < CURRENT)"
+            if [ -n "$current" ] && [ -d "releases/$current" ]; then
+              find "releases/$current" -maxdepth 2 -type f                 -printf '%p %s bytes\n'                 | sort                 | head -n 80
+              test -f "releases/$current/dist/index.html"                 && sha256sum "releases/$current/dist/index.html"                 || true
+            fi
+          fi
+
+          echo "Known runtime log files (names only):"
+          find . -maxdepth 3 -type f             \( -name 'stderr.log' -o -name 'error.log' -o -name 'passenger.log' -o -name '*.stderr.log' \)             -printf '%p %s bytes\n'             2>/dev/null             | head -n 40             || true
+
+          echo "Current public health response:"
+          curl             --silent             --show-error             --include             --max-time 15             "$PRODUCTION_URL/healthz"             | head -n 40             || true
+
+          echo "Attempting one clean Passenger restart of current revision..."
+          mkdir -p tmp
+          touch tmp/restart.txt
+
+          recovered=0
+          for attempt in 1 2 3 4 5 6; do
+            sleep 3
+            if curl               --fail               --silent               --show-error               --max-time 15               "$PRODUCTION_URL/healthz"               >/dev/null; then
+              recovered=1
+              echo "Current revision recovered on attempt $attempt."
+              break
+            fi
+          done
+
+          if [ "$recovered" -ne 1 ]; then
+            echo "Current revision is still unhealthy before release switch."
+            echo "Matching runtime error lines:"
+            for log in stderr.log error.log logs/error.log tmp/stderr.log; do
+              if [ -f "$log" ]; then
+                echo "--- $log ---"
+                grep -E 'Error|ERR_|Cannot find|SyntaxError|ReferenceError|TypeError|MODULE_NOT_FOUND|ENOENT|Passenger' "$log"                   | tail -n 80                   | sed -E 's/([A-Za-z_]*(TOKEN|KEY|SECRET|PASSWORD)[A-Za-z_]*)=[^ ]+/\1=[REDACTED]/Ig'                   || true
+              fi
+            done
+          fi
+
+          exit
+          REMOTE
+          } | ssh -tt                 -i ~/.ssh/rentauto_deploy_key                 -p "$MOCHAHOST_PORT"                 -o BatchMode=yes                 "$MOCHAHOST_USER@$MOCHAHOST_HOST"
+
       - name: Activate release
         shell: bash
         run: |
@@ -302,6 +378,23 @@ jobs:
 
           if [ "$ok" -ne 1 ]; then
             echo "ERROR: Health check failed for revision $SHA."
+            echo "=== FAILED RELEASE DIAGNOSTICS ==="
+            echo "CURRENT=$(tr -d '\\r\\n' < CURRENT 2>/dev/null || true)"
+            echo "PREVIOUS=$(tr -d '\\r\\n' < PREVIOUS 2>/dev/null || true)"
+            find "$RELEASE_DIR" -maxdepth 2 -type f               -printf '%p %s bytes\\n'               | sort               | head -n 80               || true
+            test -f "$RELEASE_DIR/dist/index.html"               && sha256sum "$RELEASE_DIR/dist/index.html"               || true
+
+            echo "HTTP health response while failed:"
+            curl               --silent               --show-error               --include               --max-time 15               "$PRODUCTION_URL/healthz"               | head -n 40               || true
+
+            echo "Matching runtime error lines:"
+            for log in stderr.log error.log logs/error.log tmp/stderr.log; do
+              if [ -f "$log" ]; then
+                echo "--- $log ---"
+                grep -E 'Error|ERR_|Cannot find|SyntaxError|ReferenceError|TypeError|MODULE_NOT_FOUND|ENOENT|Passenger' "$log"                   | tail -n 80                   | sed -E 's/([A-Za-z_]*(TOKEN|KEY|SECRET|PASSWORD)[A-Za-z_]*)=[^ ]+/\\1=[REDACTED]/Ig'                   || true
+              fi
+            done
+
             echo "Starting automatic rollback."
 
             if [ -n "$OLD" ] && [ -d "releases/$OLD" ]; then
