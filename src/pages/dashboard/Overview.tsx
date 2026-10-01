@@ -26,6 +26,63 @@ import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { StatusBadge } from "@/components/dashboard/DashboardPageHeader";
 import { TRIP_STATUS, tripAction, money, bookingRef } from "@/lib/dashboard-utils";
 
+interface PricingBreakdown {
+  protection_snapshot?: {
+    name?: string;
+  } | null;
+}
+
+interface ProfileRow {
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  phone_verified: boolean | null;
+  id_verified: boolean | null;
+  avatar_url: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
+  display_name: string | null;
+}
+
+interface VerificationRow {
+  verification_status: string;
+  id_front_url: string | null;
+  id_back_url: string | null;
+  selfie_url: string | null;
+}
+
+interface EventRow {
+  id: string;
+  trip_id: string;
+  event_type: string;
+  created_at: string;
+}
+
+interface TicketRow {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  last_response_at: string | null;
+  created_at: string;
+}
+
+interface IncidentRow {
+  id: string;
+  type: string;
+  status: string;
+  created_at: string;
+  trip_id: string;
+}
+
+interface ReadinessItem {
+  label: string;
+  done: boolean;
+  to: string;
+  hint?: string;
+}
+
 interface TripRow {
   id: string;
   car_id: string;
@@ -35,7 +92,7 @@ interface TripRow {
   payment_status: string | null;
   total_cents: number | null;
   pickup_location: string | null;
-  pricing_breakdown: any;
+  pricing_breakdown: PricingBreakdown | null;
   created_at: string;
   booking_reference: string | null;
 }
@@ -73,11 +130,11 @@ export default function DashboardOverview() {
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [cars, setCars] = useState<Record<string, CarRow>>({});
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const [profile, setProfile] = useState<any>(null);
-  const [verification, setVerification] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [incidents, setIncidents] = useState<any[]>([]);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [verification, setVerification] = useState<VerificationRow | null>(null);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [tickets, setTickets] = useState<TicketRow[]>([]);
+  const [incidents, setIncidents] = useState<IncidentRow[]>([]);
   const [recommended, setRecommended] = useState<CarRow[]>([]);
 
   useEffect(() => {
@@ -142,11 +199,13 @@ export default function DashboardOverview() {
         ]);
         if (cancelled) return;
         const cm: Record<string, CarRow> = {};
-        (carsRes.data ?? []).forEach((c: any) => (cm[c.id] = c));
+        (carsRes.data ?? []).forEach((car) => {
+          cm[car.id] = car;
+        });
         setCars(cm);
         const pm: Record<string, string> = {};
-        (photoRes.data ?? []).forEach((p: any) => {
-          if (!pm[p.car_id]) pm[p.car_id] = p.url;
+        (photoRes.data ?? []).forEach((photo) => {
+          if (!pm[photo.car_id]) pm[photo.car_id] = photo.url;
         });
         setPhotos(pm);
         setEvents(eventsRes.data ?? []);
@@ -195,7 +254,7 @@ export default function DashboardOverview() {
 
   const readiness = useMemo(() => {
     const docsSubmitted = Boolean(verification?.id_front_url && verification?.id_back_url);
-    const items = [
+    const items: ReadinessItem[] = [
       { label: "Email verified", done: Boolean(user?.email_confirmed_at), to: "/verify-email" },
       { label: "Full name completed", done: Boolean(profile?.first_name && profile?.last_name), to: "/dashboard/profile" },
       { label: "Phone number verified", done: Boolean(profile?.phone_verified), to: "/dashboard/profile" },
@@ -372,10 +431,10 @@ export default function DashboardOverview() {
                     <span className="sr-only">{item.done ? "complete" : "incomplete"}</span>
                   </span>
                   {item.done ? (
-                    <span className="text-xs text-muted-foreground">{(item as any).hint ?? "Done"}</span>
+                    <span className="text-xs text-muted-foreground">{item.hint ?? "Done"}</span>
                   ) : (
                     <Link to={item.to} className="text-xs font-medium text-primary hover:underline">
-                      {(item as any).hint ?? "Complete"}
+                      {item.hint ?? "Complete"}
                     </Link>
                   )}
                 </li>
