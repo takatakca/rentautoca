@@ -470,6 +470,8 @@ AS $$
 DECLARE
   v_trip rentauto.trips%ROWTYPE;
   v_existing rentauto.trip_cancellations%ROWTYPE;
+  v_host_id uuid;
+  v_is_admin boolean := false;
   v_preview jsonb;
   v_cancel rentauto.trip_cancellations%ROWTYPE;
   v_status text;
@@ -495,6 +497,22 @@ BEGIN
     RAISE EXCEPTION 'trip_not_found' USING ERRCODE = 'P0002';
   END IF;
 
+  SELECT car.host_id
+  INTO v_host_id
+  FROM rentauto.cars car
+  WHERE car.id = v_trip.car_id;
+
+  v_is_admin := rentauto.has_role(
+    'admin'::rentauto.app_role,
+    p_user_id
+  );
+
+  IF NOT v_is_admin
+     AND v_trip.guest_id <> p_user_id
+     AND v_host_id <> p_user_id THEN
+    RAISE EXCEPTION 'trip_forbidden' USING ERRCODE = '42501';
+  END IF;
+
   SELECT *
   INTO v_existing
   FROM rentauto.trip_cancellations
@@ -502,6 +520,11 @@ BEGIN
   FOR UPDATE;
 
   IF FOUND THEN
+    IF v_existing.actor_user_id <> p_user_id
+       AND NOT v_is_admin THEN
+      RAISE EXCEPTION 'cancellation_already_requested' USING ERRCODE = '42501';
+    END IF;
+
     IF v_existing.status = 'refund_pending' THEN
       RETURN jsonb_build_object(
         'cancellationId', v_existing.id,
