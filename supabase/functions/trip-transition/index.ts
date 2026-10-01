@@ -106,6 +106,32 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
     }
 
+    if (message.includes("driver_verification_required_at_pickup")) {
+      return json(
+        {
+          error: "Your approved driver verification must still be valid at pickup.",
+          code: "DRIVER_VERIFICATION_REQUIRED",
+        },
+        409,
+      );
+    }
+
+    if (
+      message.includes("handoff_photo_evidence_required") ||
+      message.includes("handoff_photo_path_invalid") ||
+      message.includes("handoff_evidence_required") ||
+      message.includes("handoff_evidence_invalid") ||
+      message.includes("damage_notes_required")
+    ) {
+      return json(
+        {
+          error: "Required pickup or return evidence is incomplete.",
+          code: "HANDOFF_EVIDENCE_REQUIRED",
+        },
+        409,
+      );
+    }
+
     if (
       message.includes("invalid_trip_transition") ||
       message.includes("pickup_confirmation_required") ||
