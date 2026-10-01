@@ -970,6 +970,47 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_messages: {
+        Row: {
+          body: string
+          client_message_id: string | null
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_user_id: string
+          sender_user_id: string
+          trip_id: string
+        }
+        Insert: {
+          body: string
+          client_message_id?: string | null
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_user_id: string
+          sender_user_id: string
+          trip_id: string
+        }
+        Update: {
+          body?: string
+          client_message_id?: string | null
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_user_id?: string
+          sender_user_id?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_messages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           booking_reference: string | null
