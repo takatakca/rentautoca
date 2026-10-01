@@ -26,3 +26,6 @@ ALTER FUNCTION rentauto.can_manage_car(uuid)
 
 ALTER FUNCTION rentauto.has_role(rentauto.app_role, uuid)
   SET search_path = '';
+
+ALTER FUNCTION rentauto.update_profile_compat()
+  SET search_path = '';
