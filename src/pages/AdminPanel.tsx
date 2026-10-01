@@ -101,6 +101,9 @@ export default function AdminPanel() {
             <Link to="/admin/payouts"><WalletCards className="h-4 w-4" />Payouts</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
+            <Link to="/admin/cancellations"><RotateCcw className="h-4 w-4" />Cancellations</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
             <Link to="/admin/support"><LifeBuoy className="h-4 w-4" />Support</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
