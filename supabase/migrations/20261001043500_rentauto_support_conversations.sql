@@ -7,47 +7,22 @@ UPDATE rentauto.support_tickets
 SET last_message_at = COALESCE(last_response_at, created_at)
 WHERE last_message_at IS NULL;
 
-DO $
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'support_tickets_subject_length_check'
-      AND conrelid = 'rentauto.support_tickets'::regclass
-  ) THEN
-    ALTER TABLE rentauto.support_tickets
-      ADD CONSTRAINT support_tickets_subject_length_check
-      CHECK (char_length(btrim(subject)) BETWEEN 4 AND 150);
-  END IF;
+ALTER TABLE rentauto.support_tickets
+  ADD CONSTRAINT support_tickets_subject_length_check
+  CHECK (char_length(btrim(subject)) BETWEEN 4 AND 150);
 
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'support_tickets_body_length_check'
-      AND conrelid = 'rentauto.support_tickets'::regclass
-  ) THEN
-    ALTER TABLE rentauto.support_tickets
-      ADD CONSTRAINT support_tickets_body_length_check
-      CHECK (char_length(btrim(body)) BETWEEN 1 AND 4000);
-  END IF;
+ALTER TABLE rentauto.support_tickets
+  ADD CONSTRAINT support_tickets_body_length_check
+  CHECK (char_length(btrim(body)) BETWEEN 1 AND 4000);
 
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'support_tickets_category_check'
-      AND conrelid = 'rentauto.support_tickets'::regclass
-  ) THEN
-    ALTER TABLE rentauto.support_tickets
-      ADD CONSTRAINT support_tickets_category_check
-      CHECK (
-        category IN (
-          'booking','payment','vehicle','roadside',
-          'accident','account','other'
-        )
-      );
-  END IF;
-END
-$;
+ALTER TABLE rentauto.support_tickets
+  ADD CONSTRAINT support_tickets_category_check
+  CHECK (
+    category IN (
+      'booking','payment','vehicle','roadside',
+      'accident','account','other'
+    )
+  );
 
 CREATE INDEX IF NOT EXISTS support_tickets_last_message_idx
   ON rentauto.support_tickets(last_message_at DESC NULLS LAST);
