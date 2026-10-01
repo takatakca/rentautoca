@@ -196,6 +196,43 @@ export default function AdminCancellations() {
     await load();
   };
 
+  const resume = async (row: Cancellation) => {
+    setBusyId(row.id);
+    const { data, error } = await supabase.functions.invoke("rentauto-cancel-trip", {
+      body: {
+        action: "cancel",
+        tripId: row.trip_id,
+        reason: row.reason,
+      },
+    });
+    setBusyId(null);
+
+    const response = (data ?? {}) as {
+      ok?: boolean;
+      error?: string;
+      refundStatus?: string;
+    };
+
+    if (error || !response.ok) {
+      toast({
+        title: "Refund recovery not completed",
+        description: response.error ?? error?.message ?? "The booking remains reserved.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Refund state synchronized",
+      description:
+        response.refundStatus === "pending" ||
+        response.refundStatus === "requires_action"
+          ? "Stripe still reports the refund as processing."
+          : "The existing Stripe refund operation was safely reconciled.",
+    });
+    await load();
+  };
+
   const retry = async (row: Cancellation) => {
     setBusyId(row.id);
     const { data, error } = await supabase.functions.invoke("rentauto-cancel-trip", {
@@ -387,6 +424,24 @@ export default function AdminCancellations() {
                           Deny request
                         </Button>
                       </div>
+                    </div>
+                  ) : null}
+
+                  {["processing", "refund_pending"].includes(row.status) ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground">Refund operation in progress</p>
+                        <p className="text-xs">
+                          Recheck the same Stripe operation without creating a second refund.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => void resume(row)}
+                        disabled={busyId === row.id}
+                      >
+                        <RefreshCw className="h-4 w-4" /> Recheck safely
+                      </Button>
                     </div>
                   ) : null}
 
