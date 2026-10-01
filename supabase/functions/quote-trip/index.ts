@@ -9,6 +9,41 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const MAX_QUOTE_BODY_BYTES = 10 * 1024;
+
+async function readBodyWithLimit(
+  req: Request,
+  maxBytes: number,
+): Promise<string | null> {
+  const reader = req.body?.getReader();
+  if (!reader) return "";
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new TextDecoder().decode(merged);
+}
+
 function messageFor(code: string): string {
   switch (code) {
     case "DATES_NOT_AVAILABLE":
@@ -45,7 +80,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const declaredLength = Number(req.headers.get("content-length") ?? "0");
+    if (
+      Number.isFinite(declaredLength) &&
+      declaredLength > MAX_QUOTE_BODY_BYTES
+    ) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const raw = await readBodyWithLimit(req, MAX_QUOTE_BODY_BYTES);
+    if (raw === null) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid request body" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const carId = typeof body?.carId === "string" ? body.carId : "";
     const startAt = typeof body?.startAt === "string" ? body.startAt : "";
     const endAt = typeof body?.endAt === "string" ? body.endAt : "";
@@ -55,11 +118,19 @@ Deno.serve(async (req) => {
     const protectionPlanId =
       typeof body?.protectionPlanId === "string" ? body.protectionPlanId : null;
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      console.error("[quote-trip] Required server configuration missing");
+      return new Response(JSON.stringify({ error: "Quote service unavailable" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     const quote = await buildTripQuote(admin, {
       carId,
