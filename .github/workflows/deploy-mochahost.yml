@@ -282,22 +282,32 @@ jobs:
 
           ok=0
 
-          for attempt in 1 2 3 4 5 6 7 8; do
-            echo "Health check attempt $attempt..."
+          # Passenger/cPanel can take longer than a normal Node restart,
+          # especially while a previous process is being drained. Give the
+          # application up to roughly two minutes before deciding the release
+          # itself is unhealthy.
+          for attempt in $(seq 1 24); do
+            echo "Health check attempt $attempt/24..."
 
-            if curl \
-              --fail \
+            http_code="$(curl \
               --silent \
               --show-error \
+              --output /tmp/rentauto-health-body \
+              --write-out '%{http_code}' \
               --max-time 15 \
-              "$PRODUCTION_URL/healthz" \
-              >/dev/null; then
+              "$PRODUCTION_URL/healthz" || true)"
 
+            if [ "$http_code" = "200" ]; then
+              cat /tmp/rentauto-health-body || true
+              echo
               ok=1
               break
             fi
 
-            sleep 3
+            echo "Health endpoint returned HTTP ${http_code:-000}."
+            cat /tmp/rentauto-health-body 2>/dev/null || true
+            echo
+            sleep 5
           done
 
           if [ "$ok" -ne 1 ]; then
@@ -309,17 +319,34 @@ jobs:
               mv CURRENT.new CURRENT
 
               touch tmp/restart.txt
-              sleep 5
 
               echo "Rolled back to revision: $OLD"
+              echo "Waiting for rollback health check..."
 
-              curl \
-                --fail \
-                --silent \
-                --show-error \
-                --max-time 15 \
-                "$PRODUCTION_URL/healthz" \
-                >/dev/null || true
+              rollback_ok=0
+              for rollback_attempt in $(seq 1 18); do
+                rollback_code="$(curl \
+                  --silent \
+                  --show-error \
+                  --output /tmp/rentauto-rollback-health-body \
+                  --write-out '%{http_code}' \
+                  --max-time 15 \
+                  "$PRODUCTION_URL/healthz" || true)"
+
+                if [ "$rollback_code" = "200" ]; then
+                  cat /tmp/rentauto-rollback-health-body || true
+                  echo
+                  rollback_ok=1
+                  break
+                fi
+
+                echo "Rollback health attempt $rollback_attempt/18 returned HTTP ${rollback_code:-000}."
+                sleep 5
+              done
+
+              if [ "$rollback_ok" -ne 1 ]; then
+                echo "ERROR: Rollback revision $OLD did not become healthy in time."
+              fi
             else
               echo "No previous release was available for rollback."
             fi
