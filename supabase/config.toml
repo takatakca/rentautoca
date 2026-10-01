@@ -31,3 +31,6 @@ verify_jwt = false
 
 [functions.create-booking-draft]
 verify_jwt = false
+
+[functions.rentauto-bootstrap-account]
+verify_jwt = true
