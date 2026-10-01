@@ -182,10 +182,51 @@ export function TripCancellationCard({
           ? "Refund is processing"
           : "Cancellation processed",
       description: response.manualReview
-        ? "Rentauto operations will review the refund amount before changing the booking."
+        ? "Rentauto operations will either deny the request or approve a full refund before changing the booking."
         : "The booking record and financial state are being synchronized.",
     });
 
+    window.location.reload();
+  };
+
+  const resumeExisting = async () => {
+    if (!existing) return;
+    setSubmitting(true);
+    const { data, error } = await supabase.functions.invoke("rentauto-cancel-trip", {
+      body: {
+        action: "cancel",
+        tripId,
+        reason: existing.reason,
+      },
+    });
+    setSubmitting(false);
+
+    const response = (data ?? {}) as {
+      ok?: boolean;
+      error?: string;
+      refundStatus?: string;
+    };
+
+    if (error || !response.ok) {
+      toast({
+        title: "Refund recovery not completed",
+        description:
+          response.error ??
+          error?.message ??
+          "The booking remains protected and reserved. Try again or contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title:
+        response.refundStatus === "pending" ||
+        response.refundStatus === "requires_action"
+          ? "Refund is still processing"
+          : "Refund state synchronized",
+      description: "Rentauto safely reused the existing refund operation.",
+    });
     window.location.reload();
   };
 
@@ -233,9 +274,22 @@ export function TripCancellationCard({
           ) : null}
           {existing.status === "refund_pending" ||
           existing.status === "processing" ? (
-            <p className="rounded-lg border p-3 text-muted-foreground">
-              The booking remains reserved until Stripe confirms the refund.
-            </p>
+            <div className="space-y-2 rounded-lg border p-3 text-muted-foreground">
+              <p>The booking remains reserved until Stripe confirms the refund.</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void resumeExisting()}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Recheck refund safely
+              </Button>
+            </div>
           ) : null}
           {existing.status === "failed" ? (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive">
