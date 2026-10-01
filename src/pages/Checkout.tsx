@@ -62,6 +62,8 @@ export default function Checkout() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [paying, setPaying] = useState(false);
   const [paymentNotConfigured, setPaymentNotConfigured] = useState(false);
+  const [driverStatus, setDriverStatus] = useState("not_started");
+  const [driverStatusLoading, setDriverStatusLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -82,14 +84,30 @@ export default function Checkout() {
       }
       setTrip(t);
 
-      const [{ data: c }, { data: p }, { data: blocks }] = await Promise.all([
+      const [
+        { data: c },
+        { data: p },
+        { data: blocks },
+        driverResult,
+      ] = await Promise.all([
         supabase.from("cars").select("id, make, model, year, title, location_label, host_id").eq("id", t.car_id).maybeSingle(),
         supabase.from("car_photos").select("url").eq("car_id", t.car_id).order("sort_order").limit(1).maybeSingle(),
         supabase.from("availability_blocks").select("id").eq("car_id", t.car_id).lt("start_at", t.end_at).gt("end_at", t.start_at).limit(1),
+        supabase.functions.invoke("rentauto-driver-verification", {
+          body: { action: "status" },
+        }),
       ]);
       setCar(c);
       setPhoto(p?.url ?? null);
       if ((blocks || []).length > 0) setUnavailable(true);
+
+      if (!driverResult.error) {
+        const driverResponse = (driverResult.data ?? {}) as {
+          verification?: { status?: string } | null;
+        };
+        setDriverStatus(driverResponse.verification?.status ?? "not_started");
+      }
+      setDriverStatusLoading(false);
 
       if (c?.host_id) {
         const { data: h } = await supabase.from("profiles_public")
@@ -103,6 +121,22 @@ export default function Checkout() {
 
   const handlePay = async () => {
     if (!trip) return;
+
+    if (driverStatus !== "approved") {
+      toast({
+        title:
+          driverStatus === "pending"
+            ? "Driver verification is under review"
+            : "Driver verification required",
+        description:
+          driverStatus === "pending"
+            ? "Payment unlocks after Rentauto approves your driver verification."
+            : "Upload your driver licence and selfie before paying for a booking.",
+      });
+      navigate("/dashboard/documents?focus=driver");
+      return;
+    }
+
     setPaying(true);
     try {
       const { data, error } = await supabase.functions.invoke("rentauto-create-checkout-session", {
@@ -110,7 +144,14 @@ export default function Checkout() {
       });
       if (error) {
         const msg = error.message || "Could not start payment";
-        if (msg.includes("PAYMENT_NOT_CONFIGURED") || msg.toLowerCase().includes("not configured")) {
+        if (msg.toLowerCase().includes("driver verification")) {
+          setDriverStatus("not_started");
+          toast({
+            title: "Driver verification required",
+            description: "Your driver verification must be approved before payment.",
+          });
+          navigate("/dashboard/documents?focus=driver");
+        } else if (msg.includes("PAYMENT_NOT_CONFIGURED") || msg.toLowerCase().includes("not configured")) {
           setPaymentNotConfigured(true);
         } else if (msg.toLowerCase().includes("no longer available")) {
           setUnavailable(true);
@@ -247,6 +288,31 @@ export default function Checkout() {
         </Card>
       )}
 
+      {driverStatus !== "approved" && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 flex gap-3 items-start">
+            <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">
+                {driverStatus === "pending"
+                  ? "Driver verification under review"
+                  : "Driver verification required"}
+              </p>
+              <p className="text-muted-foreground">
+                {driverStatus === "pending"
+                  ? "Your booking draft is saved, but payment stays locked until the review is approved."
+                  : "Verify your driver licence and selfie once before paying for Rentauto bookings."}
+              </p>
+              <Button variant="outline" size="sm" className="mt-2" asChild>
+                <Link to="/dashboard/documents?focus=driver">
+                  {driverStatus === "pending" ? "View verification" : "Verify driver"}
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {paymentNotConfigured && (
         <Card className="border-warning/40 bg-warning/5">
           <CardContent className="p-4 text-sm">
@@ -261,7 +327,19 @@ export default function Checkout() {
           <p className="text-xs text-muted-foreground">Total due</p>
           <p className="text-lg font-bold truncate">${(totalCents / 100).toFixed(2)} {trip.currency || "CAD"}</p>
         </div>
-        <Button size="lg" className="px-6 rounded-xl shrink-0" disabled={!acknowledged || unavailable || paying || paymentNotConfigured} onClick={handlePay}>
+        <Button
+          size="lg"
+          className="px-6 rounded-xl shrink-0"
+          disabled={
+            !acknowledged ||
+            unavailable ||
+            paying ||
+            paymentNotConfigured ||
+            driverStatusLoading ||
+            driverStatus !== "approved"
+          }
+          onClick={handlePay}
+        >
           {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
           {paying ? "Starting…" : "Confirm and pay"}
         </Button>
