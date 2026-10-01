@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu, ShieldCheck, Scale, type LucideIcon } from "lucide-react";
+import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu, ShieldCheck, Scale, WalletCards, type LucideIcon } from "lucide-react";
 
 type ActiveTrackingSession = {
   id: string;
@@ -96,6 +96,9 @@ export default function AdminPanel() {
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/incidents"><Scale className="h-4 w-4" />Claims & incidents</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/payouts"><WalletCards className="h-4 w-4" />Payouts</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/launch-checklist">LC1 Launch Checklist</Link>
