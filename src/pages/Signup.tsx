@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { lovable } from "@/integrations/lovable/index";
+import { lovable } from "@/integrations/lovable/index";\nimport { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,11 +106,9 @@ export default function Signup() {
       return setError(friendlyAuthError(verifyError?.message || "SMS verification failed."));
     }
 
-    const { error: metadataError } = await data.session
-      ? (await import("@/integrations/supabase/client")).supabase.auth.updateUser({
-          data: metadata(verifiedPhone, consentAt || new Date().toISOString()),
-        })
-      : { error: new Error("Missing session") };
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: metadata(verifiedPhone, consentAt || new Date().toISOString()),
+    });
 
     if (metadataError) {
       setLoading(false);
