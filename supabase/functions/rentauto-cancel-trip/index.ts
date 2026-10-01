@@ -207,6 +207,12 @@ Deno.serve(async (req: Request) => {
       if (message.includes("trip_not_cancellable")) {
         return json({ error: "This trip can no longer be cancelled normally." }, 409);
       }
+      if (message.includes("cancellation_already_requested")) {
+        return json(
+          { error: "The other trip participant already started a cancellation workflow." },
+          409,
+        );
+      }
       return json({ error: "Cancellation could not be prepared." }, 500);
     }
 
