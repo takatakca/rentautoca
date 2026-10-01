@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 export interface CarListing {
   id: string;
@@ -103,22 +104,43 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
 
   // Fetch host profile
   const hostRes = await supabase
-    .from("profiles_public" as any)
+    .from("profiles_public")
     .select("id, display_name, avatar_url, is_all_star, rating_avg, trips_count, created_at")
     .eq("id", car.host_id)
     .single();
 
   // Fetch reviewer profiles
-  const reviews = reviewsRes.data || [];
+  const reviews: Array<
+    Pick<
+      Tables<"reviews">,
+      | "id"
+      | "rating_overall"
+      | "rating_cleanliness"
+      | "rating_maintenance"
+      | "rating_communication"
+      | "rating_convenience"
+      | "rating_accuracy"
+      | "comment"
+      | "created_at"
+      | "reviewer_id"
+    >
+  > = reviewsRes.data || [];
   const reviewerIds = [...new Set(reviews.map((r) => r.reviewer_id))];
-  let reviewerMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+  const reviewerMap: Record<
+    string,
+    { display_name: string | null; avatar_url: string | null }
+  > = {};
   if (reviewerIds.length > 0) {
     const profilesRes = await supabase
-      .from("profiles_public" as any)
+      .from("profiles_public")
       .select("id, display_name, avatar_url")
       .in("id", reviewerIds);
-    ((profilesRes.data as any[]) || []).forEach((p: any) => {
-      reviewerMap[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url };
+    (profilesRes.data || []).forEach((profile) => {
+      if (!profile.id) return;
+      reviewerMap[profile.id] = {
+        display_name: profile.display_name,
+        avatar_url: profile.avatar_url,
+      };
     });
   }
 
@@ -134,12 +156,26 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
     return vals.length > 0 ? vals.reduce((s, v) => s + Number(v), 0) / vals.length : null;
   };
 
-  const cp = policyRes.data as any;
+  const cp = policyRes.data as {
+    cancellation_policies: { name: string; summary: string } | null;
+  } | null;
 
   return {
     ...car,
-    features: (car.features as any) || { safety: [], connectivity: [] },
-    rules: (car.rules as any) || {},
+    features:
+      (car.features as unknown as CarListing["features"] | null) || {
+        safety: [],
+        connectivity: [],
+      },
+    rules: (car.rules as unknown as CarListing["rules"] | null) || {
+      no_smoking: false,
+      keep_tidy: false,
+      refuel: false,
+      no_offroad: false,
+      smoking_fee_cents: 0,
+      tidy_fee_cents: 0,
+      telematics_disclosure: "",
+    },
     photos: photosRes.data || [],
     extras: extrasRes.data || [],
     cancellation_policy: cp?.cancellation_policies
@@ -149,16 +185,19 @@ async function fetchCarListing(carId: string): Promise<CarListing> {
       ...r,
       reviewer: reviewerMap[r.reviewer_id] || null,
     })),
-    host: hostRes.data
-      ? (() => {
-          const h = hostRes.data as any;
-          return {
-            ...h,
-            is_all_star: h.is_all_star ?? false,
-            rating_avg: h.rating_avg ? Number(h.rating_avg) : null,
-            trips_count: h.trips_count ?? 0,
-          };
-        })()
+    host: hostRes.data?.id
+      ? {
+          id: hostRes.data.id,
+          display_name: hostRes.data.display_name,
+          avatar_url: hostRes.data.avatar_url,
+          is_all_star: hostRes.data.is_all_star ?? false,
+          rating_avg:
+            hostRes.data.rating_avg != null
+              ? Number(hostRes.data.rating_avg)
+              : null,
+          trips_count: hostRes.data.trips_count ?? 0,
+          created_at: hostRes.data.created_at ?? "",
+        }
       : null,
     rating_avg: ratingAvg ? Math.round(ratingAvg * 10) / 10 : null,
     rating_count: ratingCount,
