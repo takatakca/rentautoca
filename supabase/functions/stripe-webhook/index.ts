@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
   const rentauto = admin.schema("rentauto");
 
   const { data: claimRows, error: claimError } = await admin.rpc(
-    "claim_stripe_webhook_event",
+    "rentauto_claim_stripe_webhook_event",
     {
       p_event_id: event.id,
       p_event_type: event.type,
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   }
 
   async function findTripByPaymentIntent(paymentIntentId: string) {
-    const { data, error } = await admin
+    const { data, error } = await rentauto
       .from("trips")
       .select("id,status,total_cents,payment_status")
       .eq("stripe_payment_intent_id", paymentIntentId)
@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    await admin.from("trip_events").insert({
+    await rentauto.from("trip_events").insert({
       trip_id: trip.id,
       actor_user_id: null,
       event_type: `stripe_dispute_${dispute.status}`,
@@ -231,13 +231,13 @@ Deno.serve(async (req) => {
         const payoutsEnabled = account.payouts_enabled ?? false;
         const isComplete = chargesEnabled && payoutsEnabled;
 
-        const { data: existing } = await admin
+        const { data: existing } = await rentauto
           .from("stripe_accounts")
           .select("onboarded_at")
           .eq("stripe_account_id", account.id)
           .maybeSingle();
 
-        const { error } = await admin
+        const { error } = await rentauto
           .from("stripe_accounts")
           .update({
             charges_enabled: chargesEnabled,
@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
 
       case "account.application.deauthorized": {
         const account = event.data.object as Stripe.Account;
-        const { error } = await admin
+        const { error } = await rentauto
           .from("stripe_accounts")
           .update({
             stripe_account_id: null,
@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
           throw new Error("stripe_metadata_amount_mismatch");
         }
 
-        const { data: trip, error: tripLookupError } = await admin
+        const { data: trip, error: tripLookupError } = await rentauto
           .from("trips")
           .select("id,guest_id,stripe_session_id")
           .eq("id", tripId)
@@ -322,13 +322,14 @@ Deno.serve(async (req) => {
         }
 
         const { error: finalizeError } = await admin.rpc(
-          "finalize_paid_booking",
+          "rentauto_finalize_paid_booking",
           {
             p_trip_id: tripId,
             p_stripe_session_id: session.id,
             p_payment_intent_id: paymentIntentId,
             p_amount_total: amountTotal,
             p_currency: currency,
+            p_event_id: event.id,
             p_event_created_at: new Date(event.created * 1000).toISOString(),
           },
         );
@@ -349,7 +350,7 @@ Deno.serve(async (req) => {
         const tripId = session.metadata?.trip_id;
 
         if (tripId) {
-          const { data: currentTrip } = await admin
+          const { data: currentTrip } = await rentauto
             .from("trips")
             .select("id,stripe_session_id,status")
             .eq("id", tripId)
@@ -359,7 +360,7 @@ Deno.serve(async (req) => {
             currentTrip?.stripe_session_id === session.id &&
             currentTrip.status === "pending_payment"
           ) {
-            const { error: tripUpdateError } = await admin
+            const { error: tripUpdateError } = await rentauto
               .from("trips")
               .update({
                 status: "cancelled",
@@ -373,7 +374,7 @@ Deno.serve(async (req) => {
               throw new Error("expired_checkout_trip_update_failed");
             }
 
-            const { error: holdUpdateError } = await admin
+            const { error: holdUpdateError } = await rentauto
               .from("booking_holds")
               .update({
                 status: "released",
@@ -386,7 +387,7 @@ Deno.serve(async (req) => {
               throw new Error("expired_checkout_hold_release_failed");
             }
 
-            await admin.from("trip_events").insert({
+            await rentauto.from("trip_events").insert({
               trip_id: tripId,
               actor_user_id: null,
               event_type: "checkout_expired",
@@ -428,14 +429,14 @@ Deno.serve(async (req) => {
                 ? "refunded"
                 : "partially_refunded";
 
-            const { error: tripUpdateError } = await admin
+            const { error: tripUpdateError } = await rentauto
               .from("trips")
               .update({ payment_status: paymentStatus })
               .eq("id", trip.id);
 
             if (tripUpdateError) throw new Error("trip_refund_status_failed");
 
-            await admin.from("trip_events").insert({
+            await rentauto.from("trip_events").insert({
               trip_id: trip.id,
               actor_user_id: null,
               event_type: "stripe_refund_recorded",
@@ -469,7 +470,7 @@ Deno.serve(async (req) => {
     }
 
     const { error: markError } = await admin.rpc(
-      "mark_stripe_webhook_processed",
+      "rentauto_mark_stripe_webhook_processed",
       { p_event_id: event.id },
     );
     if (markError) throw new Error("webhook_mark_processed_failed");
@@ -479,7 +480,7 @@ Deno.serve(async (req) => {
     const safeError =
       cause instanceof Error ? cause.message : "webhook_processing_failed";
 
-    await admin.rpc("mark_stripe_webhook_failed", {
+    await admin.rpc("rentauto_mark_stripe_webhook_failed", {
       p_event_id: event.id,
       p_error: safeError,
     });
