@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Item = { id: string; label: string; description?: string };
 type Group = { id: string; title: string; items: Item[] };
@@ -120,40 +121,127 @@ const GROUPS: Group[] = [
   },
 ];
 
-const STORAGE_KEY = "rentauto.lc1.checklist.v1";
-
 type State = Record<string, { checked: boolean; note: string }>;
 
-function loadState(): State {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-  return {};
-}
-
 export default function AdminLaunchChecklist() {
-  const [state, setState] = useState<State>(() => loadState());
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      return;
-    }
-  }, [state]);
+  const [state, setState] = useState<State>({});
+  const [loading, setLoading] = useState(true);
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState("");
 
   const allItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
   const checkedCount = allItems.filter((i) => state[i.id]?.checked).length;
   const pct = Math.round((checkedCount / allItems.length) * 100);
 
-  const update = (id: string, patch: Partial<{ checked: boolean; note: string }>) =>
-    setState((s) => ({ ...s, [id]: { checked: false, note: "", ...s[id], ...patch } }));
+  useEffect(() => {
+    let cancelled = false;
 
-  const reset = () => {
-    if (confirm("Reset all LC1 checklist items?")) setState({});
+    (async () => {
+      const { data, error: loadError } = await supabase
+        .from("launch_checklist_items")
+        .select("item_id,checked,note");
+
+      if (cancelled) return;
+
+      if (loadError) {
+        setError("Could not load the shared LC1 checklist.");
+        setLoading(false);
+        return;
+      }
+
+      const next: State = {};
+      for (const row of data ?? []) {
+        next[row.item_id] = {
+          checked: row.checked,
+          note: row.note,
+        };
+      }
+
+      setState(next);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const updateDraft = (
+    id: string,
+    patch: Partial<{ checked: boolean; note: string }>,
+  ) => {
+    setState((current) => ({
+      ...current,
+      [id]: {
+        checked: false,
+        note: "",
+        ...current[id],
+        ...patch,
+      },
+    }));
+  };
+
+  const persist = async (
+    id: string,
+    next: { checked: boolean; note: string },
+  ) => {
+    const previous = state[id] ?? { checked: false, note: "" };
+    setError("");
+    setState((current) => ({ ...current, [id]: next }));
+    setSavingIds((current) => new Set(current).add(id));
+
+    const { error: saveError } = await supabase
+      .from("launch_checklist_items")
+      .upsert(
+        {
+          item_id: id,
+          checked: next.checked,
+          note: next.note,
+        },
+        { onConflict: "item_id" },
+      );
+
+    if (saveError) {
+      setState((current) => ({ ...current, [id]: previous }));
+      setError("Could not save this LC1 item. The server state was not changed.");
+    }
+
+    setSavingIds((current) => {
+      const nextSaving = new Set(current);
+      nextSaving.delete(id);
+      return nextSaving;
+    });
+  };
+
+  const reset = async () => {
+    if (!confirm("Reset all LC1 checklist items for every admin?")) return;
+
+    const previous = state;
+    const cleared: State = Object.fromEntries(
+      allItems.map((item) => [item.id, { checked: false, note: "" }]),
+    );
+
+    setError("");
+    setState(cleared);
+    setSavingIds(new Set(allItems.map((item) => item.id)));
+
+    const { error: resetError } = await supabase
+      .from("launch_checklist_items")
+      .upsert(
+        allItems.map((item) => ({
+          item_id: item.id,
+          checked: false,
+          note: "",
+        })),
+        { onConflict: "item_id" },
+      );
+
+    if (resetError) {
+      setState(previous);
+      setError("Could not reset LC1. The shared server state was not changed.");
+    }
+
+    setSavingIds(new Set());
   };
 
   return (
@@ -167,18 +255,26 @@ export default function AdminLaunchChecklist() {
           <div>
             <h1 className="text-3xl font-bold">Launch Candidate 1 (LC1)</h1>
             <p className="text-muted-foreground text-sm">
-              End-to-end real-world validation checklist. Stored locally in this browser.
+              Shared server checklist. Admin changes are timestamped and audit logged.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant={pct === 100 ? "default" : "outline"} className="text-base px-3 py-1">
               {checkedCount}/{allItems.length}
             </Badge>
-            <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>
+            <Button variant="ghost" size="sm" onClick={() => void reset()} disabled={loading || savingIds.size > 0}>
+              Reset
+            </Button>
           </div>
         </div>
         <Progress value={pct} />
-        {pct === 100 && (
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading shared LC1 state…
+          </div>
+        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        {pct === 100 && !loading && (
           <div className="flex items-center gap-2 text-sm text-primary">
             <CheckCircle2 className="h-4 w-4" /> All items complete — LC1 ready for sign-off.
           </div>
@@ -201,12 +297,17 @@ export default function AdminLaunchChecklist() {
               <CardContent className="space-y-4">
                 {group.items.map((item) => {
                   const row = state[item.id] || { checked: false, note: "" };
+                  const saving = savingIds.has(item.id);
+
                   return (
                     <div key={item.id} className="flex flex-col gap-2 border-b border-border pb-3 last:border-0 last:pb-0">
                       <label className="flex items-start gap-3 cursor-pointer">
                         <Checkbox
                           checked={row.checked}
-                          onCheckedChange={(v) => update(item.id, { checked: !!v })}
+                          onCheckedChange={(value) =>
+                            void persist(item.id, { checked: !!value, note: row.note })
+                          }
+                          disabled={loading || saving}
                           className="mt-0.5"
                         />
                         <div className="flex-1">
@@ -216,13 +317,24 @@ export default function AdminLaunchChecklist() {
                           {item.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                           )}
+                          {saving && (
+                            <p className="text-xs text-muted-foreground mt-1">Saving…</p>
+                          )}
                         </div>
                       </label>
                       <Textarea
                         placeholder="Notes (optional)"
                         value={row.note}
-                        onChange={(e) => update(item.id, { note: e.target.value })}
+                        onChange={(event) => updateDraft(item.id, { note: event.target.value })}
+                        onBlur={(event) =>
+                          void persist(item.id, {
+                            checked: state[item.id]?.checked ?? row.checked,
+                            note: event.currentTarget.value,
+                          })
+                        }
                         rows={1}
+                        maxLength={4000}
+                        disabled={loading || saving}
                         className="text-xs min-h-[36px] resize-y"
                       />
                     </div>

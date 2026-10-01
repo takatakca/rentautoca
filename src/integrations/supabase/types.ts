@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      launch_checklist_events: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          checked: boolean
+          id: number
+          item_id: string
+          note: string
+          previous_checked: boolean | null
+          previous_note: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          checked: boolean
+          id?: never
+          item_id: string
+          note: string
+          previous_checked?: boolean | null
+          previous_note?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          checked?: boolean
+          id?: never
+          item_id?: string
+          note?: string
+          previous_checked?: boolean | null
+          previous_note?: string | null
+        }
+        Relationships: []
+      }
+      launch_checklist_items: {
+        Row: {
+          checked: boolean
+          item_id: string
+          note: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          checked?: boolean
+          item_id: string
+          note?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          checked?: boolean
+          item_id?: string
+          note?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       availability_blocks: {
         Row: {
           car_id: string
