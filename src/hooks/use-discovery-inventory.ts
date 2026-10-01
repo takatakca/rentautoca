@@ -36,7 +36,7 @@ export function useDiscoveryInventory(coords?: { lat: number; lng: number } | nu
     staleTime: 60_000,
     queryFn: async (): Promise<DiscoveryCar[]> => {
       const { data: carsData, error } = await supabase
-        .from("cars")
+        .from("cars_public")
         .select(
           "id, make, model, year, base_daily_price_cents, location_label, body_type, fuel_type, seats, airport_pickup_enabled, monthly_enabled, instant_book, category, included_km_per_day, lat, lng, created_at"
         )
@@ -55,7 +55,7 @@ export function useDiscoveryInventory(coords?: { lat: number; lng: number } | nu
         supabase.from("car_photos").select("car_id, url").in("car_id", ids).order("sort_order"),
         supabase.from("reviews").select("car_id, rating_overall").in("car_id", ids),
         supabase
-          .from("availability_blocks")
+          .from("availability_public")
           .select("car_id")
           .in("car_id", ids)
           .lt("start_at", tomorrow.toISOString())
