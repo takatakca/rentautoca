@@ -37,11 +37,6 @@ const DOC_LABELS: Record<DocType, string> = {
 };
 
 const SAFE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const IMAGE_EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
   const { user } = useAuth();
@@ -77,12 +72,14 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
     }
 
     setUploading(docType);
-    const ext = IMAGE_EXTENSION[file.type];
-    const filePath = `${user.id}/${docType}.${ext}`;
+    const filePath = `${user.id}/${docType}`;
 
     const { error: uploadError } = await supabase.storage
       .from("rentauto-ids-private")
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
 
     if (uploadError) {
       toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
