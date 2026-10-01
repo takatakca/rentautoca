@@ -186,6 +186,7 @@ Deno.serve(async (req: Request) => {
       const connectedAccountId = String(preparedRow.connectedAccountId ?? "");
       const currency = String(preparedRow.currency ?? "").toLowerCase();
       const amountCents = Number(preparedRow.amountCents);
+      const requestKey = String(preparedRow.requestKey ?? "");
 
       if (
         !UUID.test(tripId) ||
@@ -193,7 +194,8 @@ Deno.serve(async (req: Request) => {
         !connectedAccountId.startsWith("acct_") ||
         !/^[a-z]{3}$/.test(currency) ||
         !Number.isSafeInteger(amountCents) ||
-        amountCents <= 0
+        amountCents <= 0 ||
+        !requestKey.startsWith("rentauto-settlement-release-")
       ) {
         throw new Error("invalid_prepared_settlement");
       }
@@ -229,7 +231,7 @@ Deno.serve(async (req: Request) => {
           },
         },
         {
-          idempotencyKey: `rentauto-settlement-release-${settlementId}`,
+          idempotencyKey: requestKey,
         },
       );
 
@@ -314,19 +316,19 @@ Deno.serve(async (req: Request) => {
       const transferId = String(preparedRow.transferId ?? "");
       const tripId = String(preparedRow.tripId ?? "");
       const reversedBeforeCents = Number(preparedRow.reversedBeforeCents);
+      const requestKey = String(preparedRow.requestKey ?? "");
 
       if (
         !transferId.startsWith("tr_") ||
         !UUID.test(tripId) ||
         !Number.isSafeInteger(reversedBeforeCents) ||
-        reversedBeforeCents < 0
+        reversedBeforeCents < 0 ||
+        !requestKey.startsWith("rentauto-settlement-reversal-")
       ) {
         throw new Error("invalid_prepared_reversal");
       }
 
       prepared = true;
-      const requestKey =
-        `rentauto-settlement-reversal-${settlementId}-${reversedBeforeCents}-${amountCents}`;
       const stripe = new Stripe(stripeKey);
       const reversal = await stripe.transfers.createReversal(
         transferId,
@@ -379,7 +381,12 @@ Deno.serve(async (req: Request) => {
 
   if (action !== "list") return json({ error: "Invalid action" }, 400);
 
-  const requestedStatus = typeof body.status === "string" ? body.status : "all";
+  await admin.rpc("rentauto_recover_stale_settlement_operations", {
+    p_admin_user_id: authData.user.id,
+    p_older_than_minutes: 15,
+  });
+
+    const requestedStatus = typeof body.status === "string" ? body.status : "all";
   const allowedStatuses = new Set([
     "configuration_required",
     "pending_trip",
