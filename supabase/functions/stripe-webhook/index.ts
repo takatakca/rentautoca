@@ -350,52 +350,17 @@ Deno.serve(async (req) => {
         const tripId = session.metadata?.trip_id;
 
         if (tripId) {
-          const { data: currentTrip } = await rentauto
-            .from("trips")
-            .select("id,stripe_session_id,status")
-            .eq("id", tripId)
-            .maybeSingle();
+          const { error: failError } = await admin.rpc(
+            "rentauto_fail_checkout_session",
+            {
+              p_trip_id: tripId,
+              p_stripe_session_id: session.id,
+              p_event_type: event.type,
+            },
+          );
 
-          if (
-            currentTrip?.stripe_session_id === session.id &&
-            currentTrip.status === "pending_payment"
-          ) {
-            const { error: tripUpdateError } = await rentauto
-              .from("trips")
-              .update({
-                status: "cancelled",
-                payment_status: "failed",
-              })
-              .eq("id", tripId)
-              .eq("stripe_session_id", session.id)
-              .eq("status", "pending_payment");
-
-            if (tripUpdateError) {
-              throw new Error("expired_checkout_trip_update_failed");
-            }
-
-            const { error: holdUpdateError } = await rentauto
-              .from("booking_holds")
-              .update({
-                status: "released",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("trip_id", tripId)
-              .eq("status", "active");
-
-            if (holdUpdateError) {
-              throw new Error("expired_checkout_hold_release_failed");
-            }
-
-            await rentauto.from("trip_events").insert({
-              trip_id: tripId,
-              actor_user_id: null,
-              event_type: "checkout_expired",
-              payload_json: {
-                stripe_session_id: session.id,
-                event_type: event.type,
-              },
-            });
+          if (failError) {
+            throw new Error("checkout_failure_transition_failed");
           }
         }
         break;
@@ -411,8 +376,6 @@ Deno.serve(async (req) => {
               : null;
 
         if (paymentIntentId) {
-          const trip = await findTripByPaymentIntent(paymentIntentId);
-
           const { error: refundError } = await admin.rpc(
             "rentauto_record_payment_refund",
             {
@@ -422,33 +385,6 @@ Deno.serve(async (req) => {
           );
 
           if (refundError) throw new Error("settlement_refund_sync_failed");
-
-          if (trip) {
-            const paymentStatus =
-              charge.amount_refunded >= charge.amount
-                ? "refunded"
-                : "partially_refunded";
-
-            const { error: tripUpdateError } = await rentauto
-              .from("trips")
-              .update({ payment_status: paymentStatus })
-              .eq("id", trip.id);
-
-            if (tripUpdateError) throw new Error("trip_refund_status_failed");
-
-            await rentauto.from("trip_events").insert({
-              trip_id: trip.id,
-              actor_user_id: null,
-              event_type: "stripe_refund_recorded",
-              payload_json: {
-                charge_id: charge.id,
-                payment_intent_id: paymentIntentId,
-                amount_refunded: charge.amount_refunded,
-                charge_amount: charge.amount,
-                payment_status: paymentStatus,
-              },
-            });
-          }
         }
         break;
       }
