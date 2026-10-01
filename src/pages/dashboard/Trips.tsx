@@ -26,6 +26,14 @@ interface Row {
   booking_reference: string | null;
 }
 
+interface CarSummary {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  location_label: string | null;
+}
+
 type Bucket = "upcoming" | "active" | "past" | "cancelled" | "drafts";
 
 function bucketOf(t: Row): Bucket {
@@ -40,7 +48,7 @@ function bucketOf(t: Row): Bucket {
 export default function DashboardTrips() {
   const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
-  const [cars, setCars] = useState<Record<string, any>>({});
+  const [cars, setCars] = useState<Record<string, CarSummary>>({});
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -64,12 +72,14 @@ export default function DashboardTrips() {
           supabase.from("car_photos").select("car_id, url").in("car_id", ids).order("sort_order"),
         ]);
         if (cancelled) return;
-        const cm: Record<string, any> = {};
-        (c.data ?? []).forEach((x: any) => (cm[x.id] = x));
+        const cm: Record<string, CarSummary> = {};
+        (c.data ?? []).forEach((car) => {
+          cm[car.id] = car;
+        });
         setCars(cm);
         const pm: Record<string, string> = {};
-        (p.data ?? []).forEach((x: any) => {
-          if (!pm[x.car_id]) pm[x.car_id] = x.url;
+        (p.data ?? []).forEach((photo) => {
+          if (!pm[photo.car_id]) pm[photo.car_id] = photo.url;
         });
         setPhotos(pm);
       }
