@@ -39,7 +39,7 @@ const GROUPS: Group[] = [
     items: [
       { id: "stripe-secret", label: "STRIPE_SECRET_KEY (live) set" },
       { id: "stripe-webhook-secret", label: "STRIPE_WEBHOOK_SECRET matches live endpoint" },
-      { id: "stripe-webhook-events", label: "Webhook subscribed to checkout/account/dispute events" },
+      { id: "stripe-webhook-events", label: "Webhook subscribed to checkout/account/refund/dispute events" },
       { id: "stripe-test-success", label: "Test card 4242 booking → trip confirmed" },
       { id: "stripe-test-decline", label: "Declined/failed checkout → trip cancelled/failed and hold released" },
       { id: "stripe-live-1cad", label: "Live $1 booking succeeded and was refunded" },
