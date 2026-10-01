@@ -45,7 +45,7 @@ export default function DashboardPayments() {
       setRows(list);
       const ids = [...new Set(list.map((t) => t.car_id))];
       if (ids.length) {
-        const { data: c } = await supabase.from("cars").select("id, make, model, year").in("id", ids);
+        const { data: c } = await supabase.from("cars_accessible").select("id, make, model, year").in("id", ids);
         if (cancelled) return;
         const cm: Record<string, any> = {};
         (c ?? []).forEach((x: any) => (cm[x.id] = x));
