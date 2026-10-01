@@ -929,6 +929,110 @@ export type Database = {
           },
         ]
       }
+      trip_settlements: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          currency: string
+          dispute_id: string | null
+          dispute_status: string | null
+          dispute_window_hours: number | null
+          eligible_at: string | null
+          guest_id: string
+          hold_reason: string | null
+          host_amount_cents: number | null
+          host_id: string
+          id: string
+          last_error: string | null
+          platform_fee_bps: number | null
+          platform_fee_cents: number | null
+          pricing_snapshot: Json
+          refunded_cents: number
+          rental_revenue_cents: number
+          reversed_amount_cents: number
+          reversed_at: string | null
+          source_charge_id: string | null
+          source_payment_intent_id: string
+          status: string
+          stripe_connected_account_id: string | null
+          stripe_transfer_id: string | null
+          stripe_transfer_reversal_id: string | null
+          transferred_at: string | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          currency: string
+          dispute_id?: string | null
+          dispute_status?: string | null
+          dispute_window_hours?: number | null
+          eligible_at?: string | null
+          guest_id: string
+          hold_reason?: string | null
+          host_amount_cents?: number | null
+          host_id: string
+          id?: string
+          last_error?: string | null
+          platform_fee_bps?: number | null
+          platform_fee_cents?: number | null
+          pricing_snapshot?: Json
+          refunded_cents?: number
+          rental_revenue_cents: number
+          reversed_amount_cents?: number
+          reversed_at?: string | null
+          source_charge_id?: string | null
+          source_payment_intent_id: string
+          status?: string
+          stripe_connected_account_id?: string | null
+          stripe_transfer_id?: string | null
+          stripe_transfer_reversal_id?: string | null
+          transferred_at?: string | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          dispute_id?: string | null
+          dispute_status?: string | null
+          dispute_window_hours?: number | null
+          eligible_at?: string | null
+          guest_id?: string
+          hold_reason?: string | null
+          host_amount_cents?: number | null
+          host_id?: string
+          id?: string
+          last_error?: string | null
+          platform_fee_bps?: number | null
+          platform_fee_cents?: number | null
+          pricing_snapshot?: Json
+          refunded_cents?: number
+          rental_revenue_cents?: number
+          reversed_amount_cents?: number
+          reversed_at?: string | null
+          source_charge_id?: string | null
+          source_payment_intent_id?: string
+          status?: string
+          stripe_connected_account_id?: string | null
+          stripe_transfer_id?: string | null
+          stripe_transfer_reversal_id?: string | null
+          transferred_at?: string | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_settlements_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: true
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_accounts: {
         Row: {
           charges_enabled: boolean
