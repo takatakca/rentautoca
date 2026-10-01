@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const rentauto = admin.schema("rentauto");
 
   const { data: claimRows, error: claimError } = await admin.rpc(
     "claim_stripe_webhook_event",
@@ -66,6 +67,160 @@ Deno.serve(async (req) => {
       return json({ received: true, duplicate: true }, 200);
     }
     return json({ error: "Event is already processing" }, 503);
+  }
+
+  async function findTripByPaymentIntent(paymentIntentId: string) {
+    const { data, error } = await admin
+      .from("trips")
+      .select("id,status,total_cents,payment_status")
+      .eq("stripe_payment_intent_id", paymentIntentId)
+      .maybeSingle();
+
+    if (error) throw new Error("trip_payment_lookup_failed");
+    return data;
+  }
+
+  async function syncDispute(dispute: Stripe.Dispute) {
+    const paymentIntentId =
+      typeof dispute.payment_intent === "string"
+        ? dispute.payment_intent
+        : dispute.payment_intent && typeof dispute.payment_intent === "object"
+          ? dispute.payment_intent.id
+          : null;
+
+    if (!paymentIntentId) return;
+
+    const trip = await findTripByPaymentIntent(paymentIntentId);
+    if (!trip) return;
+
+    const dueBy = dispute.evidence_details?.due_by;
+    const closedStatuses = new Set(["won", "lost", "warning_closed"]);
+    const isClosed = closedStatuses.has(dispute.status);
+
+    const { error: disputeError } = await rentauto
+      .from("stripe_disputes")
+      .upsert(
+        {
+          stripe_dispute_id: dispute.id,
+          trip_id: trip.id,
+          payment_intent_id: paymentIntentId,
+          amount_cents: dispute.amount,
+          currency: dispute.currency.toUpperCase(),
+          reason: dispute.reason ?? null,
+          status: dispute.status,
+          evidence_due_by:
+            typeof dueBy === "number"
+              ? new Date(dueBy * 1000).toISOString()
+              : null,
+          updated_at: new Date().toISOString(),
+          closed_at: isClosed ? new Date().toISOString() : null,
+        },
+        { onConflict: "stripe_dispute_id" },
+      );
+
+    if (disputeError) throw new Error("stripe_dispute_sync_failed");
+
+    const { data: settlement, error: settlementError } = await rentauto
+      .from("trip_settlements")
+      .select(
+        "id,status,stripe_transfer_id,host_amount_cents,reversed_amount_cents",
+      )
+      .eq("trip_id", trip.id)
+      .maybeSingle();
+
+    if (settlementError) throw new Error("settlement_dispute_lookup_failed");
+
+    if (settlement) {
+      if (!isClosed) {
+        const nextStatus =
+          settlement.stripe_transfer_id &&
+          settlement.status !== "reversed"
+            ? "reversal_required"
+            : "blocked";
+
+        const { error } = await rentauto
+          .from("trip_settlements")
+          .update({
+            dispute_id: dispute.id,
+            dispute_status: dispute.status,
+            status: nextStatus,
+            hold_reason: "payment_dispute",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", settlement.id);
+
+        if (error) throw new Error("settlement_dispute_block_failed");
+      } else if (dispute.status === "won" || dispute.status === "warning_closed") {
+        if (settlement.stripe_transfer_id) {
+          const hostAmount = settlement.host_amount_cents ?? 0;
+          const reversed = settlement.reversed_amount_cents ?? 0;
+          const restoredStatus =
+            reversed >= hostAmount && hostAmount > 0
+              ? "reversed"
+              : reversed > 0
+                ? "partially_reversed"
+                : "transferred";
+
+          const { error } = await rentauto
+            .from("trip_settlements")
+            .update({
+              dispute_id: dispute.id,
+              dispute_status: dispute.status,
+              status: restoredStatus,
+              hold_reason: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", settlement.id);
+
+          if (error) throw new Error("settlement_dispute_restore_failed");
+        } else {
+          const { error } = await rentauto
+            .from("trip_settlements")
+            .update({
+              dispute_id: dispute.id,
+              dispute_status: dispute.status,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", settlement.id);
+
+          if (error) throw new Error("settlement_dispute_close_failed");
+
+          const { error: refreshError } = await rentauto.rpc(
+            "refresh_trip_settlement",
+            { p_trip_id: trip.id },
+          );
+          if (refreshError) throw new Error("settlement_dispute_refresh_failed");
+        }
+      } else {
+        const { error } = await rentauto
+          .from("trip_settlements")
+          .update({
+            dispute_id: dispute.id,
+            dispute_status: dispute.status,
+            status: settlement.stripe_transfer_id
+              ? "reversal_required"
+              : "blocked",
+            hold_reason: "payment_dispute_lost",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", settlement.id);
+
+        if (error) throw new Error("settlement_dispute_loss_failed");
+      }
+    }
+
+    await admin.from("trip_events").insert({
+      trip_id: trip.id,
+      actor_user_id: null,
+      event_type: `stripe_dispute_${dispute.status}`,
+      payload_json: {
+        dispute_id: dispute.id,
+        amount: dispute.amount,
+        currency: dispute.currency,
+        reason: dispute.reason,
+        status: dispute.status,
+      },
+    });
   }
 
   try {
@@ -245,33 +400,62 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case "charge.dispute.created": {
-        const dispute = event.data.object as Stripe.Dispute;
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
         const paymentIntentId =
-          typeof dispute.payment_intent === "string"
-            ? dispute.payment_intent
-            : null;
+          typeof charge.payment_intent === "string"
+            ? charge.payment_intent
+            : charge.payment_intent && typeof charge.payment_intent === "object"
+              ? charge.payment_intent.id
+              : null;
 
         if (paymentIntentId) {
-          const { data: trip } = await admin
-            .from("trips")
-            .select("id")
-            .eq("stripe_payment_intent_id", paymentIntentId)
-            .maybeSingle();
+          const trip = await findTripByPaymentIntent(paymentIntentId);
+
+          const { error: refundError } = await admin.rpc(
+            "rentauto_record_payment_refund",
+            {
+              p_payment_intent_id: paymentIntentId,
+              p_refunded_cents: charge.amount_refunded,
+            },
+          );
+
+          if (refundError) throw new Error("settlement_refund_sync_failed");
 
           if (trip) {
+            const paymentStatus =
+              charge.amount_refunded >= charge.amount
+                ? "refunded"
+                : "partially_refunded";
+
+            const { error: tripUpdateError } = await admin
+              .from("trips")
+              .update({ payment_status: paymentStatus })
+              .eq("id", trip.id);
+
+            if (tripUpdateError) throw new Error("trip_refund_status_failed");
+
             await admin.from("trip_events").insert({
               trip_id: trip.id,
               actor_user_id: null,
-              event_type: "charge_dispute_created",
+              event_type: "stripe_refund_recorded",
               payload_json: {
-                dispute_id: dispute.id,
-                amount: dispute.amount,
-                reason: dispute.reason,
+                charge_id: charge.id,
+                payment_intent_id: paymentIntentId,
+                amount_refunded: charge.amount_refunded,
+                charge_amount: charge.amount,
+                payment_status: paymentStatus,
               },
             });
           }
         }
+        break;
+      }
+
+      case "charge.dispute.created":
+      case "charge.dispute.updated":
+      case "charge.dispute.closed": {
+        await syncDispute(event.data.object as Stripe.Dispute);
         break;
       }
 
