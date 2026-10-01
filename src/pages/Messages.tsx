@@ -128,7 +128,7 @@ export default function Messages() {
     const missingCarIds = allCarIds.filter((id) => !carMap[id]);
     if (missingCarIds.length) {
       const { data: missingCars } = await supabase
-        .from("cars")
+        .from("cars_accessible")
         .select("id,host_id,title,make,model,year")
         .in("id", missingCarIds);
       for (const car of missingCars ?? []) carMap[car.id] = car as CarRow;
