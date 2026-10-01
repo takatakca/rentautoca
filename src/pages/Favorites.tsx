@@ -111,12 +111,13 @@ export default function Favorites() {
         agg[r.car_id].sum += Number(r.rating_overall);
         agg[r.car_id].n += 1;
       });
-      const carsById: Record<string, any> = {};
-      (carsRes.data || []).forEach((c) => (carsById[c.id] = c));
+      const carsById = new Map(
+        (carsRes.data || []).map((car) => [car.id, car] as const),
+      );
 
       const mapped = (favs || [])
         .map((f) => {
-          const c = carsById[f.car_id];
+          const c = carsById.get(f.car_id);
           if (!c) return null;
           const r = agg[f.car_id];
           return {
