@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar, MapPin, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { bookingRef } from "@/lib/dashboard-utils";
+import type { Json } from "@/integrations/supabase/types";
 
 interface TripRow {
   id: string;
@@ -20,7 +21,7 @@ interface TripRow {
   status: string;
   total_cents: number | null;
   pickup_location: string | null;
-  pricing_breakdown: any;
+  pricing_breakdown: Json | null;
   created_at: string;
   booking_reference: string | null;
   car: { make: string; model: string; year: number; title: string | null } | null;
@@ -31,6 +32,9 @@ const STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
   quote: "Quote",
   pending_payment: "Pending payment",
+  requested: "Awaiting host",
+  approved: "Approved — pay",
+  declined: "Declined",
   confirmed: "Confirmed",
   in_progress: "In progress",
   completed: "Completed",
@@ -38,7 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function bucketOf(t: TripRow): "upcoming" | "active" | "completed" | "cancelled" {
-  if (t.status === "cancelled") return "cancelled";
+  if (t.status === "cancelled" || t.status === "declined") return "cancelled";
   if (t.status === "completed") return "completed";
   const now = Date.now();
   const start = new Date(t.start_at).getTime();
@@ -161,8 +165,17 @@ export default function Trips() {
   );
 }
 
+function protectionName(value: Json | null): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const snapshot = value.protection_snapshot;
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    return null;
+  }
+  return typeof snapshot.name === "string" ? snapshot.name : null;
+}
+
 function TripCard({ t }: { t: TripRow }) {
-  const protection = t.pricing_breakdown?.protection_snapshot;
+  const protection = protectionName(t.pricing_breakdown);
   return (
     <Link to={`/trips/${t.id}`}>
       <Card className="hover:border-primary/50 transition-colors">
@@ -193,7 +206,7 @@ function TripCard({ t }: { t: TripRow }) {
             <div className="flex items-center justify-between mt-1">
               {protection && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Shield className="h-3 w-3" /> {protection.name}
+                  <Shield className="h-3 w-3" /> {protection}
                 </span>
               )}
               {t.total_cents != null && (

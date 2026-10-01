@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
-import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut, MessageCircle, CreditCard, Clock3 } from "lucide-react";
 import { format } from "date-fns";
 import { bookingRef } from "@/lib/dashboard-utils";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
@@ -127,6 +127,13 @@ export default function TripDetail() {
             <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary capitalize">
               {trip.status.replace(/_/g, " ")}
             </span>
+            {trip.status === "approved" && trip.guest_id === user?.id && (
+              <Button asChild size="sm">
+                <Link to={`/checkout/${trip.id}`}>
+                  <CreditCard className="h-3.5 w-3.5 mr-1" />Complete payment
+                </Link>
+              </Button>
+            )}
             {["confirmed", "check_in_pending"].includes(trip.status) && trip.guest_id === user?.id && (
               <Button asChild size="sm"><Link to={`/trips/${trip.id}/check-in`}><KeyRound className="h-3.5 w-3.5 mr-1" />Start check-in</Link></Button>
             )}
@@ -145,6 +152,36 @@ export default function TripDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {trip.status === "requested" && trip.guest_id === user?.id ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex gap-3 items-start">
+            <Clock3 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">Waiting for host approval</p>
+              <p className="mt-1 text-muted-foreground">
+                No payment has been taken. The host can approve or decline this request within the review window.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {trip.status === "approved" && trip.guest_id === user?.id ? (
+        <Card className="border-success/30 bg-success/5">
+          <CardContent className="p-4">
+            <p className="font-medium">Host approved your request</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Complete payment while the vehicle is held for you.
+            </p>
+            <Button asChild className="mt-3">
+              <Link to={`/checkout/${trip.id}`}>
+                <CreditCard className="h-4 w-4" />Complete payment
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {["active", "check_out_pending"].includes(trip.status) && (
         <LiveLocationCard tripId={trip.id} showRoute />

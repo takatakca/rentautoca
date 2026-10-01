@@ -185,6 +185,8 @@ export default function CarListing() {
 
     setReserving(false);
     const tripId = data && typeof data.tripId === "string" ? data.tripId : null;
+    const bookingMode =
+      data && data.bookingMode === "request" ? "request" : "instant";
 
     if (bookingError || !tripId) {
       const bookingMessage =
@@ -209,9 +211,19 @@ export default function CarListing() {
       return;
     }
 
+    if (bookingMode === "request") {
+      toast({
+        title: "Booking request sent",
+        description:
+          "The host has up to 24 hours to review it. You will be notified when they respond.",
+      });
+      navigate(`/trips/${tripId}`);
+      return;
+    }
+
     toast({
-      title: "Reviewing your booking",
-      description: "Your vehicle is temporarily held while you confirm and pay.",
+      title: "Vehicle temporarily held",
+      description: "Review your booking and complete payment to secure the vehicle.",
     });
     navigate(`/checkout/${tripId}`);
   };
@@ -232,7 +244,9 @@ export default function CarListing() {
               ? "Your verified driver licence has expired."
               : driverEligibility !== "approved"
                 ? "Driver verification is required before booking."
-              : null;
+                : !car.instant_book
+                  ? "This host reviews booking requests before payment."
+                  : null;
   const ctaLabel = !user
     ? "Sign in to continue"
     : driverEligibilityLoading
@@ -244,8 +258,12 @@ export default function CarListing() {
           : driverEligibility !== "approved"
             ? "Verify driver to book"
           : reserving
-            ? "Reserving…"
-            : "Continue";
+            ? car.instant_book
+              ? "Reserving…"
+              : "Sending request…"
+            : car.instant_book
+              ? "Continue"
+              : "Request to book";
   const ctaDisabled =
     isDisabled || datesUnavailable || !quote || (Boolean(user) && driverEligibilityLoading);
   const onDatesChange = (s: Date, e: Date) => { setStartDate(s); setEndDate(e); };
