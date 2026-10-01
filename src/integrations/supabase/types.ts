@@ -946,13 +946,114 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_handoff_snapshots: {
+        Row: {
+          damage_notes: string | null
+          damage_reported: boolean
+          evidence_hash: string
+          exterior_photos: string[]
+          fuel_level: string
+          id: string
+          interior_photos: string[]
+          location_confirmed: boolean
+          odometer_km: number
+          phase: string
+          submitted_at: string
+          submitted_by: string
+          tracking_consent_at: string | null
+          trip_id: string
+        }
+        Insert: {
+          damage_notes?: string | null
+          damage_reported?: boolean
+          evidence_hash: string
+          exterior_photos: string[]
+          fuel_level: string
+          id?: string
+          interior_photos: string[]
+          location_confirmed?: boolean
+          odometer_km: number
+          phase: string
+          submitted_at?: string
+          submitted_by: string
+          tracking_consent_at?: string | null
+          trip_id: string
+        }
+        Update: {
+          damage_notes?: string | null
+          damage_reported?: boolean
+          evidence_hash?: string
+          exterior_photos?: string[]
+          fuel_level?: string
+          id?: string
+          interior_photos?: string[]
+          location_confirmed?: boolean
+          odometer_km?: number
+          phase?: string
+          submitted_at?: string
+          submitted_by?: string
+          tracking_consent_at?: string | null
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_handoff_snapshots_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_incident_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          incident_id: string
+          payload_json: Json
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          incident_id: string
+          payload_json?: Json
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          incident_id?: string
+          payload_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_incident_events_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "trip_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_incidents: {
         Row: {
           created_at: string
           description: string | null
+          evidence_hash: string | null
           id: string
           photo_urls: string[]
           reporter_user_id: string
+          resolution_code: string | null
+          resolution_notes: string | null
+          resolved_amount_cents: number | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          severity: string
           status: string
           trip_id: string
           type: string
@@ -961,9 +1062,16 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          evidence_hash?: string | null
           id?: string
           photo_urls?: string[]
           reporter_user_id: string
+          resolution_code?: string | null
+          resolution_notes?: string | null
+          resolved_amount_cents?: number | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          severity?: string
           status?: string
           trip_id: string
           type: string
@@ -972,15 +1080,30 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          evidence_hash?: string | null
           id?: string
           photo_urls?: string[]
           reporter_user_id?: string
+          resolution_code?: string | null
+          resolution_notes?: string | null
+          resolved_amount_cents?: number | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          severity?: string
           status?: string
           trip_id?: string
           type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trip_incidents_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_tracking_sessions: {
         Row: {
