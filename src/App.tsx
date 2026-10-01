@@ -32,6 +32,7 @@ const HostCarEdit = lazy(() => import("./pages/HostCarEdit"));
 const HostVehicleDocuments = lazy(() => import("./pages/HostVehicleDocuments"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const AdminLaunchChecklist = lazy(() => import("./pages/AdminLaunchChecklist"));
+const AdminVehicleReviews = lazy(() => import("./pages/AdminVehicleReviews"));
 const BecomeHost = lazy(() => import("./pages/BecomeHost"));
 const Profile = lazy(() => import("./pages/Profile"));
 const CarListing = lazy(() => import("./pages/CarListing"));
