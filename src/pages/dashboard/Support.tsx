@@ -67,7 +67,7 @@ export default function DashboardSupport() {
         .maybeSingle();
       if (cancelled || !t) return;
       const { data: c } = await supabase
-        .from("cars")
+        .from("cars_accessible")
         .select("make, model, year")
         .eq("id", t.car_id)
         .maybeSingle();
