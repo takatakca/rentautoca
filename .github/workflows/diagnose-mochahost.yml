@@ -1,0 +1,93 @@
+name: Diagnose Rentauto MochaHost
+
+on:
+  push:
+    branches:
+      - diagnostics/mochahost-passenger
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MOCHAHOST_HOST: ${{ secrets.MOCHAHOST_HOST }}
+      MOCHAHOST_USER: ${{ secrets.MOCHAHOST_USER }}
+      MOCHAHOST_PORT: ${{ secrets.MOCHAHOST_PORT || '22' }}
+      MOCHAHOST_APP_PATH: ${{ vars.MOCHAHOST_APP_PATH || '/home/bolonca/rentauto_node' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          MOCHAHOST_SSH_KEY: ${{ secrets.MOCHAHOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$MOCHAHOST_SSH_KEY" | tr -d '\r' > ~/.ssh/rentauto_deploy_key
+          chmod 600 ~/.ssh/rentauto_deploy_key
+          ssh-keyscan -p "$MOCHAHOST_PORT" -H "$MOCHAHOST_HOST" >> ~/.ssh/known_hosts
+
+      - name: Inspect Passenger application
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'set +e\n'
+            printf 'APP_PATH=%q\n' "$MOCHAHOST_APP_PATH"
+            cat <<'REMOTE'
+          echo "=== ID / NODE ==="
+          whoami
+          node -v 2>&1 || true
+          command -v node 2>&1 || true
+
+          echo "=== APP ROOT ==="
+          cd "$APP_PATH" || exit 0
+          pwd
+          ls -la
+          echo "CURRENT=$(cat CURRENT 2>/dev/null || echo missing)"
+          echo "PREVIOUS=$(cat PREVIOUS 2>/dev/null || echo missing)"
+
+          echo "=== STARTUP FILES ==="
+          for f in app.js server.cjs package.json .htaccess; do
+            echo "--- $f ---"
+            if [ -f "$f" ]; then
+              sed -n '1,240p' "$f"
+            else
+              echo "MISSING"
+            fi
+          done
+
+          echo "=== RELEASES ==="
+          ls -lat releases 2>/dev/null | head -20 || true
+          CUR="$(tr -d '\r\n' < CURRENT 2>/dev/null)"
+          if [ -n "$CUR" ] && [ -d "releases/$CUR" ]; then
+            echo "--- current release $CUR ---"
+            find "releases/$CUR" -maxdepth 2 -type f | sort | head -80
+          fi
+
+          echo "=== HEALTH ==="
+          curl -i --max-time 15 https://rentauto.ca/healthz 2>&1 || true
+          echo
+          curl -I --max-time 15 https://rentauto.ca/ 2>&1 || true
+
+          echo "=== POSSIBLE LOGS ==="
+          for d in "$APP_PATH" "$HOME/logs" "$HOME"; do
+            find "$d" -maxdepth 2 -type f \( -name '*error*log*' -o -name '*stderr*' -o -name '*passenger*log*' \) -print 2>/dev/null | head -30
+          done
+
+          echo "=== LOG TAILS ==="
+          for f in "$APP_PATH/stderr.log" "$APP_PATH/error.log" "$HOME/logs/error_log" "$HOME/logs/error.log"; do
+            if [ -f "$f" ]; then
+              echo "--- $f ---"
+              tail -100 "$f"
+            fi
+          done
+          exit
+          REMOTE
+          } | ssh -tt -i ~/.ssh/rentauto_deploy_key -p "$MOCHAHOST_PORT" -o BatchMode=yes "$MOCHAHOST_USER@$MOCHAHOST_HOST"
