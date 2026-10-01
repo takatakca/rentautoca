@@ -23,13 +23,15 @@ Use any postal code, any name.
 ## Webhook test
 
 1. Stripe Dashboard → Developers → Webhooks → add endpoint:
-   `https://<project-ref>.functions.supabase.co/stripe-webhook`
+   `https://<project-ref>.functions.supabase.co/rentauto-stripe-webhook`
 2. Subscribe to:
    `checkout.session.completed`, `checkout.session.expired`,
    `checkout.session.async_payment_failed`,
    `payment_intent.succeeded`, `payment_intent.payment_failed`,
    `account.updated`, `account.application.deauthorized`,
-   `charge.dispute.created`.
+   `charge.refunded`, `refund.updated`, `refund.failed`,
+   `charge.dispute.created`, `charge.dispute.updated`,
+   `charge.dispute.closed`.
 3. Copy the signing secret → set as `STRIPE_WEBHOOK_SECRET`.
 4. "Send test webhook" → check Edge Function logs for `received: true`.
 
@@ -39,9 +41,9 @@ Use any postal code, any name.
 |---|---|---|
 | Checkout session created | `pending_payment` | `pending` |
 | `checkout.session.completed` | `confirmed` | `paid` |
-| `checkout.session.expired` | `draft` | `failed` |
-| `async_payment_failed` | `draft` | `failed` |
-| Refund issued (Dashboard) | `cancelled` (manual) | `refunded` |
+| `checkout.session.expired` | `cancelled` | `failed` |
+| `async_payment_failed` | `cancelled` | `failed` |
+| Rentauto cancellation refund succeeds | `cancelled` | `refunded` or `partially_refunded` |
 
 ## Live $1 test (LC1)
 
@@ -49,7 +51,7 @@ Use any postal code, any name.
 2. Create a real car with `daily_rate_cents = 100`.
 3. Book 1 day with a real card.
 4. Verify webhook fires, trip flips to `confirmed`, availability blocked.
-5. Refund from Stripe Dashboard → verify trip back to `cancelled`/`refunded`.
+5. Use the Rentauto cancellation workflow → verify Stripe refund, trip `cancelled`, payment/refund projection synchronized, and availability released only after refund success.
 
 ## Troubleshooting
 
