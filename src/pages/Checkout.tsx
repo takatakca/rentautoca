@@ -103,9 +103,19 @@ export default function Checkout() {
 
       if (!driverResult.error) {
         const driverResponse = (driverResult.data ?? {}) as {
-          verification?: { status?: string } | null;
+          verification?: {
+            status?: string;
+            licenseExpiresOn?: string | null;
+          } | null;
         };
-        setDriverStatus(driverResponse.verification?.status ?? "not_started");
+        const status = driverResponse.verification?.status ?? "not_started";
+        const expiresOn = driverResponse.verification?.licenseExpiresOn ?? null;
+        const today = new Date().toISOString().slice(0, 10);
+        setDriverStatus(
+          status === "approved" && (!expiresOn || expiresOn < today)
+            ? "expired"
+            : status,
+        );
       }
       setDriverStatusLoading(false);
 
@@ -127,11 +137,15 @@ export default function Checkout() {
         title:
           driverStatus === "pending"
             ? "Driver verification is under review"
-            : "Driver verification required",
+            : driverStatus === "expired"
+              ? "Driver verification expired"
+              : "Driver verification required",
         description:
           driverStatus === "pending"
             ? "Payment unlocks after Rentauto approves your driver verification."
-            : "Upload your driver licence and selfie before paying for a booking.",
+            : driverStatus === "expired"
+              ? "Upload a current driver licence before paying for a booking."
+              : "Upload your driver licence and selfie before paying for a booking.",
       });
       navigate("/dashboard/documents?focus=driver");
       return;
@@ -296,16 +310,24 @@ export default function Checkout() {
               <p className="font-medium">
                 {driverStatus === "pending"
                   ? "Driver verification under review"
-                  : "Driver verification required"}
+                  : driverStatus === "expired"
+                    ? "Driver verification expired"
+                    : "Driver verification required"}
               </p>
               <p className="text-muted-foreground">
                 {driverStatus === "pending"
                   ? "Your booking draft is saved, but payment stays locked until the review is approved."
-                  : "Verify your driver licence and selfie once before paying for Rentauto bookings."}
+                  : driverStatus === "expired"
+                    ? "Your previous approval expired with the licence. Upload a current licence to continue."
+                    : "Verify your driver licence and selfie once before paying for Rentauto bookings."}
               </p>
               <Button variant="outline" size="sm" className="mt-2" asChild>
                 <Link to="/dashboard/documents?focus=driver">
-                  {driverStatus === "pending" ? "View verification" : "Verify driver"}
+                  {driverStatus === "pending"
+                    ? "View verification"
+                    : driverStatus === "expired"
+                      ? "Renew verification"
+                      : "Verify driver"}
                 </Link>
               </Button>
             </div>
