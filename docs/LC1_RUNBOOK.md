@@ -20,10 +20,15 @@ Track progress live at **`/admin/launch-checklist`**. The checklist is shared se
 - [ ] Legal pages reachable: `/terms`, `/privacy`, `/insurance`,
       `/cancellation-policy`
 - [ ] Auth → Site URL + redirect URLs include deployed domain
+- [ ] TAKATAK Supabase Phone Auth enabled with the production SMS provider
+- [ ] Real TAKATAK SMS OTP received and verified on a Canadian mobile number
+- [ ] Verified phone produces one `master_identities` row and one RENTAUTO `source_profiles` projection
 
 ## 1. Host setup (30 min) — Account A
 
-- [ ] Sign up at `/signup`
+- [ ] Sign up at `/signup` through the TAKATAK SMS OTP flow
+- [ ] Confirm the same Supabase `auth.users.id` resolves to a TAKATAK master identity
+- [ ] Confirm Rentauto receives only its source projection / account authorization
 - [ ] Complete profile (name, phone, photo)
 - [ ] `/become-host` → complete host onboarding ≥ required threshold
 - [ ] Complete Stripe Connect onboarding (real bank info)
@@ -36,7 +41,8 @@ Track progress live at **`/admin/launch-checklist`**. The checklist is shared se
 
 ## 2. Guest setup (15 min) — Account B (different email + device)
 
-- [ ] Sign up at `/signup`
+- [ ] Sign up at `/signup` through the TAKATAK SMS OTP flow
+- [ ] Confirm TAKATAK master identity + RENTAUTO source projection
 - [ ] Complete profile + ID verification
 
 ## 3. Stripe test-mode validation (15 min)
