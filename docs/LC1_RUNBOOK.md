@@ -8,7 +8,7 @@ Definition of Done: one real host lists a real car, one real guest books
 it, pays via Stripe, checks in, GPS records the trip, checks out, and
 leaves a review.
 
-Track progress live at **`/admin/launch-checklist`**.
+Track progress live at **`/admin/launch-checklist`**. The checklist is shared server-side across admins; every saved change is timestamped and written to an append-only audit log.
 
 ---
 
