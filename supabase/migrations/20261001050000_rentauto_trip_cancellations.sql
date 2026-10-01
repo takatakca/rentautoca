@@ -2,6 +2,12 @@
 -- Auto-refunds only when the booking's immutable cancellation-policy snapshot
 -- explicitly covers the case. Undefined cases fail closed to manual review.
 
+UPDATE rentauto.cancellation_policies
+SET summary = 'Full refund within 24 hours of booking. Other timings require manual review.'
+WHERE name = 'Free cancellation'
+  AND rules->>'refund_percentage' = '100'
+  AND rules->>'refund_window_hours' = '24';
+
 CREATE TABLE IF NOT EXISTS rentauto.trip_cancellations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   trip_id uuid NOT NULL UNIQUE REFERENCES rentauto.trips(id) ON DELETE RESTRICT,
