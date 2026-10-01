@@ -36,6 +36,13 @@ const DOC_LABELS: Record<DocType, string> = {
   selfie: "Selfie Photo",
 };
 
+const SAFE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const IMAGE_EXTENSION: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -56,8 +63,12 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
   const handleUpload = async (docType: DocType, file: File) => {
     if (!user) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
+    if (!SAFE_IMAGE_TYPES.has(file.type)) {
+      toast({
+        title: "Invalid file",
+        description: "Use a JPEG, PNG or WebP image.",
+        variant: "destructive",
+      });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -66,7 +77,7 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
     }
 
     setUploading(docType);
-    const ext = file.name.split(".").pop() || "jpg";
+    const ext = IMAGE_EXTENSION[file.type];
     const filePath = `${user.id}/${docType}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
@@ -188,7 +199,7 @@ export function VerificationUpload({ data, onSaved }: VerificationUploadProps) {
                 <input
                   ref={fileRefs[docType]}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
