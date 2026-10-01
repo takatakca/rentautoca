@@ -11,6 +11,19 @@ import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { DashboardPageHeader, StatusBadge } from "@/components/dashboard/DashboardPageHeader";
 import { PAYMENT_STATUS, money, bookingRef } from "@/lib/dashboard-utils";
 
+interface PricingBreakdown {
+  subtotal_cents?: number;
+  tax_cents?: number;
+  fees_cents?: number;
+}
+
+interface CarSummary {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+}
+
 interface Row {
   id: string;
   car_id: string;
@@ -20,7 +33,7 @@ interface Row {
   payment_status: string | null;
   total_cents: number | null;
   currency: string;
-  pricing_breakdown: any;
+  pricing_breakdown: PricingBreakdown | null;
   created_at: string;
   booking_reference: string | null;
 }
@@ -28,7 +41,7 @@ interface Row {
 export default function DashboardPayments() {
   const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
-  const [cars, setCars] = useState<Record<string, any>>({});
+  const [cars, setCars] = useState<Record<string, CarSummary>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,10 +58,12 @@ export default function DashboardPayments() {
       setRows(list);
       const ids = [...new Set(list.map((t) => t.car_id))];
       if (ids.length) {
-        const { data: c } = await supabase.from("cars").select("id, make, model, year").in("id", ids);
+        const { data: c } = await supabase.from("cars_accessible").select("id, make, model, year").in("id", ids);
         if (cancelled) return;
-        const cm: Record<string, any> = {};
-        (c ?? []).forEach((x: any) => (cm[x.id] = x));
+        const cm: Record<string, CarSummary> = {};
+        (c ?? []).forEach((car) => {
+          cm[car.id] = car;
+        });
         setCars(cm);
       }
       setLoading(false);

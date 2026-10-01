@@ -75,7 +75,7 @@ export default function Explore() {
     queryKey: ["explore-cars", locationQuery, startDate?.toISOString(), endDate?.toISOString()],
     queryFn: async (): Promise<ExploreCar[]> => {
       let q = supabase
-        .from("cars")
+        .from("cars_public")
         .select(
           "id, make, model, year, base_daily_price_cents, location_label, body_type, transmission, fuel_type, seats, airport_pickup_enabled, monthly_enabled, instant_book",
         )
@@ -112,7 +112,7 @@ export default function Explore() {
       const unavailable = new Set<string>();
       if (startDate && endDate) {
         const { data: blocks } = await supabase
-          .from("availability_blocks")
+          .from("availability_public")
           .select("car_id")
           .in("car_id", carIds)
           .lt("start_at", endDate.toISOString())

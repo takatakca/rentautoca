@@ -82,7 +82,7 @@ export default function Trips() {
 
       if (carIds.length) {
         const [carsRes, photosRes] = await Promise.all([
-          supabase.from("cars").select("id, make, model, year, title").in("id", carIds),
+          supabase.from("cars_accessible").select("id, make, model, year, title").in("id", carIds),
           supabase.from("car_photos").select("car_id, url").in("car_id", carIds).order("sort_order"),
         ]);
         (carsRes.data || []).forEach((c) => {

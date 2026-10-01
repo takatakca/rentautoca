@@ -82,7 +82,7 @@ export interface CarListing {
 
 async function fetchCarListing(carId: string): Promise<CarListing> {
   const [carRes, photosRes, extrasRes, policyRes, reviewsRes] = await Promise.all([
-    supabase.from("cars").select("*").eq("id", carId).single(),
+    supabase.from("cars_public").select("*").eq("id", carId).single(),
     supabase.from("car_photos").select("*").eq("car_id", carId).order("sort_order"),
     supabase.from("car_extras").select("*").eq("car_id", carId).eq("is_active", true),
     supabase

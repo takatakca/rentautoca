@@ -40,7 +40,7 @@ export default function TripDetail() {
       setTrip(t);
       const [{ data: c }, { data: p }] = await Promise.all([
         supabase
-          .from("cars")
+          .from("cars_accessible")
           .select("id, make, model, year, title, location_label, host_id")
           .eq("id", t.car_id)
           .maybeSingle(),
