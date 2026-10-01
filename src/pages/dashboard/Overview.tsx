@@ -129,7 +129,7 @@ export default function DashboardOverview() {
       if (carIds.length) {
         const [carsRes, photoRes, eventsRes] = await Promise.all([
           supabase
-            .from("cars")
+            .from("cars_accessible")
             .select("id, make, model, year, title, location_label, base_daily_price_cents")
             .in("id", carIds),
           supabase.from("car_photos").select("car_id, url").in("car_id", carIds).order("sort_order"),
@@ -154,7 +154,7 @@ export default function DashboardOverview() {
 
       const prefCity = profileRes.data?.city ?? null;
       let recQuery = supabase
-        .from("cars")
+        .from("cars_accessible")
         .select("id, make, model, year, title, location_label, base_daily_price_cents")
         .eq("status", "active")
         .limit(6);
@@ -162,7 +162,7 @@ export default function DashboardOverview() {
       let { data: recs } = await recQuery;
       if (!recs || recs.length === 0) {
         const fallback = await supabase
-          .from("cars")
+          .from("cars_accessible")
           .select("id, make, model, year, title, location_label, base_daily_price_cents")
           .eq("status", "active")
           .limit(6);
