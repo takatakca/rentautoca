@@ -1,139 +1,152 @@
-// Tracking ingest endpoint — receives GPS location events from provider webhooks.
-// Public endpoint (no JWT) — authenticated via x-provider-secret header.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-provider-secret",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-interface IngestPayload {
-  provider: string;
-  device_identifier: string;
-  lat: number;
-  lng: number;
-  speed_kmh?: number;
-  heading?: number;
-  accuracy_meters?: number;
-  recorded_at?: string;
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+async function digest(value: string): Promise<Uint8Array> {
+  const bytes = new TextEncoder().encode(value);
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+}
+
+async function safeEqual(left: string, right: string): Promise<boolean> {
+  const [a, b] = await Promise.all([digest(left), digest(right)]);
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i += 1) mismatch |= a[i] ^ b[i];
+  return mismatch === 0;
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== "POST") {
+    return json({ error: "Method not allowed" }, 405);
   }
 
+  const expectedSecret = Deno.env.get("RENTAUTO_TRACKING_PROVIDER_SECRET");
+  if (!expectedSecret) {
+    console.error("[rentauto-tracking-ingest] Provider secret missing");
+    return json({ error: "Tracking provider unavailable" }, 503);
+  }
+
+  const providedSecret = req.headers.get("x-provider-secret") ?? "";
+  if (!providedSecret || !(await safeEqual(providedSecret, expectedSecret))) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const declaredLength = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > 2_048) {
+    return json({ error: "Payload too large" }, 413);
+  }
+
+  let body: Record<string, unknown>;
   try {
-    // Validate provider secret (skip in dev if not configured to allow mock)
-    const expectedSecret = Deno.env.get("TRACKING_PROVIDER_SECRET");
-    const providedSecret = req.headers.get("x-provider-secret");
-    if (expectedSecret && providedSecret !== expectedSecret) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Reject oversized payloads (defense vs. flood / amplification)
-    const contentLength = Number(req.headers.get("content-length") || "0");
-    if (contentLength > 2048) {
-      return new Response(JSON.stringify({ error: "Payload too large" }), {
-        status: 413,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const raw = await req.text();
-    if (raw.length > 2048) {
-      return new Response(JSON.stringify({ error: "Payload too large" }), {
-        status: 413,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (new TextEncoder().encode(raw).byteLength > 2_048) {
+      return json({ error: "Payload too large" }, 413);
     }
-    const body = JSON.parse(raw) as IngestPayload;
-
-    const validCoords =
-      typeof body?.lat === "number" && typeof body?.lng === "number" &&
-      body.lat >= -90 && body.lat <= 90 && body.lng >= -180 && body.lng <= 180;
-    const validSpeed = body.speed_kmh == null || (typeof body.speed_kmh === "number" && body.speed_kmh >= 0 && body.speed_kmh < 400);
-    const validAcc = body.accuracy_meters == null || (typeof body.accuracy_meters === "number" && body.accuracy_meters >= 0 && body.accuracy_meters < 100000);
-
-    if (!body?.device_identifier || typeof body.device_identifier !== "string" || body.device_identifier.length > 128 || !validCoords || !validSpeed || !validAcc) {
-      return new Response(JSON.stringify({ error: "Invalid payload" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    // Resolve device → car
-    const { data: device } = await admin
-      .from("vehicle_tracking_devices")
-      .select("id, car_id, status")
-      .eq("provider", body.provider || "mock")
-      .eq("device_identifier", body.device_identifier)
-      .maybeSingle();
-
-    if (!device) {
-      return new Response(JSON.stringify({ error: "Device not registered" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Find active session for that car
-    const { data: session } = await admin
-      .from("trip_tracking_sessions")
-      .select("id, trip_id")
-      .eq("car_id", device.car_id)
-      .eq("status", "active")
-      .order("started_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!session) {
-      // No active trip — bump last_seen but drop the location event (privacy)
-      await admin
-        .from("vehicle_tracking_devices")
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq("id", device.id);
-      return new Response(JSON.stringify({ ok: true, recorded: false, reason: "no_active_session" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const recordedAt = body.recorded_at || new Date().toISOString();
-    const { error: insErr } = await admin.from("vehicle_location_events").insert({
-      trip_id: session.trip_id,
-      car_id: device.car_id,
-      lat: body.lat,
-      lng: body.lng,
-      speed_kmh: body.speed_kmh ?? null,
-      heading: body.heading ?? null,
-      accuracy_meters: body.accuracy_meters ?? null,
-      source: body.provider || "mock",
-      recorded_at: recordedAt,
-    });
-    if (insErr) throw insErr;
-
-    await admin
-      .from("vehicle_tracking_devices")
-      .update({ last_seen_at: recordedAt })
-      .eq("id", device.id);
-
-    return new Response(JSON.stringify({ ok: true, recorded: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    body = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return json({ error: "Invalid payload" }, 400);
   }
+
+  const provider =
+    typeof body.provider === "string" && body.provider.length <= 100
+      ? body.provider.trim()
+      : "";
+  const deviceIdentifier =
+    typeof body.device_identifier === "string" &&
+    body.device_identifier.length <= 128
+      ? body.device_identifier.trim()
+      : "";
+  const lat = typeof body.lat === "number" ? body.lat : NaN;
+  const lng = typeof body.lng === "number" ? body.lng : NaN;
+  const speed =
+    body.speed_kmh === undefined || body.speed_kmh === null
+      ? null
+      : typeof body.speed_kmh === "number"
+        ? body.speed_kmh
+        : NaN;
+  const heading =
+    body.heading === undefined || body.heading === null
+      ? null
+      : typeof body.heading === "number"
+        ? body.heading
+        : NaN;
+  const accuracy =
+    body.accuracy_meters === undefined || body.accuracy_meters === null
+      ? null
+      : typeof body.accuracy_meters === "number"
+        ? body.accuracy_meters
+        : NaN;
+  const recordedAt =
+    typeof body.recorded_at === "string" ? body.recorded_at : new Date().toISOString();
+
+  if (
+    !provider ||
+    !deviceIdentifier ||
+    !Number.isFinite(lat) ||
+    lat < -90 ||
+    lat > 90 ||
+    !Number.isFinite(lng) ||
+    lng < -180 ||
+    lng > 180 ||
+    (speed !== null && (!Number.isFinite(speed) || speed < 0 || speed >= 400)) ||
+    (heading !== null &&
+      (!Number.isFinite(heading) || heading < 0 || heading >= 360)) ||
+    (accuracy !== null &&
+      (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 100_000)) ||
+    Number.isNaN(Date.parse(recordedAt))
+  ) {
+    return json({ error: "Invalid payload" }, 400);
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceKey) {
+    return json({ error: "Service unavailable" }, 503);
+  }
+
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data, error } = await admin.rpc("rentauto_ingest_location", {
+    p_provider: provider,
+    p_device_identifier: deviceIdentifier,
+    p_lat: lat,
+    p_lng: lng,
+    p_speed_kmh: speed,
+    p_heading: heading,
+    p_accuracy_meters: accuracy,
+    p_recorded_at: recordedAt,
+  });
+
+  if (error) {
+    const message = error.message ?? "";
+    if (message.includes("tracking_device_not_registered")) {
+      return json({ error: "Device not registered" }, 404);
+    }
+    if (
+      message.includes("invalid_tracking_payload") ||
+      message.includes("invalid_tracking_timestamp") ||
+      message.includes("invalid_tracking_device")
+    ) {
+      return json({ error: "Invalid payload" }, 400);
+    }
+
+    console.error(
+      "[rentauto-tracking-ingest] Ingest failed",
+      error.code ?? "unknown",
+    );
+    return json({ error: "Tracking event could not be processed" }, 500);
+  }
+
+  return json(data, 200);
 });
