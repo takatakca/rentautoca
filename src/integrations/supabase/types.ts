@@ -463,6 +463,60 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          license_back_url: string | null
+          license_country: string
+          license_expires_on: string | null
+          license_front_url: string | null
+          license_region: string | null
+          reviewed_at: string | null
+          reviewer_notes: string | null
+          reviewer_user_id: string | null
+          selfie_url: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          license_back_url?: string | null
+          license_country?: string
+          license_expires_on?: string | null
+          license_front_url?: string | null
+          license_region?: string | null
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          reviewer_user_id?: string | null
+          selfie_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          license_back_url?: string | null
+          license_country?: string
+          license_expires_on?: string | null
+          license_front_url?: string | null
+          license_region?: string | null
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          reviewer_user_id?: string | null
+          selfie_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       host_verifications: {
         Row: {
           created_at: string

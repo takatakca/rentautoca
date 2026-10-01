@@ -51,6 +51,35 @@ export default function CarListing() {
   const [reserving, setReserving] = useState(false);
 
   // Default protection plan = Silver
+  const { data: driverEligibility, isLoading: driverEligibilityLoading } = useQuery({
+    queryKey: ["driver-eligibility", user?.id],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "rentauto-driver-verification",
+        { body: { action: "status" } },
+      );
+      if (error) throw error;
+      const response = (data ?? {}) as {
+        verification?: {
+          status?: string;
+          licenseExpiresOn?: string | null;
+        } | null;
+        error?: string;
+      };
+      if (response.error) throw new Error(response.error);
+
+      const status = response.verification?.status ?? "not_started";
+      const expiresOn = response.verification?.licenseExpiresOn ?? null;
+      const today = new Date().toISOString().slice(0, 10);
+      if (status === "approved" && (!expiresOn || expiresOn < today)) {
+        return "expired";
+      }
+      return status;
+    },
+    staleTime: 30_000,
+  });
+
   const { data: defaultSilver } = useQuery({
     queryKey: ["default-silver-plan"],
     queryFn: async () => {
@@ -117,6 +146,26 @@ export default function CarListing() {
       return;
     }
     if (!quote) return;
+
+    if (driverEligibility !== "approved") {
+      toast({
+        title:
+          driverEligibility === "pending"
+            ? "Driver verification is under review"
+            : driverEligibility === "expired"
+              ? "Your driver licence verification expired"
+              : "Verify your driver licence to book",
+        description:
+          driverEligibility === "pending"
+            ? "Rentauto must approve your licence before you can reserve and pay."
+            : driverEligibility === "expired"
+              ? "Upload a current licence before starting a new booking."
+              : "Complete driver verification once, then return to this vehicle.",
+      });
+      navigate("/dashboard/documents?focus=driver");
+      return;
+    }
+
     setReserving(true);
 
     const { data, error: bookingError } = await supabase.functions.invoke(
@@ -138,11 +187,25 @@ export default function CarListing() {
     const tripId = data && typeof data.tripId === "string" ? data.tripId : null;
 
     if (bookingError || !tripId) {
+      const bookingMessage =
+        typeof data?.error === "string" ? data.error : bookingError?.message || "";
+      const verificationRequired = bookingMessage
+        .toLowerCase()
+        .includes("verification");
+
       toast({
-        title: "Could not start your booking",
-        description: "Please choose another date range or try again in a moment.",
+        title: verificationRequired
+          ? "Driver verification required"
+          : "Could not start your booking",
+        description: verificationRequired
+          ? "Your driver verification must be approved before booking."
+          : "Please choose another date range or try again in a moment.",
         variant: "destructive",
       });
+
+      if (verificationRequired) {
+        navigate("/dashboard/documents?focus=driver");
+      }
       return;
     }
 
@@ -161,9 +224,30 @@ export default function CarListing() {
       ? "These dates aren't available — pick another range."
       : !user
         ? "You'll be asked to sign in."
-        : null;
-  const ctaLabel = !user ? "Sign in to continue" : reserving ? "Reserving…" : "Continue";
-  const ctaDisabled = isDisabled || datesUnavailable || !quote;
+        : driverEligibilityLoading
+          ? "Checking driver eligibility…"
+          : driverEligibility === "pending"
+            ? "Your driver verification is under review."
+            : driverEligibility === "expired"
+              ? "Your verified driver licence has expired."
+              : driverEligibility !== "approved"
+                ? "Driver verification is required before booking."
+              : null;
+  const ctaLabel = !user
+    ? "Sign in to continue"
+    : driverEligibilityLoading
+      ? "Checking driver…"
+      : driverEligibility === "pending"
+        ? "View verification"
+        : driverEligibility === "expired"
+          ? "Renew driver verification"
+          : driverEligibility !== "approved"
+            ? "Verify driver to book"
+          : reserving
+            ? "Reserving…"
+            : "Continue";
+  const ctaDisabled =
+    isDisabled || datesUnavailable || !quote || (Boolean(user) && driverEligibilityLoading);
   const onDatesChange = (s: Date, e: Date) => { setStartDate(s); setEndDate(e); };
 
   const similar = (inventory || [])
