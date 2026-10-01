@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { SafeImage } from "@/components/ui/safe-image";
-import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu, MessageCircle } from "lucide-react";
+import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu, MessageCircle, type LucideIcon } from "lucide-react";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StripeStatusCard } from "@/components/host/StripeStatusCard";
@@ -52,7 +52,7 @@ export default function HostDashboard() {
           supabase.from("vehicle_tracking_devices").select("car_id").in("car_id", carIds),
         ]);
         (photos || []).forEach((p) => { if (!photoMap[p.car_id]) photoMap[p.car_id] = p.url; });
-        devicedIds = new Set((devices || []).map((d: any) => d.car_id));
+        devicedIds = new Set((devices || []).map((d) => d.car_id));
       }
       const carsWithPhotos = new Set(Object.keys(photoMap));
       setFleetHealth({
@@ -191,7 +191,7 @@ export default function HostDashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, sub }: { icon: any; label: string; value: string; sub: string }) {
+function StatCard({ icon: Icon, label, value, sub }: { icon: LucideIcon; label: string; value: string; sub: string }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -206,8 +206,16 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: any; label: string;
   );
 }
 
+interface TrackingSession {
+  id: string;
+  trip_id: string;
+  car_id: string;
+  status: string;
+  started_at: string;
+}
+
 function ActiveRentalsSection({ carIds }: { carIds: string[] }) {
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<TrackingSession[]>([]);
   useEffect(() => {
     if (carIds.length === 0) { setSessions([]); return; }
     supabase
@@ -216,7 +224,7 @@ function ActiveRentalsSection({ carIds }: { carIds: string[] }) {
       .in("car_id", carIds)
       .eq("status", "active")
       .then(({ data }) => setSessions(data || []));
-  }, [carIds.join(",")]);
+  }, [carIds]);
 
   if (sessions.length === 0) return null;
   return (
