@@ -79,7 +79,7 @@ export default function Checkout() {
         .from("trips").select("*").eq("id", tripId).maybeSingle();
       if (tErr || !t) { setError("Trip not found"); setLoading(false); return; }
       if (t.guest_id !== user.id) { setError("You don't have access to this booking."); setLoading(false); return; }
-      if (!["draft", "pending_payment"].includes(t.status)) {
+      if (!["draft", "approved", "pending_payment"].includes(t.status)) {
         navigate(`/trips/${t.id}`, { replace: true }); return;
       }
       setTrip(t);
