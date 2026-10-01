@@ -12,7 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +47,6 @@ type Cancellation = {
 };
 
 type Draft = {
-  amount: string;
   notes: string;
 };
 
@@ -125,10 +123,6 @@ export default function AdminCancellations() {
 
   const draftFor = (row: Cancellation): Draft =>
     drafts[row.id] ?? {
-      amount:
-        row.refund_amount_cents == null
-          ? ""
-          : (row.refund_amount_cents / 100).toFixed(2),
       notes: row.resolution_notes ?? "",
     };
 
@@ -147,23 +141,12 @@ export default function AdminCancellations() {
     decision: "approve" | "deny",
   ) => {
     const draft = draftFor(row);
-    const amount =
-      decision === "approve"
-        ? Math.round(Number(draft.amount) * 100)
-        : null;
+    const amount = decision === "approve" ? row.original_total_cents : null;
 
-    if (
-      draft.notes.trim().length < 10 ||
-      (decision === "approve" &&
-        (!Number.isSafeInteger(amount) ||
-          amount == null ||
-          amount < 0 ||
-          amount > row.original_total_cents))
-    ) {
+    if (draft.notes.trim().length < 10) {
       toast({
         title: "Resolution incomplete",
-        description:
-          "Add at least 10 characters of review notes and a valid refund amount.",
+        description: "Add at least 10 characters of review notes.",
         variant: "destructive",
       });
       return;
@@ -368,20 +351,11 @@ export default function AdminCancellations() {
                   </div>
 
                   {row.status === "manual_review" ? (
-                    <div className="grid gap-3 md:grid-cols-[180px_1fr]">
-                      <div className="space-y-1">
-                        <Label>Refund amount (CAD)</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={row.original_total_cents / 100}
-                          step="0.01"
-                          value={draft.amount}
-                          onChange={(event) =>
-                            updateDraft(row, { amount: event.target.value })
-                          }
-                          placeholder="Enter explicit amount"
-                        />
+                    <div className="space-y-3">
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        Approving this cancellation issues a full refund of{" "}
+                        <strong>{money(row.original_total_cents, row.currency)}</strong>.
+                        Partial or zero-refund cancellation payouts stay disabled until a dedicated host-compensation authority exists.
                       </div>
                       <div className="space-y-1">
                         <Label>Review notes</Label>
@@ -396,13 +370,13 @@ export default function AdminCancellations() {
                         />
                       </div>
 
-                      <div className="flex flex-wrap gap-2 md:col-span-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           onClick={() => void resolve(row, "approve")}
                           disabled={busyId === row.id}
                         >
                           <RotateCcw className="h-4 w-4" />
-                          Approve cancellation
+                          Approve full refund
                         </Button>
                         <Button
                           variant="outline"
