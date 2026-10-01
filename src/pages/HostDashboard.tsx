@@ -81,7 +81,13 @@ export default function HostDashboard() {
     })();
   }, [user]);
 
-  const upcoming = bookings.filter((b) => new Date(b.end_at) >= new Date() && b.status !== "cancelled" && b.status !== "draft");
+  const upcoming = bookings.filter(
+    (b) =>
+      new Date(b.end_at) >= new Date() &&
+      ["confirmed", "check_in_pending", "active", "check_out_pending"].includes(
+        b.status,
+      ),
+  );
   const activeCars = cars.filter((c) => c.status === "active").length;
 
   if (loading) return <DashboardSkeleton />;
