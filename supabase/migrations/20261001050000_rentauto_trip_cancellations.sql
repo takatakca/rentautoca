@@ -968,17 +968,16 @@ BEGIN
 
   IF p_decision <> 'approve'
      OR p_refund_amount_cents IS NULL
-     OR p_refund_amount_cents < 0
-     OR p_refund_amount_cents > v_cancel.original_total_cents THEN
-    RAISE EXCEPTION 'invalid_manual_resolution' USING ERRCODE = '22023';
+     OR p_refund_amount_cents <> v_cancel.original_total_cents THEN
+    RAISE EXCEPTION 'manual_resolution_requires_full_refund'
+      USING ERRCODE = '22023';
   END IF;
 
   UPDATE rentauto.trip_cancellations
   SET
-    refund_amount_cents = p_refund_amount_cents,
+    refund_amount_cents = v_cancel.original_total_cents,
     refund_percentage = CASE
-      WHEN original_total_cents > 0
-        THEN round((p_refund_amount_cents::numeric / original_total_cents) * 100, 2)
+      WHEN original_total_cents > 0 THEN 100
       ELSE 0
     END,
     rule_source = 'admin_manual',
@@ -987,10 +986,6 @@ BEGIN
     updated_at = now()
   WHERE id = v_cancel.id
   RETURNING * INTO v_cancel;
-
-  IF p_refund_amount_cents = 0 THEN
-    RETURN rentauto.finalize_trip_cancellation(v_cancel.id, 'not_required');
-  END IF;
 
   IF v_trip.stripe_payment_intent_id IS NULL THEN
     RAISE EXCEPTION 'payment_intent_missing' USING ERRCODE = '22023';
