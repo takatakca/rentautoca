@@ -59,6 +59,17 @@ export default function Login() {
     setOtpSent(true);
   };
 
+  const handleResendOtp = async () => {
+    setError(null);
+    setLoading(true);
+    const { error: resendError } = await requestTakatakSmsOtp({
+      phone: verifiedPhone,
+      shouldCreateUser: false,
+    });
+    setLoading(false);
+    if (resendError) setError(friendlyAuthError(resendError.message));
+  };
+
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -172,7 +183,7 @@ export default function Login() {
               Verify and sign in
             </Button>
             <div className="flex items-center justify-between text-sm">
-              <button type="button" className="text-primary hover:underline" onClick={() => void handleSendOtp({ preventDefault() {} } as React.FormEvent)} disabled={loading}>
+              <button type="button" className="text-primary hover:underline" onClick={() => void handleResendOtp()} disabled={loading}>
                 Resend code
               </button>
               <button type="button" className="text-muted-foreground hover:underline" onClick={() => { setOtpSent(false); setOtp(""); }}>
