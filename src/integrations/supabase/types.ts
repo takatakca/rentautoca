@@ -773,6 +773,162 @@ export type Database = {
           },
         ]
       }
+      settlement_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload_json: Json
+          settlement_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload_json?: Json
+          settlement_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload_json?: Json
+          settlement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlement_events_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "trip_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settlement_policy: {
+        Row: {
+          dispute_window_hours: number | null
+          id: number
+          platform_fee_bps: number | null
+          payouts_enabled: boolean
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          dispute_window_hours?: number | null
+          id?: number
+          platform_fee_bps?: number | null
+          payouts_enabled?: boolean
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          dispute_window_hours?: number | null
+          id?: number
+          platform_fee_bps?: number | null
+          payouts_enabled?: boolean
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
+      settlement_reversals: {
+        Row: {
+          actor_user_id: string
+          amount_cents: number
+          created_at: string
+          id: string
+          reason: string | null
+          request_key: string
+          settlement_id: string
+          stripe_reversal_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          amount_cents: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+          request_key: string
+          settlement_id: string
+          stripe_reversal_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+          request_key?: string
+          settlement_id?: string
+          stripe_reversal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlement_reversals_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "trip_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_disputes: {
+        Row: {
+          amount_cents: number
+          closed_at: string | null
+          created_at: string
+          currency: string
+          evidence_due_by: string | null
+          id: string
+          payment_intent_id: string
+          reason: string | null
+          status: string
+          stripe_dispute_id: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          closed_at?: string | null
+          created_at?: string
+          currency: string
+          evidence_due_by?: string | null
+          id?: string
+          payment_intent_id: string
+          reason?: string | null
+          status: string
+          stripe_dispute_id: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          closed_at?: string | null
+          created_at?: string
+          currency?: string
+          evidence_due_by?: string | null
+          id?: string
+          payment_intent_id?: string
+          reason?: string | null
+          status?: string
+          stripe_dispute_id?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_disputes_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_accounts: {
         Row: {
           charges_enabled: boolean
