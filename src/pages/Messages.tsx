@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { format } from "date-fns";
 import {
   ArrowUpRight,
   Car,
@@ -304,7 +304,7 @@ export default function Messages() {
   useEffect(() => {
     void markSelectedRead();
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }));
-  }, [selected?.trip.id, selectedMessages.length]);
+  }, [markSelectedRead, selected?.trip.id, selectedMessages.length]);
 
   const selectConversation = (tripId: string) => {
     const next = new URLSearchParams(searchParams);
