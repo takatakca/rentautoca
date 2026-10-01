@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
             currentTrip?.stripe_session_id === session.id &&
             currentTrip.status === "pending_payment"
           ) {
-            const { error: tripUpdateError } = await admin
+            const { error: tripUpdateError } = await rentauto
               .from("trips")
               .update({
                 status: "cancelled",
@@ -374,7 +374,7 @@ Deno.serve(async (req) => {
               throw new Error("expired_checkout_trip_update_failed");
             }
 
-            const { error: holdUpdateError } = await admin
+            const { error: holdUpdateError } = await rentauto
               .from("booking_holds")
               .update({
                 status: "released",
@@ -429,7 +429,7 @@ Deno.serve(async (req) => {
                 ? "refunded"
                 : "partially_refunded";
 
-            const { error: tripUpdateError } = await admin
+            const { error: tripUpdateError } = await rentauto
               .from("trips")
               .update({ payment_status: paymentStatus })
               .eq("id", trip.id);
