@@ -8,6 +8,41 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const MAX_WEBHOOK_BYTES = 1024 * 1024;
+
+async function readBodyWithLimit(
+  req: Request,
+  maxBytes: number,
+): Promise<string | null> {
+  const reader = req.body?.getReader();
+  if (!reader) return "";
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new TextDecoder().decode(merged);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return json({ error: "Method not allowed" }, 405);
@@ -24,11 +59,20 @@ Deno.serve(async (req) => {
   }
 
   const stripe = new Stripe(stripeKey);
-  const rawBody = await req.text();
   const signature = req.headers.get("stripe-signature");
 
   if (!signature) {
     return json({ error: "Missing signature" }, 400);
+  }
+
+  const declaredLength = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_WEBHOOK_BYTES) {
+    return json({ error: "Payload too large" }, 413);
+  }
+
+  const rawBody = await readBodyWithLimit(req, MAX_WEBHOOK_BYTES);
+  if (rawBody === null) {
+    return json({ error: "Payload too large" }, 413);
   }
 
   let event: Stripe.Event;
