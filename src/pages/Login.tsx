@@ -8,18 +8,28 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
-import { friendlyAuthError, sanitizeRedirect } from "@/lib/auth-helpers";
-import { toast } from "@/hooks/use-toast";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { ensureProfile, friendlyAuthError, sanitizeRedirect } from "@/lib/auth-helpers";
+import {
+  normalizeTakatakPhone,
+  requestTakatakSmsOtp,
+  verifyTakatakSmsOtp,
+} from "@/lib/takatak-phone-auth";
+
+type LoginMode = "sms" | "password";
 
 export default function Login() {
+  const [mode, setMode] = useState<LoginMode>("sms");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [verifiedPhone, setVerifiedPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [unverified, setUnverified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -28,22 +38,63 @@ export default function Login() {
   const from = safeRedirect || sanitizeRedirect(fromState) || "/";
   const isCheckoutRedirect = from.startsWith("/checkout");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setUnverified(false);
+
+    const phone = normalizeTakatakPhone(phoneInput);
+    if (!phone) return setError("Enter a valid mobile number with area code or country code.");
+
+    setLoading(true);
+    const { error: otpError } = await requestTakatakSmsOtp({
+      phone,
+      shouldCreateUser: false,
+    });
+    setLoading(false);
+
+    if (otpError) return setError(friendlyAuthError(otpError.message));
+
+    setVerifiedPhone(phone);
+    setOtp("");
+    setOtpSent(true);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (otp.length !== 6) return setError("Enter the 6-digit verification code.");
+
+    setLoading(true);
+    const { data, error: verifyError } = await verifyTakatakSmsOtp(verifiedPhone, otp);
+
+    if (verifyError || !data.user) {
+      setLoading(false);
+      return setError(friendlyAuthError(verifyError?.message || "SMS verification failed."));
+    }
+
+    await ensureProfile(data.user);
+    setLoading(false);
+    navigate(from, { replace: true });
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setLoading(false);
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
-        setUnverified(true);
-      }
-      setError(friendlyAuthError(error.message));
-      return;
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (loginError || !data.user) {
+      setLoading(false);
+      return setError(friendlyAuthError(loginError?.message || "Login failed."));
     }
+
+    await ensureProfile(data.user);
+    setLoading(false);
     navigate(from, { replace: true });
   };
 
@@ -60,24 +111,21 @@ export default function Login() {
     navigate(from, { replace: true });
   };
 
-  const handleResend = async () => {
-    if (!email.trim()) return setError("Enter your email above to resend the confirmation.");
-    setResending(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
-    setResending(false);
-    if (error) return setError(friendlyAuthError(error.message));
-    toast({ title: "Confirmation sent", description: "Check your inbox for a new verification code." });
-    navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&redirect=${encodeURIComponent(from)}`);
+  const switchMode = (next: LoginMode) => {
+    setMode(next);
+    setOtpSent(false);
+    setOtp("");
+    setError(null);
   };
 
   return (
     <AuthShell
       title={isCheckoutRedirect ? "Sign in to continue to checkout" : "Welcome back"}
-      description={isCheckoutRedirect ? "Log in to complete your booking securely." : "Sign in to book cars or manage your listings."}
+      description={isCheckoutRedirect ? "Use your TAKATAK identity to complete your booking securely." : "One TAKATAK identity, with Rentauto access when authorized."}
       footer={
         <>
           New to Rentauto?{" "}
-          <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
+          <Link to="/signup" className="text-primary hover:underline font-medium">Create your TAKATAK identity</Link>
         </>
       }
     >
@@ -86,48 +134,77 @@ export default function Login() {
         Continue with Google
       </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">or</span>
-        </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Button type="button" variant={mode === "sms" ? "default" : "outline"} onClick={() => switchMode("sms")} disabled={loading}>
+          SMS code
+        </Button>
+        <Button type="button" variant={mode === "password" ? "default" : "outline"} onClick={() => switchMode("password")} disabled={loading}>
+          Existing password
+        </Button>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription className="space-y-2">
-              <div>{error}</div>
-              {unverified && (
-                <Button type="button" size="sm" variant="outline" onClick={handleResend} disabled={resending}>
-                  {resending && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
-                  Resend confirmation email
-                </Button>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="text-xs text-primary hover:underline">Forgot?</Link>
+      {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+      {mode === "sms" ? (
+        !otpSent ? (
+          <form onSubmit={handleSendOtp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">TAKATAK mobile number</Label>
+              <Input id="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+1 514 555 0123" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} required />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send TAKATAK SMS code
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyOtp} className="space-y-5">
+            <p className="text-sm text-muted-foreground text-center">Code sent to {verifiedPhone}</p>
+            <div className="flex justify-center">
+              <InputOTP maxLength={6} value={otp} onChange={setOtp} inputMode="numeric">
+                <InputOTPGroup>
+                  {[0, 1, 2, 3, 4, 5].map((index) => <InputOTPSlot key={index} index={index} />)}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verify and sign in
+            </Button>
+            <div className="flex items-center justify-between text-sm">
+              <button type="button" className="text-primary hover:underline" onClick={() => void handleSendOtp({ preventDefault() {} } as React.FormEvent)} disabled={loading}>
+                Resend code
+              </button>
+              <button type="button" className="text-muted-foreground hover:underline" onClick={() => { setOtpSent(false); setOtp(""); }}>
+                Change number
+              </button>
+            </div>
+          </form>
+        )
+      ) : (
+        <form onSubmit={handlePasswordLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
-          <div className="relative">
-            <Input id="password" type={showPw ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1" aria-label={showPw ? "Hide password" : "Show password"}>
-              {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link to="/forgot-password" className="text-xs text-primary hover:underline">Forgot?</Link>
+            </div>
+            <div className="relative">
+              <Input id="password" type={showPw ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1" aria-label={showPw ? "Hide password" : "Show password"}>
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
-        </div>
-        <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Sign in
-        </Button>
-      </form>
+          <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sign in with existing password
+          </Button>
+        </form>
+      )}
     </AuthShell>
   );
 }
