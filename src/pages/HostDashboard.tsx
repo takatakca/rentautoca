@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { SafeImage } from "@/components/ui/safe-image";
-import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu } from "lucide-react";
+import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu, MessageCircle } from "lucide-react";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StripeStatusCard } from "@/components/host/StripeStatusCard";
@@ -170,9 +170,18 @@ export default function HostDashboard() {
                 <p className="font-medium truncate">{b.car_label}</p>
                 <p className="text-xs text-muted-foreground">{format(new Date(b.start_at), "MMM d")} → {format(new Date(b.end_at), "MMM d")}</p>
               </div>
-              <div className="text-right shrink-0">
-                <Badge variant="outline" className="capitalize">{b.status.replace("_", " ")}</Badge>
-                <p className="text-xs text-muted-foreground mt-1">${((b.total_cents || 0) / 100).toFixed(0)}</p>
+              <div className="flex shrink-0 items-center gap-2">
+                {!["draft", "pending_payment"].includes(b.status) ? (
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/messages?trip=${b.id}`} aria-label="Message guest">
+                      <MessageCircle className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                ) : null}
+                <div className="text-right">
+                  <Badge variant="outline" className="capitalize">{b.status.replace("_", " ")}</Badge>
+                  <p className="text-xs text-muted-foreground mt-1">${((b.total_cents || 0) / 100).toFixed(0)}</p>
+                </div>
               </div>
             </div>
           ))}
