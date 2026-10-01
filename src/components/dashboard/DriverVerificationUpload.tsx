@@ -89,6 +89,13 @@ function statusBadge(status: string) {
       </Badge>
     );
   }
+  if (status === "expired") {
+    return (
+      <Badge variant="destructive">
+        <XCircle className="mr-1 h-3 w-3" /> Expired
+      </Badge>
+    );
+  }
   return <Badge variant="outline">Not started</Badge>;
 }
 
@@ -275,6 +282,15 @@ export function DriverVerificationUpload({ verification, onSaved }: Props) {
   return (
     <div className="space-y-5">
       {statusBadge(status)}
+
+      {status === "expired" ? (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Your previous approval expired with your driver licence. Upload a
+            current licence and submit it for review again.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {status === "rejected" && verification?.reviewerNotes ? (
         <Alert variant="destructive">
