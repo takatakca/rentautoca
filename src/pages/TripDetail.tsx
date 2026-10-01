@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
-import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Shield, AlertTriangle, KeyRound, LogOut, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { bookingRef } from "@/lib/dashboard-utils";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
@@ -133,6 +133,14 @@ export default function TripDetail() {
             {["active", "check_out_pending"].includes(trip.status) && (
               <Button asChild size="sm" variant="outline"><Link to={`/trips/${trip.id}/check-out`}><LogOut className="h-3.5 w-3.5 mr-1" />Check-out</Link></Button>
             )}
+            {!["draft", "pending_payment"].includes(trip.status) &&
+              (trip.guest_id === user?.id || car?.host_id === user?.id) && (
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/messages?trip=${trip.id}`}>
+                    <MessageCircle className="h-3.5 w-3.5 mr-1" />Message {trip.guest_id === user?.id ? "host" : "guest"}
+                  </Link>
+                </Button>
+              )}
             <Button asChild size="sm" variant="ghost"><Link to={`/trips/${trip.id}/report-issue`}><AlertTriangle className="h-3.5 w-3.5 mr-1" />Report issue</Link></Button>
           </div>
         </CardContent>
