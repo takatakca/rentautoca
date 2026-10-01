@@ -51,8 +51,9 @@ export default function CancellationPolicy() {
       <p>
         Extreme weather, government orders, payment disputes, or other cases not
         explicitly covered by the saved policy are reviewed case by case. Any
-        manual refund amount is recorded in the cancellation audit trail before
-        it is submitted to Stripe.
+        manual decision is recorded in the cancellation audit trail. An
+        approved manual cancellation is processed as a full refund; otherwise
+        the request is denied and the booking remains active.
       </p>
     </LegalLayout>
   );
