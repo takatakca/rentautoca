@@ -34,7 +34,6 @@ type BookingRequest = {
     displayName: string;
     ratingAvg: number | null;
     tripsCount: number;
-    idVerified: boolean;
   };
 };
 
