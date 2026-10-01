@@ -81,7 +81,7 @@ export default function Favorites() {
 
       const [carsRes, photosRes, reviewsRes] = await Promise.all([
         supabase
-          .from("cars")
+          .from("cars_public")
           .select(
             "id, make, model, year, trim, base_daily_price_cents, location_label, body_type, seats, fuel_type, transmission, included_km_per_day, airport_pickup_enabled, monthly_enabled, instant_book",
           )
@@ -93,7 +93,7 @@ export default function Favorites() {
       let blockedIds = new Set<string>();
       if (validStart && validEnd) {
         const { data: blocks } = await supabase
-          .from("availability_blocks")
+          .from("availability_public")
           .select("car_id")
           .in("car_id", carIds)
           .lt("start_at", validEnd.toISOString())
