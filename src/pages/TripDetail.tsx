@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { bookingRef } from "@/lib/dashboard-utils";
 import { LiveLocationCard } from "@/components/tracking/LiveLocationCard";
 import { TripReviewCard } from "@/components/trips/TripReviewCard";
+import { TripEvidenceCard } from "@/components/trips/TripEvidenceCard";
 
 export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -223,6 +224,8 @@ export default function TripDetail() {
           />
         </CardContent>
       </Card>
+
+      <TripEvidenceCard tripId={trip.id} />
 
       {trip.guest_id === user?.id && car ? (
         <TripReviewCard

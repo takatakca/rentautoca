@@ -7,7 +7,31 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu } from "lucide-react";
+import { Users, Car, Calendar, Activity, AlertTriangle, Camera, Cpu, ShieldCheck, Scale, type LucideIcon } from "lucide-react";
+
+type ActiveTrackingSession = {
+  id: string;
+  trip_id: string;
+  car_id: string;
+  started_at: string | null;
+};
+
+type PendingCheckIn = {
+  id: string;
+  status: string;
+  start_at: string;
+  car_id: string;
+  guest_id: string;
+};
+
+type IncidentSummary = {
+  id: string;
+  trip_id: string;
+  type: string;
+  status: string;
+  severity: string;
+  created_at: string;
+};
 
 export default function AdminPanel() {
   const [stats, setStats] = useState({
@@ -15,9 +39,9 @@ export default function AdminPanel() {
     pendingCheckIns: 0, activeSessions: 0,
     carsWithoutPhotos: 0, carsWithoutDevices: 0,
   });
-  const [activeTrips, setActiveTrips] = useState<any[]>([]);
-  const [pendingCheckIns, setPendingCheckIns] = useState<any[]>([]);
-  const [incidents, setIncidents] = useState<any[]>([]);
+  const [activeTrips, setActiveTrips] = useState<ActiveTrackingSession[]>([]);
+  const [pendingCheckIns, setPendingCheckIns] = useState<PendingCheckIn[]>([]);
+  const [incidents, setIncidents] = useState<IncidentSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,17 +55,17 @@ export default function AdminPanel() {
         supabase.from("trip_tracking_sessions").select("id, trip_id, car_id, started_at").eq("status", "active"),
         supabase.from("cars").select("id"),
         supabase.from("vehicle_tracking_devices").select("car_id"),
-        supabase.from("trip_incidents").select("id, trip_id, type, status, created_at").eq("status", "open").order("created_at", { ascending: false }).limit(10),
+        supabase.from("trip_incidents").select("id, trip_id, type, status, severity, created_at").in("status", ["open", "reviewing"]).order("created_at", { ascending: false }).limit(10),
       ]);
 
-      const allCarIds = (cwp.data || []).map((x: any) => x.id);
-      const devicedIds = new Set((cwd.data || []).map((x: any) => x.car_id));
+      const allCarIds = (cwp.data || []).map((x) => x.id);
+      const devicedIds = new Set((cwd.data || []).map((x) => x.car_id));
 
       // Count cars without photos
       let carsWithoutPhotos = 0;
       if (allCarIds.length) {
         const { data: phs } = await supabase.from("car_photos").select("car_id").in("car_id", allCarIds);
-        const withPhotos = new Set((phs || []).map((p: any) => p.car_id));
+        const withPhotos = new Set((phs || []).map((p) => p.car_id));
         carsWithoutPhotos = allCarIds.filter((id) => !withPhotos.has(id)).length;
       }
 
@@ -66,9 +90,17 @@ export default function AdminPanel() {
     <div className="container py-8 pb-24 md:pb-8">
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <h1 className="text-3xl font-bold">Admin Control Center</h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/admin/launch-checklist">LC1 Launch Checklist</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/vehicle-reviews"><ShieldCheck className="h-4 w-4" />Vehicle reviews</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/incidents"><Scale className="h-4 w-4" />Claims & incidents</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/launch-checklist">LC1 Launch Checklist</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
@@ -123,8 +155,17 @@ export default function AdminPanel() {
               {incidents.length === 0 && <p className="text-sm text-muted-foreground">No open incidents.</p>}
               {incidents.map((i) => (
                 <div key={i.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
-                  <div><p className="capitalize">{i.type.replace(/_/g, " ")}</p><p className="text-xs text-muted-foreground">Trip {String(i.trip_id).slice(0, 8)} · {new Date(i.created_at).toLocaleString()}</p></div>
-                  <Badge variant="outline">{i.status}</Badge>
+                  <div>
+                    <p className="capitalize">{i.type.replace(/_/g, " ")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Trip {String(i.trip_id).slice(0, 8)} · {new Date(i.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={i.severity === "safety" ? "destructive" : "secondary"} className="capitalize">{i.severity}</Badge>
+                    <Badge variant="outline">{i.status}</Badge>
+                    <Button asChild size="sm" variant="ghost"><Link to="/admin/incidents">Review</Link></Button>
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -135,7 +176,7 @@ export default function AdminPanel() {
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
+function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
