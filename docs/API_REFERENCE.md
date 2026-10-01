@@ -5,10 +5,13 @@ Rentauto's frontend talks to Supabase exclusively via the typed client at
 `supabase.from(...)` with RLS, and privileged operations call Edge Functions.
 
 ## Auth / Profile
-- **Sign up / log in:** `supabase.auth.signUp`, `signInWithPassword`, `signInWithOAuth({ provider: 'google' })`.
-- **Profile row:** `public.profiles` (auto-created by `handle_new_user` trigger).
-- **Role:** `public.user_roles` (`guest` default; `host`/`admin` granted via RBAC).
-- Hook: `AuthContext` + `useAuth()`.
+- **Authority:** shared GROUPE TAKATAK Supabase Auth; Rentauto does not own an independent identity system.
+- **Default sign up / log in:** TAKATAK phone OTP via `supabase.auth.signInWithOtp({ phone })` + `verifyOtp({ phone, token, type: "sms" })`.
+- **Existing account compatibility:** `signInWithPassword` and Google OAuth remain available for existing shared TAKATAK identities.
+- **Master identity:** `public.master_identities`, linked from shared `public.profiles`; verified phone or verified email may satisfy identity verification.
+- **Rentauto projection:** `public.source_profiles` with `sourceApplication = 'RENTAUTO'`, then `rentauto.accounts` + `rentauto.account_roles`.
+- **Isolation:** Rentauto receives the minimum identity projection it needs. Driver documents, vehicle records, GPS, trips, incidents, and Stripe operational data remain Rentauto-specific.
+- Hook: `AuthContext` + `useAuth()`; bootstrap authority: `rentauto-bootstrap-account`.
 
 ## Explore / Search
 - Table: `public.cars` joined with `car_photos`, `provinces`, `vehicle_tracking_devices`.
