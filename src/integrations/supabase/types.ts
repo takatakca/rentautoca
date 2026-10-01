@@ -1220,6 +1220,83 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_cancellations: {
+        Row: {
+          actor_role: string
+          actor_user_id: string
+          attempt_count: number
+          currency: string
+          id: string
+          idempotency_key: string | null
+          original_total_cents: number
+          policy_snapshot: Json
+          reason: string
+          refund_amount_cents: number | null
+          refund_percentage: number | null
+          requested_at: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          rule_source: string
+          status: string
+          stripe_refund_id: string | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          actor_role: string
+          actor_user_id: string
+          attempt_count?: number
+          currency: string
+          id?: string
+          idempotency_key?: string | null
+          original_total_cents: number
+          policy_snapshot?: Json
+          reason: string
+          refund_amount_cents?: number | null
+          refund_percentage?: number | null
+          requested_at?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          rule_source: string
+          status: string
+          stripe_refund_id?: string | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          actor_role?: string
+          actor_user_id?: string
+          attempt_count?: number
+          currency?: string
+          id?: string
+          idempotency_key?: string | null
+          original_total_cents?: number
+          policy_snapshot?: Json
+          reason?: string
+          refund_amount_cents?: number | null
+          refund_percentage?: number | null
+          requested_at?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          rule_source?: string
+          status?: string
+          stripe_refund_id?: string | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_cancellations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: true
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_events: {
         Row: {
           actor_user_id: string | null
