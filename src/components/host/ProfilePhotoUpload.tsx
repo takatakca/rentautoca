@@ -12,11 +12,6 @@ interface ProfilePhotoUploadProps {
 }
 
 const SAFE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const IMAGE_EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploadProps) {
   const { user } = useAuth();
@@ -43,12 +38,14 @@ export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploa
     }
 
     setUploading(true);
-    const ext = IMAGE_EXTENSION[file.type];
-    const filePath = `${user.id}/avatar.${ext}`;
+    const filePath = `${user.id}/avatar`;
 
     const { error: uploadError } = await supabase.storage
       .from("rentauto-profile-photos")
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
 
     if (uploadError) {
       toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
