@@ -20,6 +20,11 @@ export function friendlyAuthError(message: string | undefined | null): string {
   if (m.includes("email not confirmed")) return "Please confirm your email before logging in. Check your inbox for the code.";
   if (m.includes("user already registered")) return "An account with this email already exists. Try logging in instead.";
   if (m.includes("password should be")) return "Password must be at least 8 characters.";
+  if (
+    m.includes("sms") &&
+    (m.includes("provider") || m.includes("disabled") || m.includes("not enabled"))
+  ) return "TAKATAK SMS verification is temporarily unavailable. Please try another sign-in method.";
+  if (m.includes("phone") && m.includes("invalid")) return "Enter a valid mobile number including the area code.";
   if (m.includes("rate limit") || m.includes("too many")) return "Too many attempts. Please wait a minute and try again.";
   if (m.includes("otp") && m.includes("expired")) return "That code expired. Request a new one.";
   if (m.includes("token") && (m.includes("invalid") || m.includes("expired"))) return "That code is invalid or has expired. Request a new one.";

@@ -31,6 +31,8 @@ const GROUPS: Group[] = [
       { id: "vite-app-url", label: "VITE_APP_URL set to deployed domain" },
       { id: "public-app-url", label: "PUBLIC_APP_URL secret set" },
       { id: "supabase-auth-urls", label: "Supabase Auth Site URL + redirect URLs include deployed domain" },
+      { id: "takatak-sms-otp", label: "TAKATAK phone auth + SMS provider enabled and real OTP received" },
+      { id: "takatak-master-identity", label: "Verified phone creates one TAKATAK master identity and Rentauto source profile" },
       { id: "tracking-secret", label: "RENTAUTO_TRACKING_PROVIDER_SECRET set" },
     ],
   },
