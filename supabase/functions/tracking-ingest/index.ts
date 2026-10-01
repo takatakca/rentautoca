@@ -11,6 +11,41 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const MAX_TRACKING_BODY_BYTES = 2_048;
+
+async function readBodyWithLimit(
+  req: Request,
+  maxBytes: number,
+): Promise<string | null> {
+  const reader = req.body?.getReader();
+  if (!reader) return "";
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new TextDecoder().decode(merged);
+}
+
 async function digest(value: string): Promise<Uint8Array> {
   const bytes = new TextEncoder().encode(value);
   return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
@@ -41,14 +76,17 @@ Deno.serve(async (req: Request) => {
   }
 
   const declaredLength = Number(req.headers.get("content-length") ?? "0");
-  if (Number.isFinite(declaredLength) && declaredLength > 2_048) {
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_TRACKING_BODY_BYTES
+  ) {
     return json({ error: "Payload too large" }, 413);
   }
 
   let body: Record<string, unknown>;
   try {
-    const raw = await req.text();
-    if (new TextEncoder().encode(raw).byteLength > 2_048) {
+    const raw = await readBodyWithLimit(req, MAX_TRACKING_BODY_BYTES);
+    if (raw === null) {
       return json({ error: "Payload too large" }, 413);
     }
     body = JSON.parse(raw) as Record<string, unknown>;
