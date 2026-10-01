@@ -31,6 +31,9 @@ const STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
   quote: "Quote",
   pending_payment: "Pending payment",
+  requested: "Awaiting host",
+  approved: "Approved — pay",
+  declined: "Declined",
   confirmed: "Confirmed",
   in_progress: "In progress",
   completed: "Completed",
@@ -38,7 +41,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function bucketOf(t: TripRow): "upcoming" | "active" | "completed" | "cancelled" {
-  if (t.status === "cancelled") return "cancelled";
+  if (t.status === "cancelled" || t.status === "declined") return "cancelled";
   if (t.status === "completed") return "completed";
   const now = Date.now();
   const start = new Date(t.start_at).getTime();
