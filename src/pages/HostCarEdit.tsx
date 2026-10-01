@@ -40,6 +40,13 @@ type Device = {
   last_seen_at: string | null;
 };
 
+const SAFE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const IMAGE_EXTENSION: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 export default function HostCarEdit() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -200,22 +207,54 @@ export default function HostCarEdit() {
 
   const handlePhotoUpload = async (file: File) => {
     if (!car) return;
+
+    if (!SAFE_IMAGE_TYPES.has(file.type)) {
+      toast({
+        title: "Invalid photo",
+        description: "Use a JPEG, PNG or WebP image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Photo too large",
+        description: "Maximum vehicle photo size is 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
-    const path = `${car.id}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("rentauto-vehicle-photos").upload(path, file, { upsert: false });
+    const ext = IMAGE_EXTENSION[file.type];
+    const path = `${car.id}/${crypto.randomUUID()}.${ext}`;
+    const bucket = supabase.storage.from("rentauto-vehicle-photos");
+    const { error: upErr } = await bucket.upload(path, file, {
+      upsert: false,
+      contentType: file.type,
+    });
+
     if (upErr) {
       toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from("rentauto-vehicle-photos").getPublicUrl(path);
+
+    const { data: urlData } = bucket.getPublicUrl(path);
     const { data, error } = await supabase
       .from("car_photos")
       .insert({ car_id: car.id, url: urlData.publicUrl, sort_order: photos.length })
       .select("id, url, sort_order")
       .single();
-    if (error) toast({ title: "Save failed", description: error.message, variant: "destructive" });
-    else if (data) setPhotos([...photos, data as Photo]);
+
+    if (error) {
+      await bucket.remove([path]);
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    } else if (data) {
+      setPhotos([...photos, data as Photo]);
+    }
+
     setUploading(false);
   };
 
@@ -573,7 +612,7 @@ export default function HostCarEdit() {
           <label className="inline-flex">
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               aria-label="Upload vehicle photo"
               onChange={(e) => {

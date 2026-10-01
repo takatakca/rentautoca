@@ -11,6 +11,8 @@ interface ProfilePhotoUploadProps {
   onUploaded: (url: string) => void;
 }
 
+const SAFE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploadProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -22,8 +24,12 @@ export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploa
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please upload an image file.", variant: "destructive" });
+    if (!SAFE_IMAGE_TYPES.has(file.type)) {
+      toast({
+        title: "Invalid file",
+        description: "Use a JPEG, PNG or WebP image.",
+        variant: "destructive",
+      });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -32,12 +38,14 @@ export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploa
     }
 
     setUploading(true);
-    const ext = file.name.split(".").pop() || "jpg";
-    const filePath = `${user.id}/avatar.${ext}`;
+    const filePath = `${user.id}/avatar`;
 
     const { error: uploadError } = await supabase.storage
       .from("rentauto-profile-photos")
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
 
     if (uploadError) {
       toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
@@ -75,7 +83,7 @@ export function ProfilePhotoUpload({ currentUrl, onUploaded }: ProfilePhotoUploa
           </div>
         )}
       </div>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleUpload} />
       <Button
         variant="outline"
         size="sm"
