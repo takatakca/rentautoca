@@ -43,7 +43,7 @@ Use any postal code, any name.
 | `checkout.session.completed` | `confirmed` | `paid` |
 | `checkout.session.expired` | `cancelled` | `failed` |
 | `async_payment_failed` | `cancelled` | `failed` |
-| Rentauto cancellation refund succeeds | `cancelled` | `refunded` or `partially_refunded` |
+| Rentauto cancellation refund succeeds | `cancelled` | `refunded` |
 
 ## Live $1 test (LC1)
 
@@ -51,7 +51,7 @@ Use any postal code, any name.
 2. Create a real car with `daily_rate_cents = 100`.
 3. Book 1 day with a real card.
 4. Verify webhook fires, trip flips to `confirmed`, availability blocked.
-5. Use the Rentauto cancellation workflow → verify Stripe refund, trip `cancelled`, payment/refund projection synchronized, and availability released only after refund success.
+5. Use the Rentauto cancellation workflow → verify the full Stripe refund, trip `cancelled`, payment/refund projection synchronized, and availability released only after refund success.
 
 ## Troubleshooting
 
