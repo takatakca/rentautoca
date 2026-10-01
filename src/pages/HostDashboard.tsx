@@ -10,6 +10,7 @@ import { SafeImage } from "@/components/ui/safe-image";
 import { Car, Calendar, DollarSign, Plus, ArrowRight, Pencil, Activity, AlertTriangle, Camera, Cpu, MessageCircle, type LucideIcon } from "lucide-react";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { BookingRequestsCard } from "@/components/host/BookingRequestsCard";
 import { StripeStatusCard } from "@/components/host/StripeStatusCard";
 import { useHostCompletion } from "@/hooks/use-host-completion";
 import { format } from "date-fns";
@@ -115,6 +116,7 @@ export default function HostDashboard() {
       </div>
 
       <StripeStatusCard />
+      <BookingRequestsCard />
 
       {cars.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
