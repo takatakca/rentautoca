@@ -156,14 +156,13 @@ Deno.serve(async (req: Request) => {
       first_name: string | null;
       rating_avg: number | null;
       trips_count: number;
-      id_verified: boolean;
     }
   >();
 
   if (guestIds.length > 0) {
     const { data: profiles } = await rentauto
       .from("profiles_public")
-      .select("id,display_name,first_name,rating_avg,trips_count,id_verified")
+      .select("id,display_name,first_name,rating_avg,trips_count")
       .in("id", guestIds);
 
     for (const profile of profiles ?? []) {
@@ -206,7 +205,6 @@ Deno.serve(async (req: Request) => {
             "Verified Rentauto guest",
           ratingAvg: guest?.rating_avg ?? null,
           tripsCount: guest?.trips_count ?? 0,
-          idVerified: guest?.id_verified ?? false,
         },
       };
     }),
