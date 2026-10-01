@@ -91,11 +91,18 @@ Deno.serve(async (req: Request) => {
 
     if (error) return json({ error: "Could not load driver verification." }, 500);
 
+    const today = new Date().toISOString().slice(0, 10);
+    const effectiveStatus =
+      data?.status === "approved" &&
+      (!data.license_expires_on || data.license_expires_on < today)
+        ? "expired"
+        : data?.status;
+
     return json({
       verification: data
         ? {
             id: data.id,
-            status: data.status,
+            status: effectiveStatus,
             licenseRegion: data.license_region,
             licenseCountry: data.license_country,
             licenseExpiresOn: data.license_expires_on,
@@ -160,13 +167,18 @@ Deno.serve(async (req: Request) => {
 
   const { data: existing, error: existingError } = await rentauto
     .from("driver_verifications")
-    .select("id,status")
+    .select("id,status,license_expires_on")
     .eq("user_id", authData.user.id)
     .maybeSingle();
 
   if (existingError) return json({ error: "Could not load driver verification." }, 500);
 
-  if (existing?.status === "approved") {
+  const today = new Date().toISOString().slice(0, 10);
+  if (
+    existing?.status === "approved" &&
+    existing.license_expires_on &&
+    existing.license_expires_on >= today
+  ) {
     return json(
       { error: "Driver verification is already approved", code: "ALREADY_APPROVED" },
       409,
