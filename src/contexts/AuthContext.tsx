@@ -7,6 +7,7 @@ import {
   readRentautoOAuthIntent,
   sanitizeRedirect,
 } from "@/lib/auth-helpers";
+import { authorizeRentautoAccount } from "@/lib/takatak-phone-auth";
 
 export type AppRole = "guest" | "host" | "admin";
 
@@ -89,37 +90,61 @@ interface AuthContextType {
     if (!oauthFinalizeRef.current) {
       oauthFinalizeRef.current = (async () => {
         let resolvedUser = authenticatedUser;
+        const safeDestination = sanitizeRedirect(pending.redirect) || "/";
 
         if (pending.kind === "signup") {
-          const { data, error } = await supabase.auth.updateUser({
-            data: {
-              source_application: "RENTAUTO",
-              host_intent: pending.hostIntent ? "true" : "false",
-              rentauto_terms_accepted_at: pending.consentAt,
-              rentauto_privacy_accepted_at: pending.consentAt,
-              rentauto_consent_captured_at: pending.consentAt,
-            },
-          });
+          const { error: authorizationError } = await authorizeRentautoAccount(
+            pending.hostIntent,
+          );
 
-          if (error) {
-            console.error("Could not persist Rentauto OAuth consent", error.message);
+          if (authorizationError) {
+            console.error(
+              "Could not authorize Rentauto after Google sign-in",
+              authorizationError.message,
+            );
             clearRentautoOAuthIntent();
-            await supabase.auth.signOut();
+
             if (typeof window !== "undefined") {
-              window.location.replace("/signup?oauth_error=consent");
+              window.location.replace(
+                `/signup?authorize=1&oauth_error=authorization&redirect=${encodeURIComponent(safeDestination)}`,
+              );
             }
             return null;
           }
 
+          const { data } = await supabase.auth.refreshSession();
           if (data.user) resolvedUser = data.user;
+        } else {
+          const bootstrapResult = await ensureProfile(resolvedUser);
+
+          if (bootstrapResult.status === "consent_required") {
+            clearRentautoOAuthIntent();
+            if (typeof window !== "undefined") {
+              window.location.replace(
+                `/signup?authorize=1&redirect=${encodeURIComponent(safeDestination)}`,
+              );
+            }
+            return null;
+          }
+
+          if (bootstrapResult.status === "error") {
+            console.error(
+              "Could not synchronize Rentauto after Google sign-in",
+              bootstrapResult.message,
+            );
+            clearRentautoOAuthIntent();
+            if (typeof window !== "undefined") {
+              window.location.replace("/login?oauth_error=sync");
+            }
+            return null;
+          }
         }
 
-        await ensureProfile(resolvedUser);
         clearRentautoOAuthIntent();
 
         return {
           resolvedUser,
-          redirect: sanitizeRedirect(pending.redirect),
+          redirect: safeDestination,
         };
       })().finally(() => {
         oauthFinalizeRef.current = null;
@@ -131,18 +156,12 @@ interface AuthContextType {
 
   const hydrateAuthenticatedUser = async (
     authenticatedUser: User,
-    bootstrapOnSignIn: boolean,
   ) => {
-    const hadPendingOAuth = Boolean(readRentautoOAuthIntent());
     const oauthResult = await finishPendingOAuth(authenticatedUser);
 
     if (!oauthResult) return;
 
     const resolvedUser = oauthResult.resolvedUser;
-
-    if (!hadPendingOAuth && bootstrapOnSignIn) {
-      await ensureProfile(resolvedUser);
-    }
 
     setUser(resolvedUser);
     await hydrateDisplayName(resolvedUser);
@@ -160,15 +179,12 @@ interface AuthContextType {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, nextSession) => {
+      (_event, nextSession) => {
         setSession(nextSession);
 
         if (nextSession?.user) {
           setTimeout(() => {
-            void hydrateAuthenticatedUser(
-              nextSession.user,
-              event === "SIGNED_IN",
-            );
+            void hydrateAuthenticatedUser(nextSession.user);
           }, 0);
         } else {
           setUser(null);
@@ -183,7 +199,7 @@ interface AuthContextType {
       setSession(currentSession);
 
       if (currentSession?.user) {
-        void hydrateAuthenticatedUser(currentSession.user, false);
+        void hydrateAuthenticatedUser(currentSession.user);
       } else {
         setUser(null);
         setIsLoading(false);
