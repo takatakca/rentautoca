@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -32,9 +32,11 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleAutoStarted, setGoogleAutoStarted] = useState(false);
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const safeRedirect = sanitizeRedirect(params.get("redirect"));
+  const requestedProvider = params.get("provider");
   const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname;
   const from = safeRedirect || sanitizeRedirect(fromState) || "/";
   const isCheckoutRedirect = from.startsWith("/checkout");
@@ -122,6 +124,14 @@ export default function Login() {
     if (result.redirected) return;
     navigate(from, { replace: true });
   };
+
+  useEffect(() => {
+    if (requestedProvider !== "google" || googleAutoStarted) return;
+    setGoogleAutoStarted(true);
+    void handleGoogle();
+    // Run once for an explicit provider deep link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedProvider, googleAutoStarted]);
 
   const switchMode = (next: LoginMode) => {
     setMode(next);
