@@ -25,7 +25,11 @@
     return <Navigate to={`/login${q}`} state={{ from: location }} replace />;
   }
  
-   if (requiredRole && !hasRole(requiredRole)) {
+   if (
+     requiredRole &&
+     !hasRole(requiredRole) &&
+     !(requiredRole === "host" && hasRole("admin"))
+   ) {
      return <Navigate to="/" replace />;
    }
  
