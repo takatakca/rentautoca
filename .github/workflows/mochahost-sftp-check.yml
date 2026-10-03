@@ -1,0 +1,59 @@
+name: MochaHost SFTP transport check
+
+on:
+  push:
+    branches:
+      - codex/mochahost-sftp-deploy
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      MOCHAHOST_HOST: ${{ secrets.MOCHAHOST_HOST }}
+      MOCHAHOST_USER: ${{ secrets.MOCHAHOST_USER }}
+      MOCHAHOST_PORT: ${{ secrets.MOCHAHOST_PORT || '22' }}
+      MOCHAHOST_APP_PATH: ${{ vars.MOCHAHOST_APP_PATH || '/home/bolonca/rentauto_node' }}
+
+    steps:
+      - name: Configure SSH key
+        shell: bash
+        env:
+          MOCHAHOST_SSH_KEY: ${{ secrets.MOCHAHOST_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$MOCHAHOST_SSH_KEY" | tr -d '\r' > ~/.ssh/rentauto_deploy_key
+          chmod 600 ~/.ssh/rentauto_deploy_key
+          ssh-keygen -y -f ~/.ssh/rentauto_deploy_key >/dev/null
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh-keyscan -p "$MOCHAHOST_PORT" -H "$MOCHAHOST_HOST" >> ~/.ssh/known_hosts
+
+      - name: Probe SFTP subsystem and app root
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/sftp-check.batch <<EOF
+          pwd
+          cd $MOCHAHOST_APP_PATH
+          pwd
+          ls -la
+          ls -la dist
+          EOF
+
+          sftp \
+            -b /tmp/sftp-check.batch \
+            -i ~/.ssh/rentauto_deploy_key \
+            -P "$MOCHAHOST_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST"
