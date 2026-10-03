@@ -40,6 +40,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Edge function source parity
+        run: npm run qa:edge-sources
+
       - name: Lint changed TypeScript files
         shell: bash
         run: |
