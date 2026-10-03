@@ -46,7 +46,10 @@ Deno.serve(async (req: Request) => {
     const message = error.message ?? "";
     if (message.includes("verified_master_identity_required")) {
       return json(
-        { error: "Verify your email before applying to host.", code: "EMAIL_VERIFICATION_REQUIRED" },
+        {
+          error: "Verify a TAKATAK email or mobile number before applying to host.",
+          code: "IDENTITY_VERIFICATION_REQUIRED",
+        },
         409,
       );
     }
