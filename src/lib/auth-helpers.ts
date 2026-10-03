@@ -126,15 +126,16 @@ export type EnsureProfileResult =
 
 export async function ensureProfile(user: User): Promise<EnsureProfileResult> {
   try {
-    const { data: existingAccount, error: accountError } = await supabase
-      .from("accounts")
-      .select("auth_user_id")
-      .eq("auth_user_id", user.id)
+    const { data: existingRole, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .limit(1)
       .maybeSingle();
 
-    if (accountError) {
-      console.warn("Rentauto account lookup failed", accountError.message);
-      return { status: "error", message: accountError.message };
+    if (roleError) {
+      console.warn("Rentauto membership lookup failed", roleError.message);
+      return { status: "error", message: roleError.message };
     }
 
     const appMetadata = (user.app_metadata || {}) as Record<string, unknown>;
@@ -143,7 +144,7 @@ export async function ensureProfile(user: User): Promise<EnsureProfileResult> {
       typeof appMetadata.rentauto_terms_accepted_at === "string" &&
       typeof appMetadata.rentauto_privacy_accepted_at === "string";
 
-    if (!existingAccount && !hasServerAuthorization) {
+    if (!existingRole && !hasServerAuthorization) {
       return { status: "consent_required" };
     }
 
