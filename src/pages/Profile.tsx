@@ -1,4 +1,5 @@
  import { useState, useEffect } from "react";
+ import { Link } from "react-router-dom";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/contexts/AuthContext";
  import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@
    first_name: string | null;
    last_name: string | null;
    phone: string | null;
+   phone_verified: boolean | null;
    city: string | null;
    province: string | null;
    postal_code: string | null;
@@ -34,6 +36,7 @@
      first_name: "",
      last_name: "",
      phone: "",
+     phone_verified: false,
      city: "",
      province: "",
      postal_code: "",
@@ -56,7 +59,7 @@
        if (user) {
          const { data: profileData } = await supabase
            .from("profiles")
-           .select("first_name, last_name, phone, city, province, postal_code")
+           .select("first_name, last_name, phone, phone_verified, city, province, postal_code")
            .eq("id", user.id)
            .single();
          
@@ -65,6 +68,7 @@
              first_name: profileData.first_name || "",
              last_name: profileData.last_name || "",
              phone: profileData.phone || "",
+             phone_verified: profileData.phone_verified ?? false,
              city: profileData.city || "",
              province: profileData.province || "",
              postal_code: profileData.postal_code || "",
@@ -86,7 +90,6 @@
        .update({
          first_name: profile.first_name || null,
          last_name: profile.last_name || null,
-         phone: profile.phone || null,
          city: profile.city || null,
          province: profile.province || null,
          postal_code: profile.postal_code || null,
@@ -172,13 +175,21 @@
              </div>
            </div>
            <div className="space-y-2">
-             <Label htmlFor="phone">Phone</Label>
-             <Input
-               id="phone"
-               type="tel"
-               value={profile.phone || ""}
-               onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-             />
+             <div className="flex items-center justify-between gap-3">
+               <Label>TAKATAK mobile</Label>
+               <span className={`text-xs font-medium ${profile.phone_verified ? "text-primary" : "text-muted-foreground"}`}>
+                 {profile.phone_verified ? "Verified" : "Verification required"}
+               </span>
+             </div>
+             <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+               {profile.phone || "No verified mobile number yet"}
+             </div>
+             <p className="text-xs text-muted-foreground">
+               Mobile numbers cannot be edited as ordinary profile data.{" "}
+               <Link to="/dashboard/security" className="font-medium text-primary hover:underline">
+                 Add or change your number with SMS verification
+               </Link>.
+             </p>
            </div>
            <div className="grid sm:grid-cols-3 gap-4">
              <div className="space-y-2">
