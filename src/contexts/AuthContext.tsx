@@ -1,7 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureProfile } from "@/lib/auth-helpers";
+import {
+  clearRentautoOAuthIntent,
+  ensureProfile,
+  readRentautoOAuthIntent,
+  sanitizeRedirect,
+} from "@/lib/auth-helpers";
 
 export type AppRole = "guest" | "host" | "admin";
 
@@ -23,6 +28,9 @@ interface AuthContextType {
    const [user, setUser] = useState<User | null>(null);
    const [roles, setRoles] = useState<AppRole[]>([]);
    const [isLoading, setIsLoading] = useState(true);
+   const oauthFinalizeRef = useRef<
+     Promise<{ resolvedUser: User; redirect: string | null } | null> | null
+   >(null);
  
    const fetchRoles = async (userId: string) => {
      const { data, error } = await supabase
@@ -63,41 +71,114 @@ interface AuthContextType {
     }
   };
 
+  const finishPendingOAuth = async (
+    authenticatedUser: User,
+  ): Promise<{ resolvedUser: User; redirect: string | null } | null> => {
+    const pending = readRentautoOAuthIntent();
+    if (!pending) {
+      return { resolvedUser: authenticatedUser, redirect: null };
+    }
+
+    if (!oauthFinalizeRef.current) {
+      oauthFinalizeRef.current = (async () => {
+        let resolvedUser = authenticatedUser;
+
+        if (pending.kind === "signup") {
+          const { data, error } = await supabase.auth.updateUser({
+            data: {
+              source_application: "RENTAUTO",
+              host_intent: pending.hostIntent ? "true" : "false",
+              rentauto_terms_accepted_at: pending.consentAt,
+              rentauto_privacy_accepted_at: pending.consentAt,
+              rentauto_consent_captured_at: pending.consentAt,
+            },
+          });
+
+          if (error) {
+            console.error("Could not persist Rentauto OAuth consent", error.message);
+            clearRentautoOAuthIntent();
+            await supabase.auth.signOut();
+            if (typeof window !== "undefined") {
+              window.location.replace("/signup?oauth_error=consent");
+            }
+            return null;
+          }
+
+          if (data.user) resolvedUser = data.user;
+        }
+
+        await ensureProfile(resolvedUser);
+        clearRentautoOAuthIntent();
+
+        return {
+          resolvedUser,
+          redirect: sanitizeRedirect(pending.redirect),
+        };
+      })().finally(() => {
+        oauthFinalizeRef.current = null;
+      });
+    }
+
+    return oauthFinalizeRef.current;
+  };
+
+  const hydrateAuthenticatedUser = async (
+    authenticatedUser: User,
+    bootstrapOnSignIn: boolean,
+  ) => {
+    const hadPendingOAuth = Boolean(readRentautoOAuthIntent());
+    const oauthResult = await finishPendingOAuth(authenticatedUser);
+
+    if (!oauthResult) return;
+
+    const resolvedUser = oauthResult.resolvedUser;
+
+    if (!hadPendingOAuth && bootstrapOnSignIn) {
+      await ensureProfile(resolvedUser);
+    }
+
+    setUser(resolvedUser);
+    await hydrateDisplayName(resolvedUser);
+    const userRoles = await fetchRoles(resolvedUser.id);
+    setRoles(userRoles);
+    setIsLoading(false);
+
+    if (oauthResult.redirect && typeof window !== "undefined") {
+      const current = window.location.pathname + window.location.search;
+      if (current !== oauthResult.redirect) {
+        window.location.replace(oauthResult.redirect);
+      }
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, nextSession) => {
+        setSession(nextSession);
 
-        if (session?.user) {
-          setTimeout(async () => {
-            if (event === "SIGNED_IN") {
-              await ensureProfile(session.user);
-            }
-            await hydrateDisplayName(session.user);
-            const userRoles = await fetchRoles(session.user.id);
-            setRoles(userRoles);
-            setIsLoading(false);
+        if (nextSession?.user) {
+          setTimeout(() => {
+            void hydrateAuthenticatedUser(
+              nextSession.user,
+              event === "SIGNED_IN",
+            );
           }, 0);
         } else {
+          setUser(null);
           setRoles([]);
           setDisplayName(null);
           setIsLoading(false);
         }
-      }
+      },
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        (async () => {
-          await hydrateDisplayName(session.user);
-          const userRoles = await fetchRoles(session.user.id);
-          setRoles(userRoles);
-          setIsLoading(false);
-        })();
+    void supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+
+      if (currentSession?.user) {
+        void hydrateAuthenticatedUser(currentSession.user, false);
       } else {
+        setUser(null);
         setIsLoading(false);
       }
     });
@@ -105,11 +186,14 @@ interface AuthContextType {
     return () => {
       subscription.unsubscribe();
     };
+    // Auth helpers are intentionally stable for the lifetime of the provider.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const hasRole = (role: AppRole) => roles.includes(role);
 
   const signOut = async () => {
+    clearRentautoOAuthIntent();
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
