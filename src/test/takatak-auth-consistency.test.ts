@@ -18,6 +18,15 @@ describe("TAKATAK authentication authority contracts", () => {
     "supabase/functions/rentauto-host-application/index.ts",
   );
   const overview = read("src/pages/dashboard/Overview.tsx");
+  const authorizationGate = read(
+    "supabase/migrations/20261003073000_rentauto_explicit_vertical_authorization.sql",
+  );
+  const authorizeAccount = read(
+    "supabase/functions/rentauto-authorize-account/index.ts",
+  );
+  const bootstrapAccount = read(
+    "supabase/functions/rentauto-bootstrap-account/index.ts",
+  );
 
   it("never carries verified-phone state through an ordinary profile edit", () => {
     expect(phoneAuthority).toContain("verified_phone_change_required");
@@ -40,13 +49,32 @@ describe("TAKATAK authentication authority contracts", () => {
     expect(authContext).toContain("window.location.replace(oauthResult.redirect)");
   });
 
-  it("requires and persists Rentauto consent for Google signup", () => {
-    expect(signup).toContain("if (!acceptTerms)");
-    expect(signup).toContain('kind: "signup"');
-    expect(authContext).toContain("rentauto_terms_accepted_at");
-    expect(authContext).toContain("rentauto_privacy_accepted_at");
-    expect(authContext).toContain("rentauto_consent_captured_at");
-    expect(authContext).toContain("await ensureProfile(resolvedUser)");
+  it("requires explicit server-side Rentauto authorization for every new vertical account", () => {
+    expect(authorizationGate).toContain("rentauto_consent_required");
+    expect(authorizationGate).toContain("raw_app_meta_data");
+    expect(authorizationGate).toContain("rentauto_authorized_at");
+    expect(authorizationGate).toContain("rentauto_terms_accepted_at");
+    expect(authorizationGate).toContain("rentauto_privacy_accepted_at");
+    expect(authorizeAccount).toContain("admin.auth.admin.updateUserById");
+    expect(authorizeAccount).toContain("app_metadata");
+    expect(authorizeAccount).toContain("rentauto_terms_version");
+    expect(authorizeAccount).toContain("rentauto_privacy_version");
+    expect(bootstrapAccount).toContain("RENTAUTO_CONSENT_REQUIRED");
+  });
+
+  it("routes SMS, Google and existing TAKATAK users through the same Rentauto authorization", () => {
+    expect(signup).toContain("authorizeRentautoAccount");
+    expect(signup).toContain('searchParams.get("authorize") === "1"');
+    expect(signup).toContain("You must accept the Terms and Privacy Policy");
+    expect(authContext).toContain("authorizeRentautoAccount");
+    expect(authContext).toContain("/signup?authorize=1");
+    expect(login).toContain('result.status === "consent_required"');
+    expect(login).toContain("/signup?authorize=1");
+  });
+
+  it("does not let generic auth events silently opt a TAKATAK identity into Rentauto", () => {
+    expect(authContext).not.toContain('event === "SIGNED_IN"');
+    expect(authContext).not.toContain("bootstrapOnSignIn");
   });
 
   it("treats verified email or verified mobile as TAKATAK identity authority", () => {
