@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,8 +42,19 @@ export default function Signup() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectParam = sanitizeRedirect(new URLSearchParams(location.search).get("redirect"));
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = sanitizeRedirect(searchParams.get("redirect"));
   const postAuthDest = hostIntent ? "/become-host" : (redirectParam || "/");
+
+  useEffect(() => {
+    if (searchParams.get("oauth_error") === "consent") {
+      setError(
+        "Google sign-in completed, but Rentauto could not record the required Terms and Privacy consent. Please try again.",
+      );
+    }
+    // location.search is the source of truth for OAuth return errors.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const metadata = (phone: string, capturedAt: string): TakatakSignupMetadata => {
     const { firstName, lastName } = splitTakatakName(fullName);
