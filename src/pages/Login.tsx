@@ -43,7 +43,14 @@ export default function Login() {
   const params = new URLSearchParams(location.search);
   const safeRedirect = sanitizeRedirect(params.get("redirect"));
   const requestedProvider = params.get("provider");
-  const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname;
+  const fromLocation = (
+    location.state as {
+      from?: { pathname?: string; search?: string; hash?: string };
+    }
+  )?.from;
+  const fromState = fromLocation?.pathname
+    ? `${fromLocation.pathname}${fromLocation.search ?? ""}${fromLocation.hash ?? ""}`
+    : null;
   const from = safeRedirect || sanitizeRedirect(fromState) || "/";
   const isCheckoutRedirect = from.startsWith("/checkout");
 
