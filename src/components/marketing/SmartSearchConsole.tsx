@@ -21,8 +21,11 @@ import { useVoiceSearch } from "@/hooks/use-voice-search";
 import { useNearbyLocation } from "@/hooks/use-nearby-location";
 import { exploreUrl, parseNaturalQuery, SearchState } from "@/lib/search-state";
 
-const quickChips: Array<{ label: string; state: SearchState }> = [
-  { label: "This weekend", state: { category: "Weekend" } },
+const quickChips: Array<
+  | { label: string; state: SearchState }
+  | { label: string; query: string }
+> = [
+  { label: "This weekend", query: "this weekend" },
   { label: "YUL Airport", state: { location: "YUL Airport", airport: true, category: "Airports" } },
   { label: "Monthly", state: { monthly: true, category: "Monthly" } },
   { label: "Electric", state: { electric: true, category: "Electric" } },
@@ -375,7 +378,7 @@ export function SmartSearchConsole({ compact = false }: { compact?: boolean }) {
             <button
               key={chip.label}
               type="button"
-              onClick={() => go(chip.state)}
+              onClick={() => ("query" in chip ? runSmart(chip.query) : go(chip.state))}
               className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5 text-xs font-medium text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-black/40 md:text-sm"
             >
               {chip.label}
