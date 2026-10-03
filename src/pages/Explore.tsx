@@ -46,9 +46,25 @@ export default function Explore() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const origin = useMemo(() => {
-    const lat = Number(searchParams.get("lat"));
-    const lng = Number(searchParams.get("lng"));
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    const rawLat = searchParams.get("lat");
+    const rawLng = searchParams.get("lng");
+
+    if (!rawLat?.trim() || !rawLng?.trim()) return null;
+
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return null;
+    }
+
     return { lat, lng };
   }, [searchParams]);
 
