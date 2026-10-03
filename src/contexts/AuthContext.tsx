@@ -56,8 +56,15 @@ interface AuthContextType {
   const [displayName, setDisplayName] = useState<string | null>(null);
 
   const hydrateDisplayName = async (u: User) => {
-    const md = (u.user_metadata || {}) as Record<string, any>;
-    const fromMeta = md.full_name || md.display_name || md.name;
+    const md = (u.user_metadata || {}) as Record<string, unknown>;
+    const fromMeta =
+      typeof md.full_name === "string"
+        ? md.full_name
+        : typeof md.display_name === "string"
+          ? md.display_name
+          : typeof md.name === "string"
+            ? md.name
+            : null;
     if (fromMeta) {
       setDisplayName(fromMeta);
     }
