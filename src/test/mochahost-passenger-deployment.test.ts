@@ -27,8 +27,8 @@ describe("MochaHost release-pointer deployment contracts", () => {
   });
 
   it("restarts Passenger after CURRENT changes and rollback", () => {
-    const restartTouches = workflow.match(/touch tmp\\/restart\\.txt/g) ?? [];
-    expect(restartTouches.length).toBeGreaterThanOrEqual(2);
+    const restartTouches = workflow.split("touch tmp/restart.txt").length - 1;
+    expect(restartTouches).toBeGreaterThanOrEqual(2);
   });
 
   it("verifies the live revision from the installed health JSON", () => {
