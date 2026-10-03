@@ -5,44 +5,48 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
-describe("MochaHost Passenger deployment contracts", () => {
+describe("MochaHost release-pointer deployment contracts", () => {
   const server = read("server.cjs");
   const workflow = read(".github/workflows/deploy-mochahost.yml");
 
-  it("keeps deployment probes outside the SPA fallback", () => {
+  it("keeps explicit deployment probes outside the fallback server", () => {
     expect(server).toContain('app.get("/healthz"');
     expect(server).toContain('app.get("/revision.txt"');
     expect(server.indexOf('app.get("/healthz"')).toBeLessThan(
       server.indexOf("SPA fallback"),
     );
-    expect(server.indexOf('app.get("/revision.txt"')).toBeLessThan(
-      server.indexOf("SPA fallback"),
-    );
-    expect(server).toContain('res.setHeader("Cache-Control", "no-store")');
   });
 
-  it("ships the production server with each immutable frontend artifact", () => {
-    expect(workflow).toContain("cp server.cjs .deploy/release/server.cjs");
-    expect(workflow).toContain('test -f "$STAGE/server.cjs"');
-    expect(workflow).toContain('mv "$STAGE/server.cjs" server.cjs');
+  it("deploys immutable releases instead of swapping an app-root dist", () => {
+    expect(workflow).toContain('RELEASE_DIR="releases/${SHA}"');
+    expect(workflow).toContain('printf \'%s\\n\' "$SHA" > CURRENT.new');
+    expect(workflow).toContain("mv CURRENT.new CURRENT");
+    expect(workflow).toContain("PREVIOUS.new");
+    expect(workflow).not.toContain("Atomically activate app-root dist");
+    expect(workflow).not.toContain('mv "$STAGE/dist" dist');
   });
 
-  it("restarts Passenger after server activation and rollback", () => {
-    const restartTouches = workflow.match(/touch tmp\/restart\.txt/g) ?? [];
-    expect(restartTouches.length).toBeGreaterThanOrEqual(2);
-    expect(workflow).toContain('cp -a server.cjs "$BACKUP/server.cjs"');
-    expect(workflow).toContain('cp -a "$BACKUP/server.cjs" server.cjs');
+  it("restarts Passenger after CURRENT changes and rollback", () => {
+    const restartTouches = workflow.split("touch tmp/restart.txt").length - 1;
+    expect(restartTouches).toBeGreaterThanOrEqual(2);
   });
 
-  it("rejects SPA HTML masquerading as a healthy deployment", () => {
-    expect(workflow).toContain('health_body="$(tr -d');
-    expect(workflow).toContain('[ "$health_body" = "ok" ]');
-    expect(workflow).toContain('if [ "$health_body" != "ok" ]');
+  it("verifies the live revision from the installed health JSON", () => {
+    expect(workflow).toContain('"revision\\":\\"$SHA\\"');
+    expect(workflow).toContain('"revision\\":\\"$DEPLOY_SHA\\"');
+    expect(workflow).toContain('grep -Eq \'"ok"[[:space:]]*:[[:space:]]*true\'');
   });
 
-  it("captures cPanel domain and document-root diagnostics", () => {
-    expect(workflow).toContain("DomainInfo domains_data");
-    expect(workflow).toContain("DomainLookup getdocroots");
-    expect(workflow).toContain("Passenger / Node processes");
+  it("preserves immutable build evidence before touching production", () => {
+    expect(workflow).toContain("actions/upload-artifact@v4");
+    expect(workflow).toContain("rentauto-production-${{ env.DEPLOY_SHA }}");
+    expect(workflow).toContain("dist/revision.txt");
+  });
+
+  it("diagnoses the release-pointer runtime before activation", () => {
+    expect(workflow).toContain("installed release-pointer runtime");
+    expect(workflow).toContain("current=");
+    expect(workflow).toContain("previous=");
+    expect(workflow).toContain("release directories");
   });
 });
