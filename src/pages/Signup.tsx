@@ -10,7 +10,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, MessageSquareText } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { friendlyAuthError, sanitizeRedirect } from "@/lib/auth-helpers";
+import {
+  clearRentautoOAuthIntent,
+  friendlyAuthError,
+  sanitizeRedirect,
+  storeRentautoOAuthIntent,
+} from "@/lib/auth-helpers";
 import {
   bootstrapRentautoFromTakatak,
   normalizeTakatakPhone,
@@ -142,17 +147,38 @@ export default function Signup() {
 
   const handleGoogle = async () => {
     setError(null);
+
+    if (!acceptTerms) {
+      setError("You must accept the Terms and Privacy Policy to continue.");
+      return;
+    }
+
+    const capturedAt = new Date().toISOString();
+
+    storeRentautoOAuthIntent({
+      kind: "signup",
+      redirect: postAuthDest,
+      consentAt: capturedAt,
+      hostIntent,
+    });
+
     setGoogleLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
+
     if (result.error) {
+      clearRentautoOAuthIntent();
       setGoogleLoading(false);
       setError(friendlyAuthError((result.error as Error).message));
       return;
     }
+
     if (result.redirected) return;
-    navigate(postAuthDest, { replace: true });
+
+    // AuthContext persists Rentauto consent metadata, bootstraps the TAKATAK
+    // identity projection, and restores the requested internal destination.
+    setGoogleLoading(false);
   };
 
   return (
@@ -172,7 +198,29 @@ export default function Signup() {
     >
       {step === "details" ? (
         <>
-          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading || loading}>
+          {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+          <Alert>
+            <MessageSquareText className="h-4 w-4" />
+            <AlertDescription>
+              Your login is managed by TAKATAK. Rentauto receives only the identity fields it needs; rental, vehicle, GPS and payment data stay separated.
+            </AlertDescription>
+          </Alert>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">
+              I agree to the <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
+              <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox checked={hostIntent} onCheckedChange={(v) => setHostIntent(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">I want to list my car and earn as a host (subject to approval).</span>
+          </label>
+
+          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading || loading || !acceptTerms}>
             {googleLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <GoogleIcon className="mr-2" />}
             Continue with your TAKATAK Google identity
           </Button>
@@ -185,15 +233,6 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSendOtp} className="space-y-4">
-            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-
-            <Alert>
-              <MessageSquareText className="h-4 w-4" />
-              <AlertDescription>
-                Your login is managed by TAKATAK. Rentauto receives only the identity fields it needs; rental, vehicle, GPS and payment data stay separated.
-              </AlertDescription>
-            </Alert>
-
             <div className="space-y-2">
               <Label htmlFor="fullName">Full name</Label>
               <Input id="fullName" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -207,18 +246,6 @@ export default function Signup() {
               <Label htmlFor="phone">Mobile number</Label>
               <Input id="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+1 514 555 0123" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} required />
             </div>
-
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <Checkbox checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-0.5" />
-              <span className="text-muted-foreground">
-                I agree to the <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
-                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-              </span>
-            </label>
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <Checkbox checked={hostIntent} onCheckedChange={(v) => setHostIntent(v === true)} className="mt-0.5" />
-              <span className="text-muted-foreground">I want to list my car and earn as a host (subject to approval).</span>
-            </label>
 
             <Button type="submit" className="w-full" disabled={loading || googleLoading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
