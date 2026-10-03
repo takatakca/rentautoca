@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage } from "npm:ai";
@@ -8,7 +7,7 @@ import {
   getLovableAiGatewayRunId,
   getLovableAiGatewayResponseHeaders,
   withLovableAiGatewayRunIdHeader,
-} from "../_shared/ai-gateway.ts";
+} from "./ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,15 +25,15 @@ const KNOWLEDGE: Record<string, string> = {
   ev_charging:
     "Rentauto EV listings show battery range and charge type. Level 2 chargers (240V) add roughly 30-50 km of range per hour; DC fast chargers reach 80% in 20-40 minutes. In Quebec the Circuit Electrique network is the largest. Guests return EVs at the same charge level they received, or pay a recharge fee set by the host.",
   insurance:
-    "Rentauto's checkout is designed to present the protection option and contractual terms that actually apply to a trip before payment. Do not infer insurer, liability limits, deductibles, roadside benefits, or primary-coverage status from pre-launch plan names or examples.",
+    "Every Rentauto trip includes a protection plan chosen at checkout. Plans differ by deductible and coverage of collision, third-party liability and theft. Personal auto insurance and credit card coverage may not extend to peer-to-peer rentals in Quebec, so the platform plan is the primary coverage during the trip.",
   gps_privacy:
     "Vehicles may carry a GPS device, disclosed on the listing. Location is only recorded while a trip is active: pings are dropped before check-in and after check-out. Hosts see location for their own active rentals only, and guests can see the same live map from their trip page.",
   cancellation:
-    "Each listing carries a cancellation policy shown before payment and snapshotted onto the booking. Rentauto uses that saved policy to preview any automatic refund before cancellation. If the saved rule does not explicitly cover the timing or payment state, the request goes to manual review instead of guessing a fee or refund amount.",
+    "Each listing carries a cancellation policy shown before payment and snapshotted onto the booking. Use the policy tool or booking snapshot for exact refund rules; do not invent a cancellation window.",
   host_ratings:
     "Host ratings average guest reviews across cleanliness, maintenance, communication, convenience and listing accuracy. All Star hosts maintain high ratings, fast responses and very few cancellations.",
   checkout:
-    "Checkout flow: pick dates on the listing, choose extras and a protection plan, press Reserve to create the booking, then pay through the secure Stripe session. Payment authorises the trip; the host confirms and you receive pickup instructions.",
+    "Checkout flow: pick dates on the listing, choose extras and a protection plan, press Reserve to create the booking, then pay through the secure Stripe session. A successful Stripe Checkout is confirmed only after the verified payment webhook updates the booking; then pickup preparation becomes available.",
   host_publishing:
     "To publish a vehicle: complete host onboarding (profile, ID verification, payout account), add the vehicle with photos, registration and insurance documents, set daily price, included kilometres and rules, then submit for review. Listings go live once documents pass review and the payout account is enabled.",
   airports:
@@ -62,13 +61,14 @@ Deno.serve(async (req) => {
     );
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
     const user = userData?.user;
+    const db = admin.schema("rentauto");
     if (userErr || !user) return json({ error: "Not authenticated" }, 401);
 
     const body = await req.json().catch(() => null);
     const parsed = z
       .object({
         threadId: z.string().uuid(),
-        messages: z.array(z.any()).max(200),
+        messages: z.array(z.unknown()).max(200),
       })
       .safeParse(body);
     if (!parsed.success) return json({ error: "Invalid request" }, 400);
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     const { threadId } = parsed.data;
     const messages = parsed.data.messages as UIMessage[];
 
-    const { data: thread } = await admin
+    const { data: thread } = await db
       .from("concierge_threads")
       .select("id, user_id, title")
       .eq("id", threadId)
@@ -86,23 +86,23 @@ Deno.serve(async (req) => {
     // Persist the latest user message
     const last = messages[messages.length - 1];
     if (last && last.role === "user") {
-      const { error: insErr } = await admin.from("concierge_messages").insert({
+      const { error: insErr } = await db.from("concierge_messages").insert({
         thread_id: threadId,
         user_id: user.id,
         role: "user",
-        client_message_id: (last as any).id ?? null,
-        message: last as any,
+        client_message_id: last.id ?? null,
+        message: last,
       });
       if (insErr) console.error("persist user message failed", insErr.message);
 
       const text = (last.parts ?? [])
-        .filter((p: any) => p.type === "text")
-        .map((p: any) => p.text)
+        .filter((p) => p.type === "text")
+        .map((p) => (p.type === "text" ? p.text : ""))
         .join(" ")
         .trim();
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (thread.title === "New conversation" && text) patch.title = text.slice(0, 60);
-      await admin.from("concierge_threads").update(patch).eq("id", threadId);
+      await db.from("concierge_threads").update(patch).eq("id", threadId);
     }
 
     const tools = {
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
           monthlyEligible: z.boolean().describe("Only monthly-eligible vehicles"),
         }),
         execute: async (i) => {
-          let q = admin
+          let q = db
             .from("cars")
             .select(
               "id,title,make,model,year,category,seats,doors,fuel_type,transmission,consumption_l_per_100km,base_daily_price_cents,included_km_per_day,extra_km_price_cents,location_label,airport_pickup_enabled,monthly_enabled,instant_book",
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
         description: "Get full detail for one vehicle by id, including host rating and reviews count.",
         inputSchema: z.object({ carId: z.string() }),
         execute: async ({ carId }) => {
-          const { data: car, error } = await admin
+          const { data: car, error } = await db
             .from("cars")
             .select(
               "id,title,make,model,year,trim,description,category,body_type,seats,doors,fuel_type,transmission,consumption_l_per_100km,features,rules,base_daily_price_cents,included_km_per_day,extra_km_price_cents,location_label,airport_pickup_enabled,monthly_enabled,instant_book,status,host_id",
@@ -149,12 +149,12 @@ Deno.serve(async (req) => {
             .eq("id", carId)
             .maybeSingle();
           if (error || !car) return { error: "Vehicle not found" };
-          const { data: reviews } = await admin
+          const { data: reviews } = await db
             .from("reviews")
             .select("rating_overall")
             .eq("car_id", carId);
-          const ratings = (reviews ?? []).map((r: any) => Number(r.rating_overall));
-          const { host_id, ...safe } = car as any;
+          const ratings = (reviews ?? []).map((review) => Number(review.rating_overall));
+          const { host_id: _hostId, ...safe } = car;
           return {
             vehicle: safe,
             rating_avg: ratings.length ? Number((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)) : null,
@@ -172,22 +172,14 @@ Deno.serve(async (req) => {
           protectionPlanId: z.string().describe("Protection plan id, empty string for none"),
         }),
         execute: async (i) => {
-          const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/quote-trip`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-            },
-            body: JSON.stringify({
-              carId: i.carId,
-              startAt: i.startAt,
-              endAt: i.endAt,
-              selectedExtras: [],
-              protectionPlanId: i.protectionPlanId || null,
-            }),
+          const { data, error } = await admin.rpc("rentauto_quote_trip", {
+            p_car_id: i.carId,
+            p_start_at: i.startAt,
+            p_end_at: i.endAt,
+            p_selected_extras: [],
+            p_protection_plan_id: i.protectionPlanId || null,
           });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) return { error: (data as any)?.error ?? `Quote failed (${res.status})` };
+          if (error) return { error: "Unable to calculate this trip quote." };
           return data;
         },
       }),
@@ -195,7 +187,7 @@ Deno.serve(async (req) => {
         description: "List active protection plans with pricing and deductibles.",
         inputSchema: z.object({}),
         execute: async () => {
-          const { data } = await admin
+          const { data } = await db
             .from("protection_plans")
             .select("id,name,tier,description,price_per_day_cents,deductible_cents,coverage_details")
             .eq("is_active", true)
@@ -207,7 +199,7 @@ Deno.serve(async (req) => {
         description: "List cancellation policies and their rules.",
         inputSchema: z.object({}),
         execute: async () => {
-          const { data } = await admin.from("cancellation_policies").select("id,name,summary,rules");
+          const { data } = await db.from("cancellation_policies").select("id,name,summary,rules");
           return { policies: data ?? [] };
         },
       }),
@@ -224,7 +216,7 @@ Deno.serve(async (req) => {
         description: "The signed-in user's own bookings, newest first. Use for trip-specific help.",
         inputSchema: z.object({}),
         execute: async () => {
-          const { data } = await admin
+          const { data } = await db
             .from("trips")
             .select("id,car_id,start_at,end_at,status,payment_status,total_cents,currency,pickup_location")
             .eq("guest_id", user.id)
@@ -259,15 +251,15 @@ Rules:
     const response = result.toUIMessageStreamResponse({
       originalMessages: messages,
       onFinish: async ({ responseMessage }) => {
-        const { error } = await admin.from("concierge_messages").insert({
+        const { error } = await db.from("concierge_messages").insert({
           thread_id: threadId,
           user_id: user.id,
           role: "assistant",
-          client_message_id: (responseMessage as any)?.id ?? null,
-          message: responseMessage as any,
+          client_message_id: responseMessage.id ?? null,
+          message: responseMessage,
         });
         if (error) console.error("persist assistant message failed", error.message);
-        await admin
+        await db
           .from("concierge_threads")
           .update({ updated_at: new Date().toISOString() })
           .eq("id", threadId);

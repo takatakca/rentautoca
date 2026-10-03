@@ -13,7 +13,7 @@ describe("Rentauto cancellation/refund authority contracts", () => {
     "supabase/functions/rentauto-cancel-trip/index.ts",
   );
   const stripeWebhook = read(
-    "supabase/functions/stripe-webhook/index.ts",
+    "supabase/functions/rentauto-stripe-webhook/index.ts",
   );
 
   it("never releases a paid booking before a required refund succeeds", () => {

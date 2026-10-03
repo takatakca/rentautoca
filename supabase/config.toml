@@ -1,36 +1,75 @@
 project_id = "pcjfahhlozsseqqevimi"
 
-[functions.stripe-onboard]
-verify_jwt = false
-
-[functions.stripe-status]
-verify_jwt = false
-
-[functions.stripe-dashboard]
-verify_jwt = false
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.quote-trip]
-verify_jwt = false
-
-[functions.create-checkout-session]
-verify_jwt = false
-
-
-[functions.tracking-ingest]
-verify_jwt = false
-
-[functions.trip-transition]
-verify_jwt = false
-
-
-[functions.takatak-sync-outbox]
-verify_jwt = false
-
-[functions.create-booking-draft]
-verify_jwt = false
+# Canonical RENTAUTO Edge Function slugs.
+# Keep names and JWT modes aligned with production.
+# verify_jwt=false is reserved for intentional public/custom-auth endpoints.
 
 [functions.rentauto-bootstrap-account]
 verify_jwt = true
+
+[functions.rentauto-quote-trip]
+verify_jwt = false
+
+[functions.rentauto-create-booking-draft]
+verify_jwt = true
+
+[functions.rentauto-create-checkout-session]
+verify_jwt = true
+
+[functions.rentauto-stripe-webhook]
+verify_jwt = false
+
+[functions.rentauto-trip-transition]
+verify_jwt = true
+
+[functions.rentauto-tracking-ingest]
+verify_jwt = false
+
+[functions.rentauto-stripe-status]
+verify_jwt = true
+
+[functions.rentauto-stripe-onboard]
+verify_jwt = true
+
+[functions.rentauto-stripe-dashboard]
+verify_jwt = true
+
+[functions.rentauto-concierge]
+verify_jwt = true
+
+[functions.rentauto-host-application]
+verify_jwt = true
+
+[functions.rentauto-admin-host-applications]
+verify_jwt = true
+
+[functions.rentauto-admin-vehicle-reviews]
+verify_jwt = true
+
+[functions.rentauto-vehicle-documents]
+verify_jwt = true
+
+[functions.rentauto-admin-host-verifications]
+verify_jwt = true
+
+[functions.rentauto-driver-verification]
+verify_jwt = true
+
+[functions.rentauto-admin-driver-verifications]
+verify_jwt = true
+
+[functions.rentauto-host-booking-requests]
+verify_jwt = true
+
+[functions.rentauto-admin-trip-incidents]
+verify_jwt = true
+
+[functions.rentauto-admin-settlements]
+verify_jwt = true
+
+[functions.rentauto-cancel-trip]
+verify_jwt = true
+
+# Server-to-server TAKATAK outbox delivery authenticates with its own secret.
+[functions.takatak-sync-outbox]
+verify_jwt = false
