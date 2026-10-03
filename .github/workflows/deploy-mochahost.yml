@@ -209,14 +209,14 @@ jobs:
 
           echo "--- cPanel domain data ---"
           if [ -x /usr/local/cpanel/bin/uapi ]; then
-            /usr/local/cpanel/bin/uapi --output=jsonpretty DomainInfo domains_data format=hash 2>&1 | sed -n '1,240p'
+            /usr/local/cpanel/bin/uapi --user="$(id -un)" --output=jsonpretty DomainInfo domains_data format=hash 2>&1 | sed -n '1,240p'
           else
             echo "uapi command unavailable"
           fi
 
           echo "--- cPanel document roots (legacy diagnostic API) ---"
           if [ -x /usr/local/cpanel/bin/cpapi2 ]; then
-            /usr/local/cpanel/bin/cpapi2 --output=jsonpretty DomainLookup getdocroots 2>&1 | sed -n '1,240p'
+            /usr/local/cpanel/bin/cpapi2 --user="$(id -un)" --output=jsonpretty DomainLookup getdocroots 2>&1 | sed -n '1,240p'
           else
             echo "cpapi2 command unavailable"
           fi
