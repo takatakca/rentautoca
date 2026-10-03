@@ -9,7 +9,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ensureProfile, friendlyAuthError, sanitizeRedirect } from "@/lib/auth-helpers";
+import {
+  clearRentautoOAuthIntent,
+  ensureProfile,
+  friendlyAuthError,
+  sanitizeRedirect,
+  storeRentautoOAuthIntent,
+} from "@/lib/auth-helpers";
 import {
   normalizeTakatakPhone,
   requestTakatakSmsOtp,
@@ -115,14 +121,28 @@ export default function Login() {
   const handleGoogle = async () => {
     setError(null);
     setGoogleLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+
+    storeRentautoOAuthIntent({
+      kind: "login",
+      redirect: from,
+    });
+
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+
     if (result.error) {
+      clearRentautoOAuthIntent();
       setGoogleLoading(false);
       setError(friendlyAuthError((result.error as Error).message));
       return;
     }
+
     if (result.redirected) return;
-    navigate(from, { replace: true });
+
+    // setSession() inside the OAuth adapter emits SIGNED_IN. AuthContext consumes
+    // the pending intent and restores the exact safe internal destination.
+    setGoogleLoading(false);
   };
 
   useEffect(() => {
