@@ -59,8 +59,23 @@ app.use(
   })
 );
 
-// Lightweight health check
-app.get("/healthz", (_req, res) => res.status(200).send("ok"));
+// Deployment probes must never fall through to the SPA. Keep them explicit,
+// uncacheable and backed by the same dist directory the app serves.
+app.get("/healthz", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.type("text/plain").status(200).send("ok");
+});
+
+app.get("/revision.txt", (_req, res) => {
+  const revisionPath = path.join(DIST_DIR, "revision.txt");
+
+  if (!fs.existsSync(revisionPath)) {
+    return res.status(404).type("text/plain").send("revision missing");
+  }
+
+  res.setHeader("Cache-Control", "no-store");
+  return res.type("text/plain").sendFile(revisionPath);
+});
 
 // SPA fallback — any non-asset GET returns index.html
 app.get(/.*/, (_req, res) => {
