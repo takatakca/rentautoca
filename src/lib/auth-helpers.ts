@@ -13,6 +13,83 @@ export function sanitizeRedirect(raw: string | null | undefined): string | null 
   return raw;
 }
 
+export const RENTAUTO_OAUTH_INTENT_KEY = "rentauto_oauth_intent_v1";
+
+export type RentautoOAuthIntent =
+  | {
+      kind: "login";
+      redirect: string | null;
+    }
+  | {
+      kind: "signup";
+      redirect: string | null;
+      consentAt: string;
+      hostIntent: boolean;
+    };
+
+export function storeRentautoOAuthIntent(intent: RentautoOAuthIntent): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(
+    RENTAUTO_OAUTH_INTENT_KEY,
+    JSON.stringify({
+      ...intent,
+      redirect: sanitizeRedirect(intent.redirect),
+    }),
+  );
+}
+
+export function readRentautoOAuthIntent(): RentautoOAuthIntent | null {
+  if (typeof window === "undefined") return null;
+
+  const raw = sessionStorage.getItem(RENTAUTO_OAUTH_INTENT_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<RentautoOAuthIntent> & {
+      kind?: unknown;
+      redirect?: unknown;
+      consentAt?: unknown;
+      hostIntent?: unknown;
+    };
+
+    if (parsed.kind === "login") {
+      return {
+        kind: "login",
+        redirect:
+          typeof parsed.redirect === "string"
+            ? sanitizeRedirect(parsed.redirect)
+            : null,
+      };
+    }
+
+    if (
+      parsed.kind === "signup" &&
+      typeof parsed.consentAt === "string" &&
+      !Number.isNaN(Date.parse(parsed.consentAt))
+    ) {
+      return {
+        kind: "signup",
+        redirect:
+          typeof parsed.redirect === "string"
+            ? sanitizeRedirect(parsed.redirect)
+            : null,
+        consentAt: parsed.consentAt,
+        hostIntent: parsed.hostIntent === true,
+      };
+    }
+  } catch {
+    // Invalid browser state is discarded below.
+  }
+
+  sessionStorage.removeItem(RENTAUTO_OAUTH_INTENT_KEY);
+  return null;
+}
+
+export function clearRentautoOAuthIntent(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RENTAUTO_OAUTH_INTENT_KEY);
+}
+
 export function friendlyAuthError(message: string | undefined | null): string {
   if (!message) return "Something went wrong. Please try again.";
   const m = message.toLowerCase();
