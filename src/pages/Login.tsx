@@ -44,6 +44,7 @@ export default function Login() {
   const params = new URLSearchParams(location.search);
   const safeRedirect = sanitizeRedirect(params.get("redirect"));
   const requestedProvider = params.get("provider");
+  const oauthError = params.get("oauth_error");
   const fromLocation = (
     location.state as {
       from?: { pathname?: string; search?: string; hash?: string };
@@ -172,6 +173,14 @@ export default function Login() {
     // the pending intent and restores the exact safe internal destination.
     setGoogleLoading(false);
   };
+
+  useEffect(() => {
+    if (oauthError === "sync") {
+      setError(
+        "Google sign-in succeeded, but Rentauto could not synchronize your authorized account. Please try again.",
+      );
+    }
+  }, [oauthError]);
 
   useEffect(() => {
     if (requestedProvider !== "google" || googleAutoStarted.current) return;
