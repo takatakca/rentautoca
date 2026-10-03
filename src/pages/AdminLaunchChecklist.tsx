@@ -125,42 +125,68 @@ const GROUPS: Group[] = [
 
 type State = Record<string, { checked: boolean; note: string }>;
 
+type ReadinessEvidence = {
+  ready: boolean;
+  detail: string;
+};
+
+type ReadinessPayload = {
+  generated_at: string;
+  counts: Record<string, number>;
+  evidence: Record<string, ReadinessEvidence>;
+};
+
 export default function AdminLaunchChecklist() {
   const [state, setState] = useState<State>({});
   const [loading, setLoading] = useState(true);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
+  const [readiness, setReadiness] = useState<ReadinessPayload | null>(null);
+  const [readinessError, setReadinessError] = useState("");
+  const [readinessLoading, setReadinessLoading] = useState(true);
 
   const allItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
   const checkedCount = allItems.filter((i) => state[i.id]?.checked).length;
   const pct = Math.round((checkedCount / allItems.length) * 100);
+  const readinessEntries = Object.values(readiness?.evidence ?? {});
+  const readinessReadyCount = readinessEntries.filter((item) => item.ready).length;
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const { data, error: loadError } = await supabase
-        .from("launch_checklist_items")
-        .select("item_id,checked,note");
+      const [checklistResult, readinessResult] = await Promise.all([
+        supabase
+          .from("launch_checklist_items")
+          .select("item_id,checked,note"),
+        supabase.functions.invoke("rentauto-admin-launch-readiness", {
+          body: {},
+        }),
+      ]);
 
       if (cancelled) return;
 
-      if (loadError) {
+      if (checklistResult.error) {
         setError("Could not load the shared LC1 checklist.");
-        setLoading(false);
-        return;
+      } else {
+        const next: State = {};
+        for (const row of checklistResult.data ?? []) {
+          next[row.item_id] = {
+            checked: row.checked,
+            note: row.note,
+          };
+        }
+        setState(next);
       }
 
-      const next: State = {};
-      for (const row of data ?? []) {
-        next[row.item_id] = {
-          checked: row.checked,
-          note: row.note,
-        };
+      if (readinessResult.error) {
+        setReadinessError("Could not load automated technical evidence.");
+      } else if (readinessResult.data) {
+        setReadiness(readinessResult.data as ReadinessPayload);
       }
 
-      setState(next);
       setLoading(false);
+      setReadinessLoading(false);
     })();
 
     return () => {
@@ -270,6 +296,30 @@ export default function AdminLaunchChecklist() {
           </div>
         </div>
         <Progress value={pct} />
+        <div className="rounded-xl border bg-muted/30 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold">Automated technical evidence</p>
+              <p className="text-xs text-muted-foreground">
+                Evidence never checks a launch item automatically. Human sign-off stays manual.
+              </p>
+            </div>
+            <Badge variant={readinessReadyCount === readinessEntries.length && readinessEntries.length > 0 ? "default" : "outline"}>
+              {readinessReadyCount}/{readinessEntries.length || 0} evidence signals
+            </Badge>
+          </div>
+          {readiness?.generated_at && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Refreshed {new Date(readiness.generated_at).toLocaleString()}
+            </p>
+          )}
+          {readinessLoading && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading technical evidence…
+            </div>
+          )}
+          {readinessError && <p className="mt-2 text-xs text-destructive">{readinessError}</p>}
+        </div>
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading shared LC1 state…
@@ -300,6 +350,7 @@ export default function AdminLaunchChecklist() {
                 {group.items.map((item) => {
                   const row = state[item.id] || { checked: false, note: "" };
                   const saving = savingIds.has(item.id);
+                  const technicalEvidence = readiness?.evidence[item.id];
 
                   return (
                     <div key={item.id} className="flex flex-col gap-2 border-b border-border pb-3 last:border-0 last:pb-0">
@@ -318,6 +369,16 @@ export default function AdminLaunchChecklist() {
                           </p>
                           {item.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                          )}
+                          {technicalEvidence && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Badge variant={technicalEvidence.ready ? "default" : "outline"} className="text-[10px]">
+                                {technicalEvidence.ready ? "Evidence found" : "No evidence yet"}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {technicalEvidence.detail}
+                              </span>
+                            </div>
                           )}
                           {saving && (
                             <p className="text-xs text-muted-foreground mt-1">Saving…</p>
