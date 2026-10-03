@@ -23,7 +23,6 @@ export type RentautoOAuthIntent =
   | {
       kind: "signup";
       redirect: string | null;
-      consentAt: string;
       hostIntent: boolean;
     };
 
@@ -48,7 +47,6 @@ export function readRentautoOAuthIntent(): RentautoOAuthIntent | null {
     const parsed = JSON.parse(raw) as Partial<RentautoOAuthIntent> & {
       kind?: unknown;
       redirect?: unknown;
-      consentAt?: unknown;
       hostIntent?: unknown;
     };
 
@@ -62,18 +60,13 @@ export function readRentautoOAuthIntent(): RentautoOAuthIntent | null {
       };
     }
 
-    if (
-      parsed.kind === "signup" &&
-      typeof parsed.consentAt === "string" &&
-      !Number.isNaN(Date.parse(parsed.consentAt))
-    ) {
+    if (parsed.kind === "signup") {
       return {
         kind: "signup",
         redirect:
           typeof parsed.redirect === "string"
             ? sanitizeRedirect(parsed.redirect)
             : null,
-        consentAt: parsed.consentAt,
         hostIntent: parsed.hostIntent === true,
       };
     }
@@ -120,12 +113,40 @@ export function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label:
 }
 
 /**
- * Ensure a profile row exists for the current user and backfill display data
- * from auth user_metadata (Google sign-in populates full_name / name / avatar_url).
- * Never grants roles or elevates privileges.
+ * Ensure the authenticated TAKATAK identity is already authorized for RENTAUTO,
+ * then synchronize its Rentauto projection and display profile.
+ *
+ * A TAKATAK login is not equivalent to RENTAUTO consent. New vertical access
+ * must be granted through rentauto-authorize-account first.
  */
-export async function ensureProfile(user: User): Promise<void> {
+export type EnsureProfileResult =
+  | { status: "ready" }
+  | { status: "consent_required" }
+  | { status: "error"; message: string };
+
+export async function ensureProfile(user: User): Promise<EnsureProfileResult> {
   try {
+    const { data: existingAccount, error: accountError } = await supabase
+      .from("accounts")
+      .select("auth_user_id")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (accountError) {
+      console.warn("Rentauto account lookup failed", accountError.message);
+      return { status: "error", message: accountError.message };
+    }
+
+    const appMetadata = (user.app_metadata || {}) as Record<string, unknown>;
+    const hasServerAuthorization =
+      typeof appMetadata.rentauto_authorized_at === "string" &&
+      typeof appMetadata.rentauto_terms_accepted_at === "string" &&
+      typeof appMetadata.rentauto_privacy_accepted_at === "string";
+
+    if (!existingAccount && !hasServerAuthorization) {
+      return { status: "consent_required" };
+    }
+
     const { error: bootstrapError } = await supabase.functions.invoke(
       "rentauto-bootstrap-account",
       { body: {} },
@@ -133,7 +154,7 @@ export async function ensureProfile(user: User): Promise<void> {
 
     if (bootstrapError) {
       console.warn("Rentauto account bootstrap failed", bootstrapError.message);
-      return;
+      return { status: "error", message: bootstrapError.message };
     }
 
     const md = (user.user_metadata || {}) as Record<string, unknown>;
@@ -170,34 +191,35 @@ export async function ensureProfile(user: User): Promise<void> {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!existing) return;
+    if (existing) {
+      const patch: {
+        display_name?: string;
+        first_name?: string;
+        last_name?: string;
+        avatar_url?: string;
+      } = {};
 
-    const patch: {
-      display_name?: string;
-      first_name?: string;
-      last_name?: string;
-      avatar_url?: string;
-    } = {};
+      if (fullName && !existing.display_name) patch.display_name = fullName;
+      if (firstName && !existing.first_name) patch.first_name = firstName;
+      if (lastName && !existing.last_name) patch.last_name = lastName;
+      if (avatarUrl && !existing.avatar_url) patch.avatar_url = avatarUrl;
 
-    if (fullName && !existing.display_name) patch.display_name = fullName;
-    if (firstName && !existing.first_name) patch.first_name = firstName;
-    if (lastName && !existing.last_name) patch.last_name = lastName;
-    if (avatarUrl && !existing.avatar_url) patch.avatar_url = avatarUrl;
+      if (Object.keys(patch).length > 0) {
+        const { error } = await supabase
+          .from("profiles")
+          .update(patch)
+          .eq("id", user.id);
 
-    if (Object.keys(patch).length > 0) {
-      const { error } = await supabase
-        .from("profiles")
-        .update(patch)
-        .eq("id", user.id);
-
-      if (error) {
-        console.warn("Rentauto profile metadata sync failed", error.message);
+        if (error) {
+          console.warn("Rentauto profile metadata sync failed", error.message);
+        }
       }
     }
+
+    return { status: "ready" };
   } catch (error) {
-    console.warn(
-      "ensureProfile failed",
-      error instanceof Error ? error.message : error,
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("ensureProfile failed", message);
+    return { status: "error", message };
   }
 }
