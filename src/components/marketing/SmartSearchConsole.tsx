@@ -66,19 +66,27 @@ export function SmartSearchConsole({ compact = false }: { compact?: boolean }) {
   }, [mode]);
 
   useEffect(() => {
-    if (!pendingNearby || !coords) return;
-    const window = nowWindow();
-    setPendingNearby(false);
-    navigate(
-      exploreUrl({
-        lat: coords.lat,
-        lng: coords.lng,
-        start: window.start,
-        end: window.end,
-        instantBook: true,
-      }),
-    );
-  }, [coords, navigate, pendingNearby]);
+    if (!pendingNearby) return;
+
+    if (coords) {
+      const window = nowWindow();
+      setPendingNearby(false);
+      navigate(
+        exploreUrl({
+          lat: coords.lat,
+          lng: coords.lng,
+          start: window.start,
+          end: window.end,
+          instantBook: true,
+        }),
+      );
+      return;
+    }
+
+    if (geoStatus === "denied" || geoStatus === "unsupported") {
+      setPendingNearby(false);
+    }
+  }, [coords, geoStatus, navigate, pendingNearby]);
 
   const go = (overrides?: SearchState) => {
     const state: SearchState = {
