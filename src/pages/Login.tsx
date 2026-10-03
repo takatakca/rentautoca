@@ -19,7 +19,9 @@ import {
 type LoginMode = "sms" | "password";
 
 export default function Login() {
-  const [mode, setMode] = useState<LoginMode>("sms");
+  const location = useLocation();
+  const requestedMode = new URLSearchParams(location.search).get("mode");
+  const [mode, setMode] = useState<LoginMode>(requestedMode === "password" ? "password" : "sms");
   const [phoneInput, setPhoneInput] = useState("");
   const [verifiedPhone, setVerifiedPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -31,7 +33,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const params = new URLSearchParams(location.search);
   const safeRedirect = sanitizeRedirect(params.get("redirect"));
   const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname;
