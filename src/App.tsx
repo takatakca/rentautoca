@@ -39,6 +39,7 @@ const AdminSettlements = lazy(() => import("./pages/AdminSettlements"));
 const AdminSupport = lazy(() => import("./pages/AdminSupport"));
 const BecomeHost = lazy(() => import("./pages/BecomeHost"));
 const Profile = lazy(() => import("./pages/Profile"));
+const More = lazy(() => import("./pages/More"));
 const CarListing = lazy(() => import("./pages/CarListing"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Terms = lazy(() => import("./pages/legal/Terms"));
@@ -132,7 +133,7 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/more" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
                 <Route
                   path="/become-host"
                   element={

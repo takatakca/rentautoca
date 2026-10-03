@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { LegalLayout } from "@/components/legal/LegalLayout";
 
 export default function Terms() {
@@ -14,7 +15,7 @@ export default function Terms() {
       <h2>3. Bookings and payment</h2>
       <p>All bookings are processed in Canadian dollars (CAD). Applicable taxes including GST and Quebec QST are calculated at checkout. Rentauto charges a service fee on each completed booking.</p>
       <h2>4. Cancellations</h2>
-      <p>Cancellation outcomes are governed by the per-vehicle policy disclosed at checkout — see the <a href="/cancellation-policy">Cancellation Policy</a>.</p>
+      <p>Cancellation outcomes are governed by the per-vehicle policy disclosed at checkout — see the <Link to="/cancellation-policy">Cancellation Policy</Link>.</p>
       <h2>5. Prohibited use</h2>
       <p>Vehicles may not be used for street racing, off-road driving (unless permitted), commercial ride-share, transport of illegal goods, or by any driver not declared at booking.</p>
       <h2>6. Liability</h2>

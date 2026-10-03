@@ -15,7 +15,7 @@ const navItems = [
     path: "/trips",
   },
   { icon: MessageSquare, label: "Inbox", path: "/messages" },
-  { icon: MoreHorizontal, label: "More", path: "/profile" },
+  { icon: MoreHorizontal, label: "More", path: "/more" },
 ];
 
 export function MobileBottomNav() {
@@ -30,7 +30,7 @@ export function MobileBottomNav() {
         {navItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
-            (item.path !== "/profile" && location.pathname.startsWith(item.path + "/"));
+            location.pathname.startsWith(item.path + "/");
           const Icon = item.icon;
           return (
             <Link
