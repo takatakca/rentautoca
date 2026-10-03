@@ -9,9 +9,6 @@ export type TakatakSignupMetadata = {
   phone: string;
   source_application: "RENTAUTO";
   host_intent: "true" | "false";
-  rentauto_terms_accepted_at: string;
-  rentauto_privacy_accepted_at: string;
-  rentauto_consent_captured_at: string;
 };
 
 export function normalizeTakatakPhone(raw: string): string | null {
@@ -68,5 +65,11 @@ export async function verifyTakatakSmsOtp(phone: string, token: string) {
 export async function bootstrapRentautoFromTakatak() {
   return supabase.functions.invoke("rentauto-bootstrap-account", {
     body: {},
+  });
+}
+
+export async function authorizeRentautoAccount(hostIntent: boolean) {
+  return supabase.functions.invoke("rentauto-authorize-account", {
+    body: { host_intent: hostIntent },
   });
 }
