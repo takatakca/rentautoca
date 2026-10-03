@@ -255,9 +255,18 @@ export default function DashboardOverview() {
   const readiness = useMemo(() => {
     const docsSubmitted = Boolean(verification?.id_front_url && verification?.id_back_url);
     const items: ReadinessItem[] = [
-      { label: "Email verified", done: Boolean(user?.email_confirmed_at), to: "/verify-email" },
+      {
+        label: "TAKATAK identity verified",
+        done: Boolean(user?.email_confirmed_at || profile?.phone_verified),
+        to: "/dashboard/security",
+        hint: user?.email_confirmed_at
+          ? "Verified by email"
+          : profile?.phone_verified
+            ? "Verified by mobile"
+            : undefined,
+      },
       { label: "Full name completed", done: Boolean(profile?.first_name && profile?.last_name), to: "/dashboard/profile" },
-      { label: "Phone number verified", done: Boolean(profile?.phone_verified), to: "/dashboard/profile" },
+      { label: "Mobile verified for SMS access", done: Boolean(profile?.phone_verified), to: "/dashboard/security" },
       { label: "Profile photo uploaded", done: Boolean(profile?.avatar_url), to: "/dashboard/profile" },
       {
         label: "Driver's licence verification",

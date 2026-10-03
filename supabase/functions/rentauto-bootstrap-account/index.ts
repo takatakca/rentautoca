@@ -47,6 +47,16 @@ Deno.serve(async (req: Request) => {
   });
 
   if (error) {
+    if (error.message?.includes("rentauto_consent_required")) {
+      return json(
+        {
+          error: "Explicit Rentauto Terms and Privacy consent is required.",
+          code: "RENTAUTO_CONSENT_REQUIRED",
+        },
+        409,
+      );
+    }
+
     if (error.message?.includes("verified_master_identity_required")) {
       return json(
         {

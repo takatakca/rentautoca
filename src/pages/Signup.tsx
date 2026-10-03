@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +11,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, MessageSquareText } from "lucide-react";
 import { AuthShell, GoogleIcon } from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { friendlyAuthError, sanitizeRedirect } from "@/lib/auth-helpers";
 import {
-  bootstrapRentautoFromTakatak,
+  clearRentautoOAuthIntent,
+  friendlyAuthError,
+  sanitizeRedirect,
+  storeRentautoOAuthIntent,
+} from "@/lib/auth-helpers";
+import {
+  authorizeRentautoAccount,
   normalizeTakatakPhone,
   requestTakatakSmsOtp,
   splitTakatakName,
@@ -31,16 +37,28 @@ export default function Signup() {
   const [otp, setOtp] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [hostIntent, setHostIntent] = useState(false);
-  const [consentAt, setConsentAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const location = useLocation();
-  const redirectParam = sanitizeRedirect(new URLSearchParams(location.search).get("redirect"));
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = sanitizeRedirect(searchParams.get("redirect"));
+  const authorizationMode = searchParams.get("authorize") === "1" && Boolean(user);
   const postAuthDest = hostIntent ? "/become-host" : (redirectParam || "/");
 
-  const metadata = (phone: string, capturedAt: string): TakatakSignupMetadata => {
+  useEffect(() => {
+    if (searchParams.get("oauth_error") === "authorization") {
+      setError(
+        "Google sign-in completed, but Rentauto could not record the required service authorization. Confirm your Terms and Privacy consent and try again.",
+      );
+    }
+    // location.search is the source of truth for OAuth return errors.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  const metadata = (phone: string): TakatakSignupMetadata => {
     const { firstName, lastName } = splitTakatakName(fullName);
     return {
       full_name: fullName.trim(),
@@ -51,10 +69,33 @@ export default function Signup() {
       phone,
       source_application: "RENTAUTO",
       host_intent: hostIntent ? "true" : "false",
-      rentauto_terms_accepted_at: capturedAt,
-      rentauto_privacy_accepted_at: capturedAt,
-      rentauto_consent_captured_at: capturedAt,
     };
+  };
+
+  const handleAuthorizeExisting = async () => {
+    if (!user) return;
+    setError(null);
+
+    if (!acceptTerms) {
+      setError("You must accept the Terms and Privacy Policy to continue.");
+      return;
+    }
+
+    setLoading(true);
+    const { error: authorizationError } = await authorizeRentautoAccount(hostIntent);
+    if (!authorizationError) {
+      await supabase.auth.refreshSession();
+    }
+    setLoading(false);
+
+    if (authorizationError) {
+      setError(
+        "TAKATAK could not authorize Rentauto for this identity. Make sure your TAKATAK email or mobile identity is verified.",
+      );
+      return;
+    }
+
+    navigate(postAuthDest, { replace: true });
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -76,19 +117,17 @@ export default function Signup() {
       return setError("Enter a valid mobile number with area code or country code.");
     }
 
-    const capturedAt = new Date().toISOString();
     setLoading(true);
     const { error: otpError } = await requestTakatakSmsOtp({
       phone,
       shouldCreateUser: true,
-      metadata: metadata(phone, capturedAt),
+      metadata: metadata(phone),
     });
     setLoading(false);
 
     if (otpError) return setError(friendlyAuthError(otpError.message));
 
     setVerifiedPhone(phone);
-    setConsentAt(capturedAt);
     setOtp("");
     setStep("otp");
   };
@@ -108,7 +147,7 @@ export default function Signup() {
     }
 
     const { error: metadataError } = await supabase.auth.updateUser({
-      data: metadata(verifiedPhone, consentAt || new Date().toISOString()),
+      data: metadata(verifiedPhone),
     });
 
     if (metadataError) {
@@ -116,10 +155,11 @@ export default function Signup() {
       return setError("Your phone was verified, but TAKATAK could not finalize your profile.");
     }
 
-    const { error: bootstrapError } = await bootstrapRentautoFromTakatak();
+    const { error: authorizationError } = await authorizeRentautoAccount(hostIntent);
+    await supabase.auth.refreshSession();
     setLoading(false);
 
-    if (bootstrapError) {
+    if (authorizationError) {
       return setError(
         "TAKATAK could not authorize Rentauto for this identity. If you already use another GROUPE TAKATAK service, log in with that existing account instead of creating another one.",
       );
@@ -142,26 +182,52 @@ export default function Signup() {
 
   const handleGoogle = async () => {
     setError(null);
+
+    if (!acceptTerms) {
+      setError("You must accept the Terms and Privacy Policy to continue.");
+      return;
+    }
+
+    storeRentautoOAuthIntent({
+      kind: "signup",
+      redirect: postAuthDest,
+      hostIntent,
+    });
+
     setGoogleLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
+
     if (result.error) {
+      clearRentautoOAuthIntent();
       setGoogleLoading(false);
       setError(friendlyAuthError((result.error as Error).message));
       return;
     }
+
     if (result.redirected) return;
-    navigate(postAuthDest, { replace: true });
+
+    // AuthContext persists Rentauto consent metadata, bootstraps the TAKATAK
+    // identity projection, and restores the requested internal destination.
+    setGoogleLoading(false);
   };
 
   return (
     <AuthShell
-      title={step === "otp" ? "Verify your mobile" : "Create your TAKATAK identity"}
+      title={
+        authorizationMode
+          ? "Authorize Rentauto"
+          : step === "otp"
+            ? "Verify your mobile"
+            : "Create your TAKATAK identity"
+      }
       description={
-        step === "otp"
-          ? `Enter the 6-digit SMS code sent to ${verifiedPhone}.`
-          : "One TAKATAK identity connects Rentauto with the services you choose across GROUPE TAKATAK."
+        authorizationMode
+          ? "Your TAKATAK identity is already signed in. Confirm Rentauto Terms and Privacy to activate this service."
+          : step === "otp"
+            ? `Enter the 6-digit SMS code sent to ${verifiedPhone}.`
+            : "One TAKATAK identity connects Rentauto with the services you choose across GROUPE TAKATAK."
       }
       footer={
         <>
@@ -170,9 +236,60 @@ export default function Signup() {
         </>
       }
     >
-      {step === "details" ? (
+      {authorizationMode ? (
+        <div className="space-y-5">
+          {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+          <Alert>
+            <MessageSquareText className="h-4 w-4" />
+            <AlertDescription>
+              TAKATAK authentication is shared, but Rentauto access is separate. Your rental, vehicle, GPS and payment data remain scoped to Rentauto.
+            </AlertDescription>
+          </Alert>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">
+              I agree to the <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
+              <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox checked={hostIntent} onCheckedChange={(v) => setHostIntent(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">I want to list my car and earn as a host (subject to approval).</span>
+          </label>
+
+          <Button type="button" className="w-full" onClick={() => void handleAuthorizeExisting()} disabled={loading || !acceptTerms}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Authorize Rentauto
+          </Button>
+        </div>
+      ) : step === "details" ? (
         <>
-          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading || loading}>
+          {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+          <Alert>
+            <MessageSquareText className="h-4 w-4" />
+            <AlertDescription>
+              Your login is managed by TAKATAK. Rentauto receives only the identity fields it needs; rental, vehicle, GPS and payment data stay separated.
+            </AlertDescription>
+          </Alert>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">
+              I agree to the <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
+              <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox checked={hostIntent} onCheckedChange={(v) => setHostIntent(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">I want to list my car and earn as a host (subject to approval).</span>
+          </label>
+
+          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading || loading || !acceptTerms}>
             {googleLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <GoogleIcon className="mr-2" />}
             Continue with your TAKATAK Google identity
           </Button>
@@ -185,15 +302,6 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSendOtp} className="space-y-4">
-            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-
-            <Alert>
-              <MessageSquareText className="h-4 w-4" />
-              <AlertDescription>
-                Your login is managed by TAKATAK. Rentauto receives only the identity fields it needs; rental, vehicle, GPS and payment data stay separated.
-              </AlertDescription>
-            </Alert>
-
             <div className="space-y-2">
               <Label htmlFor="fullName">Full name</Label>
               <Input id="fullName" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -207,18 +315,6 @@ export default function Signup() {
               <Label htmlFor="phone">Mobile number</Label>
               <Input id="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+1 514 555 0123" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} required />
             </div>
-
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <Checkbox checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-0.5" />
-              <span className="text-muted-foreground">
-                I agree to the <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
-                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-              </span>
-            </label>
-            <label className="flex items-start gap-2 text-sm cursor-pointer">
-              <Checkbox checked={hostIntent} onCheckedChange={(v) => setHostIntent(v === true)} className="mt-0.5" />
-              <span className="text-muted-foreground">I want to list my car and earn as a host (subject to approval).</span>
-            </label>
 
             <Button type="submit" className="w-full" disabled={loading || googleLoading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
