@@ -49,9 +49,9 @@ export default function Signup() {
   const postAuthDest = hostIntent ? "/become-host" : (redirectParam || "/");
 
   useEffect(() => {
-    if (searchParams.get("oauth_error") === "consent") {
+    if (searchParams.get("oauth_error") === "authorization") {
       setError(
-        "Google sign-in completed, but Rentauto could not record the required Terms and Privacy consent. Please try again.",
+        "Google sign-in completed, but Rentauto could not record the required service authorization. Confirm your Terms and Privacy consent and try again.",
       );
     }
     // location.search is the source of truth for OAuth return errors.
