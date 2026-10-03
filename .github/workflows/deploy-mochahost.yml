@@ -183,18 +183,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Testing SSH connection to MochaHost..."
+          echo "Testing non-interactive SSH exec on MochaHost..."
 
-          printf '%s\n' \
-            "echo 'SSH connection successful'" \
-            "whoami" \
-            "exit" \
-            | ssh -tt \
+          ok=0
+          for attempt in $(seq 1 5); do
+            echo "SSH exec attempt $attempt/5..."
+
+            if ssh -T \
                 -i ~/.ssh/rentauto_deploy_key \
                 -p "$MOCHAHOST_PORT" \
                 -o BatchMode=yes \
                 -o ConnectTimeout=15 \
-                "$MOCHAHOST_USER@$MOCHAHOST_HOST"
+                -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=3 \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+                "printf '%s\\n' 'SSH exec successful'; whoami"; then
+              ok=1
+              break
+            fi
+
+            sleep 5
+          done
+
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::MochaHost accepted SSH transport but remote command execution failed after 5 attempts."
+            exit 1
+          fi
 
       - name: Upload release archive
         shell: bash
@@ -203,14 +217,15 @@ jobs:
 
           echo "Preparing remote deployment folders..."
 
-          printf '%s\n' \
-            "mkdir -p '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'" \
-            "exit" \
-            | ssh -tt \
-                -i ~/.ssh/rentauto_deploy_key \
-                -p "$MOCHAHOST_PORT" \
-                -o BatchMode=yes \
-                "$MOCHAHOST_USER@$MOCHAHOST_HOST"
+          ssh -T \
+            -i ~/.ssh/rentauto_deploy_key \
+            -p "$MOCHAHOST_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+            "mkdir -p -- '$MOCHAHOST_APP_PATH/incoming' '$MOCHAHOST_APP_PATH/releases' '$MOCHAHOST_APP_PATH/tmp'"
 
           echo "Uploading Rentauto release..."
 
@@ -366,11 +381,15 @@ jobs:
           echo "Deployment completed successfully."
           exit
           REMOTE
-          } | ssh -tt \
+          } | ssh -T \
                 -i ~/.ssh/rentauto_deploy_key \
                 -p "$MOCHAHOST_PORT" \
                 -o BatchMode=yes \
-                "$MOCHAHOST_USER@$MOCHAHOST_HOST"
+                -o ConnectTimeout=15 \
+                -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=3 \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+                "bash -se"
 
       - name: Verify live website
         shell: bash
