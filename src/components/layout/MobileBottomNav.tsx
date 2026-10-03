@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, Heart, MessageSquare, MoreHorizontal } from "lucide-react";
+import { CarFront, Heart, MessageSquare, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { icon: Search, label: "Search", path: "/explore" },
+  { icon: CarFront, label: "Drive", path: "/explore" },
   { icon: Heart, label: "Favorites", path: "/favorites" },
   {
     icon: () => (
