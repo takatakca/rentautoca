@@ -33,15 +33,15 @@ export function EditorialHero({ availableToday }: EditorialHeroProps) {
       <div className="container pt-24 pb-10 md:pt-36 md:pb-20">
         <div className="max-w-2xl">
           <p className="text-[11px] md:text-xs font-semibold uppercase tracking-[0.2em] text-overlay-muted">
-            Car rental across Quebec
+            Peer-to-peer car rental across Quebec
           </p>
           <h1 className="mt-3 text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-overlay-foreground leading-[1.02]">
-            Rent a car from
-            <br className="hidden sm:block" /> someone nearby.
+            A car when you need it.
+            <br className="hidden sm:block" /> From someone nearby.
           </h1>
           <p className="mt-4 text-base md:text-lg text-overlay-muted max-w-xl">
-            Thousands of verified vehicles in Montreal, Quebec City, Laval and beyond — booked in minutes,
-            picked up on your street or at the airport.
+            Find an available vehicle, book the trip, pick it up, drive, and return it — with verified identities,
+            trip controls, protection choices, and secure payment built into the rental.
           </p>
           {typeof availableToday === "number" && availableToday > 0 && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-overlay-foreground/10 px-3 py-1.5 text-xs font-medium text-overlay-foreground backdrop-blur">
