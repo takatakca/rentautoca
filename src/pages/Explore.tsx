@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CarCardGridSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Search, CalendarDays, Car, SlidersHorizontal } from "lucide-react";
-import { format, differenceInCalendarDays } from "date-fns";
+import { CalendarDays, Car, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { differenceInCalendarDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { VehicleCard, PublicVehicle } from "@/components/vehicle/VehicleCard";
 import { FilterPanel } from "@/components/explore/FilterPanel";
+import { haversineKm } from "@/hooks/use-discovery-inventory";
 import {
   EMPTY_FILTERS,
   ExploreFilters,
@@ -27,7 +28,11 @@ import {
   VehicleType,
 } from "@/components/explore/filter-state";
 
-type ExploreCar = PublicVehicle & { transmission?: string | null };
+type ExploreCar = PublicVehicle & {
+  transmission?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+};
 
 export default function Explore() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,15 +45,44 @@ export default function Explore() {
   const [draftFilters, setDraftFilters] = useState<ExploreFilters>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  /* Hydrate intent from the URL so homepage/voice search carries over intact. */
+  const origin = useMemo(() => {
+    const rawLat = searchParams.get("lat");
+    const rawLng = searchParams.get("lng");
+
+    if (!rawLat?.trim() || !rawLng?.trim()) return null;
+
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return null;
+    }
+
+    return { lat, lng };
+  }, [searchParams]);
+
   useEffect(() => {
     const p = searchParams;
     const loc = p.get("location");
     if (loc) setLocationQuery(loc);
+
     const s = p.get("start");
     const e = p.get("end");
-    if (s) { const d = new Date(s); if (!isNaN(d.getTime())) setStartDate(d); }
-    if (e) { const d = new Date(e); if (!isNaN(d.getTime())) setEndDate(d); }
+    if (s) {
+      const d = new Date(s);
+      if (!Number.isNaN(d.getTime())) setStartDate(d);
+    }
+    if (e) {
+      const d = new Date(e);
+      if (!Number.isNaN(d.getTime())) setEndDate(d);
+    }
 
     const cat = p.get("category");
     const next: ExploreFilters = { ...EMPTY_FILTERS };
@@ -57,30 +91,42 @@ export default function Explore() {
     if (cat === "Monthly" || p.get("monthly") === "1") next.monthly = true;
     if (cat === "Electric" || p.get("electric") === "1") next.fuel = "electric";
     if (p.get("instant") === "1") next.instant = true;
+
     const maxPrice = Number(p.get("maxPrice"));
     if (Number.isFinite(maxPrice) && maxPrice > 0) next.maxPrice = maxPrice;
+
     const seats = Number(p.get("seats"));
     if (Number.isFinite(seats) && seats > 0) next.seats = seats;
+
     setFilters(next);
     setDraftFilters(next);
 
     const sortParam = p.get("sort") as SortKey | null;
     if (sortParam && sortParam in SORT_LABELS) setSort(sortParam);
+    // Hydrate only on entry. User interactions keep local state and URL synchronized.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const tripDays = startDate && endDate ? Math.max(1, differenceInCalendarDays(endDate, startDate)) : null;
+  const tripDays =
+    startDate && endDate ? Math.max(1, differenceInCalendarDays(endDate, startDate)) : null;
 
   const { data: cars, isLoading, isError, refetch } = useQuery({
-    queryKey: ["explore-cars", locationQuery, startDate?.toISOString(), endDate?.toISOString()],
+    queryKey: [
+      "explore-cars",
+      locationQuery,
+      startDate?.toISOString(),
+      endDate?.toISOString(),
+      origin?.lat,
+      origin?.lng,
+    ],
     queryFn: async (): Promise<ExploreCar[]> => {
       let q = supabase
         .from("cars_public")
         .select(
-          "id, make, model, year, base_daily_price_cents, location_label, body_type, transmission, fuel_type, seats, airport_pickup_enabled, monthly_enabled, instant_book",
+          "id, make, model, year, base_daily_price_cents, location_label, body_type, transmission, fuel_type, seats, airport_pickup_enabled, monthly_enabled, instant_book, lat, lng",
         )
         .eq("status", "active")
-        .limit(60);
+        .limit(80);
 
       if (locationQuery.trim()) {
         const term = `%${locationQuery.trim()}%`;
@@ -122,16 +168,42 @@ export default function Explore() {
 
       return carsData
         .filter((c) => !unavailable.has(c.id))
-        .map((car) => ({
-          ...car,
-          photo_url: photoMap[car.id] || null,
-          rating: agg[car.id] ? Math.round((agg[car.id].sum / agg[car.id].n) * 10) / 10 : null,
-          trips: agg[car.id]?.n || 0,
-        }));
+        .map((car) => {
+          const lat = car.lat === null ? null : Number(car.lat);
+          const lng = car.lng === null ? null : Number(car.lng);
+          const distance =
+            origin && lat !== null && lng !== null
+              ? haversineKm(origin, { lat, lng })
+              : null;
+
+          return {
+            ...car,
+            lat,
+            lng,
+            distance_km: distance,
+            photo_url: photoMap[car.id] || null,
+            rating: agg[car.id]
+              ? Math.round((agg[car.id].sum / agg[car.id].n) * 10) / 10
+              : null,
+            trips: agg[car.id]?.n || 0,
+          };
+        });
     },
   });
 
-  const results = useMemo(() => sortCars(applyFilters(cars || [], filters), sort), [cars, filters, sort]);
+  const results = useMemo(() => {
+    const filtered = applyFilters(cars || [], filters);
+
+    if (origin && sort === "recommended") {
+      return [...filtered].sort((a, b) => {
+        const da = a.distance_km ?? Number.POSITIVE_INFINITY;
+        const db = b.distance_km ?? Number.POSITIVE_INFINITY;
+        return da - db || (b.rating ?? 0) - (a.rating ?? 0) || a.base_daily_price_cents - b.base_daily_price_cents;
+      });
+    }
+
+    return sortCars(filtered, sort);
+  }, [cars, filters, origin, sort]);
 
   const syncUrl = (patch: Record<string, string | null>) => {
     const p = new URLSearchParams(searchParams);
@@ -157,9 +229,16 @@ export default function Explore() {
         ? `${format(startDate, "MMM d")} – Return`
         : "Any dates";
 
-  const headline = locationQuery.trim() ? `Cars in ${locationQuery.trim()}` : "Cars available now";
+  const headline = origin
+    ? "Cars near you"
+    : locationQuery.trim()
+      ? `Cars in ${locationQuery.trim()}`
+      : "Cars available now";
+
   const subline = [
+    origin ? "Closest available first" : null,
     startDate && endDate ? `${format(startDate, "MMM d")}–${format(endDate, "MMM d")}` : null,
+    filters.instant ? "Instant book" : null,
     isLoading ? null : `${results.length} available`,
   ]
     .filter(Boolean)
@@ -209,13 +288,15 @@ export default function Explore() {
 
   return (
     <div className="flex min-h-dvh flex-col pb-24 md:pb-0">
-      {/* Compact sticky search header */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="container flex flex-col gap-3 py-3 md:flex-row md:items-center">
           <div className="relative flex-1 md:max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
             <Input
-              placeholder="City, make or model"
+              placeholder={origin ? "Search within nearby cars" : "City, make or model"}
               aria-label="Search by city, make or model"
               className="h-10 pl-9"
               value={locationQuery}
@@ -248,7 +329,7 @@ export default function Explore() {
                 }}
                 numberOfMonths={1}
                 disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
-                className={cn("p-3 pointer-events-auto")}
+                className={cn("pointer-events-auto p-3")}
               />
             </PopoverContent>
           </Popover>
@@ -278,9 +359,16 @@ export default function Explore() {
       </div>
 
       <div className="container py-6">
-        <header className="mb-5">
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{headline}</h1>
-          {subline && <p className="mt-0.5 text-sm text-muted-foreground">{subline}</p>}
+        <header className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            {origin && (
+              <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                <MapPin className="h-3.5 w-3.5" /> Live nearby search
+              </span>
+            )}
+            <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{headline}</h1>
+            {subline && <p className="mt-0.5 text-sm text-muted-foreground">{subline}</p>}
+          </div>
         </header>
 
         {isLoading ? (
