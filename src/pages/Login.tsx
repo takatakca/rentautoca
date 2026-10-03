@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -54,6 +55,28 @@ export default function Login() {
   const from = safeRedirect || sanitizeRedirect(fromState) || "/";
   const isCheckoutRedirect = from.startsWith("/checkout");
 
+  const continueAfterTakatakLogin = async (authenticatedUser: User) => {
+    const result = await ensureProfile(authenticatedUser);
+
+    if (result.status === "consent_required") {
+      navigate(
+        `/signup?authorize=1&redirect=${encodeURIComponent(from)}`,
+        { replace: true },
+      );
+      return false;
+    }
+
+    if (result.status === "error") {
+      setError(
+        "Your TAKATAK login succeeded, but Rentauto could not synchronize your account. Please try again.",
+      );
+      return false;
+    }
+
+    navigate(from, { replace: true });
+    return true;
+  };
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -100,9 +123,8 @@ export default function Login() {
       return setError(friendlyAuthError(verifyError?.message || "SMS verification failed."));
     }
 
-    await ensureProfile(data.user);
+    await continueAfterTakatakLogin(data.user);
     setLoading(false);
-    navigate(from, { replace: true });
   };
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -120,9 +142,8 @@ export default function Login() {
       return setError(friendlyAuthError(loginError?.message || "Login failed."));
     }
 
-    await ensureProfile(data.user);
+    await continueAfterTakatakLogin(data.user);
     setLoading(false);
-    navigate(from, { replace: true });
   };
 
   const handleGoogle = async () => {
