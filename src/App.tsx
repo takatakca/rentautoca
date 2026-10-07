@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RouteMeta } from "@/components/seo/RouteMeta";
+import { SiteJsonLd } from "@/seo/Seo";
+import { CookieBanner } from "@/consent/CookieBanner";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 import Home from "./pages/Home";
@@ -83,6 +85,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <RouteMeta />
+          <SiteJsonLd />
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route element={<AppLayout />}>
@@ -262,6 +265,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <CookieBanner />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

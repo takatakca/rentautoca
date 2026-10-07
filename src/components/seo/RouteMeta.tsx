@@ -1,9 +1,9 @@
 import { Helmet } from "react-helmet-async";
 import { useLocation, matchPath } from "react-router-dom";
+import { SITE as SITE_CONFIG } from "@/site.config";
 
-const SITE = (
-  (import.meta.env.VITE_APP_URL as string | undefined) || "https://rentautoca.lovable.app"
-).replace(/\/$/, "");
+/** Canonical origin: always the production domain (src/site.config.ts). */
+const SITE = SITE_CONFIG.url;
 
 type Meta = { title: string; description: string };
 
@@ -288,6 +288,31 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
   },
 ];
 
+/** Account, booking, host, admin and auth screens: noindex, no canonical. Unlisted paths are noindex too. */
+const NOINDEX = new Set([
+  "/concierge/:threadId",
+  "/favorites",
+  "/trips",
+  "/trips/:tripId",
+  "/trips/:tripId/check-in",
+  "/trips/:tripId/check-out",
+  "/trips/:tripId/report-issue",
+  "/checkout/:tripId",
+  "/messages",
+  "/profile",
+  "/more",
+  "/become-host",
+  "/host",
+  "/host/onboarding",
+  "/host/cars",
+  "/host/cars/:id/edit",
+  "/admin",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+]);
+
 const FALLBACK: Meta = {
   title: "Rentauto.ca — Peer-to-peer car rental in Canada",
   description:
@@ -298,16 +323,18 @@ export function RouteMeta() {
   const { pathname } = useLocation();
   const matched = ROUTES.find((r) => matchPath({ path: r.pattern, end: true }, pathname));
   const meta = matched?.meta ?? FALLBACK;
+  const noindex = !matched || NOINDEX.has(matched.pattern);
   const canonical = `${SITE}${pathname === "/" ? "/" : pathname.replace(/\/$/, "")}`;
 
   return (
     <Helmet>
       <title>{meta.title}</title>
       <meta name="description" content={meta.description} />
-      <link rel="canonical" href={canonical} />
+      {noindex ? <meta name="robots" content="noindex, nofollow" /> : null}
+      {noindex ? null : <link rel="canonical" href={canonical} />}
       <meta property="og:title" content={meta.title} />
       <meta property="og:description" content={meta.description} />
-      <meta property="og:url" content={canonical} />
+      {noindex ? null : <meta property="og:url" content={canonical} />}
       <meta property="og:type" content="website" />
     </Helmet>
   );

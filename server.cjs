@@ -52,7 +52,8 @@ app.use(
     index: false,
     maxAge: "1y",
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith("index.html")) {
+      // index.html, robots.txt and sitemap.xml are not hashed: never cache them for a year.
+      if (/(?:index\.html|robots\.txt|sitemap\.xml)$/.test(filePath)) {
         res.setHeader("Cache-Control", "no-cache");
       }
     },

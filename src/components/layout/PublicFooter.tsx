@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Car } from "lucide-react";
+import { ManageCookiesLink } from "@/consent/ManageCookiesLink";
 
 const columns = [
   {
@@ -47,7 +48,7 @@ const serviceAreas = [
 
 export function PublicFooter() {
   return (
-    <footer className="border-t border-border/60 bg-card/30 mt-12 hidden md:block">
+    <footer className="border-t border-border/60 bg-card/30 mt-12 pb-16 md:pb-0">
       <div className="container py-12">
         <div className="grid gap-10 md:grid-cols-5">
           <div className="md:col-span-1">
@@ -98,6 +99,7 @@ export function PublicFooter() {
         <div className="mt-8 pt-6 border-t border-border/60 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} Rentauto.ca — Canada's peer-to-peer car rental marketplace.</p>
           <p>Built in Quebec. Bilingual support: support@rentauto.ca</p>
+          <ManageCookiesLink className="text-left underline-offset-2 hover:text-foreground hover:underline" />
         </div>
       </div>
     </footer>
