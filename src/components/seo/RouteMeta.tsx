@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { shouldNoIndex } from "@/lib/seo-indexing";
 import { useLocation, matchPath } from "react-router-dom";
 
 const SITE = (
@@ -298,12 +299,14 @@ export function RouteMeta() {
   const { pathname } = useLocation();
   const matched = ROUTES.find((r) => matchPath({ path: r.pattern, end: true }, pathname));
   const meta = matched?.meta ?? FALLBACK;
+  const noIndex = shouldNoIndex(pathname, Boolean(matched));
   const canonical = `${SITE}${pathname === "/" ? "/" : pathname.replace(/\/$/, "")}`;
 
   return (
     <Helmet>
       <title>{meta.title}</title>
       <meta name="description" content={meta.description} />
+      <meta name="robots" content={noIndex ? "noindex, nofollow" : "index, follow"} />
       <link rel="canonical" href={canonical} />
       <meta property="og:title" content={meta.title} />
       <meta property="og:description" content={meta.description} />

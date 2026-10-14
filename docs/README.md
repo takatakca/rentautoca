@@ -1,69 +1,33 @@
-# Rentauto.ca — Developer & Operator Docs
+# Rentauto.ca — engineering and launch documentation
 
-Rentauto is a peer-to-peer car rental marketplace for Canada (CAD only),
-modeled after Turo. This folder is the source of truth for engineers and
-operators preparing the platform for Launch Candidate 1 (LC1) and beyond.
+Rentauto is a Canadian peer-to-peer vehicle-rental marketplace. The independent React/Vite frontend is deployed to MochaHost from GitHub Actions; its identity and backend services use the shared TAKATAK Supabase project with Rentauto-scoped rental data.
 
-## Architecture at a glance
+## Boundaries
 
-```
-┌──────────────────────────┐      ┌────────────────────────────┐
-│   React + Vite SPA       │      │   Supabase (Lovable Cloud) │
-│   (served by server.cjs  │ ───▶ │   - Postgres + RLS         │
-│    on MochaHost)         │      │   - Auth (email + Google)  │
-│                          │      │   - Storage buckets        │
-│   - React Router         │      │   - Edge Functions (Deno)  │
-│   - Tailwind + shadcn    │      │   - Realtime (tracking)    │
-│   - TanStack Query       │      └──────────┬─────────────────┘
-└──────────────────────────┘                 │
-                                             ▼
-                                    ┌─────────────────────┐
-                                    │ Stripe (Connect +   │
-                                    │ Checkout + Webhook) │
-                                    └─────────────────────┘
-                                             │
-                                             ▼
-                                    ┌─────────────────────┐
-                                    │ GPS provider        │
-                                    │ (Bouncie / Geotab)  │
-                                    └─────────────────────┘
-```
+- **GROUPE TAKATAK:** master identity, authorization, shared customer projections and cross-product integrations.
+- **RENTAUTO:** vehicles, availability, rental quotes, booking state, payments, host payouts, check-in/out, GPS tracking, disputes, and reviews.
+- **Stripe:** Checkout/Connect, payment capture and webhooks via server-side Supabase Edge Functions. Never embed secret Stripe keys in the browser.
+- **MochaHost:** serves the immutable static frontend through an installed Passenger `app.js` release-pointer runtime. It does not execute the production Vite build.
 
-## Key documents
+## Key references
 
-| File | Purpose |
-|---|---|
-| `API_REFERENCE.md` | Frontend → backend data flows by feature |
-| `EDGE_FUNCTIONS.md` | All Supabase Edge Functions, auth, I/O, errors |
-| `BOOKING_LIFECYCLE.md` | Trip state machine + side effects |
-| `TRACKING_LIFECYCLE.md` | When GPS is on/off + privacy rules |
-| `STRIPE_TESTING.md` | Test cards, webhook test, $1 live test |
-| `GPS_PROVIDER_SETUP.md` | Registering devices + webhook contract |
-| `MOCHAHOST_DEPLOYMENT.md` | cPanel Node app deploy reference |
-| `LC1_RUNBOOK.md` | Step-by-step launch candidate test script |
+| Document | Purpose |
+| --- | --- |
+| [Deployment (root)](../DEPLOY_MOCHAHOST.md) | Actual GitHub CI → immutable SHA artifact → Passenger / CURRENT deploy |
+| [MochaHost troubleshooting](MOCHAHOST_DEPLOYMENT.md) | cPanel binding, health checks and recovery |
+| [Launch checklist](LC1_RUNBOOK.md) | End-to-end host/guest, live billing and GPS acceptance criteria |
+| [API reference](API_REFERENCE.md) | Frontend to backend data flows |
+| [Edge Functions](EDGE_FUNCTIONS.md) | Canonical Supabase Function slugs, authentication and contracts |
+| [Booking lifecycle](BOOKING_LIFECYCLE.md) | Transactional booking state machine |
+| [Tracking lifecycle](TRACKING_LIFECYCLE.md) | Active-trip tracking and privacy constraints |
+| [TAKATAK integration](TAKATAK_INTEGRATION.md) | Tenant-scoped outbox and identity authority |
+| [Stripe testing](STRIPE_TESTING.md) | Stripe sandbox and live-mode acceptance |
+| [GPS setup](GPS_PROVIDER_SETUP.md) | Provider webhook configuration |
 
-## Important environment variables
+## Config ownership
 
-**Frontend (build-time, safe to ship):**
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_SUPABASE_PROJECT_ID`
-- `VITE_APP_URL` — canonical base URL for SEO + Stripe success/cancel
+Browser-safe build-time variables: `VITE_TAKATAK_SUPABASE_URL`, `VITE_TAKATAK_SUPABASE_PUBLISHABLE_KEY`, `VITE_TAKATAK_SUPABASE_PROJECT_ID` and `VITE_APP_URL`.
 
-**Edge Function secrets (server-only, never exposed):**
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `PUBLIC_APP_URL`
-- `TRACKING_PROVIDER_SECRET` (shared secret for GPS provider webhooks)
-- `SUPABASE_SERVICE_ROLE_KEY` (auto-provided)
+Server-only Edge Function secrets include `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PUBLIC_APP_URL` and provider secrets. Backend function deployment and database migration rollout are not part of the frontend MochaHost workflow.
 
-## ⚠️ No secrets in the frontend
-
-The Stripe Node SDK and any service-role key MUST live exclusively in
-Edge Functions. The frontend imports `@/integrations/supabase/client` only,
-which carries the publishable anon key. Grep before shipping:
-
-```bash
-rg -n "stripe" src/        # should return 0 hits
-rg -n "service_role" src/  # should return 0 hits
-```
+**Do not follow older instructions to build manually on MochaHost or to publish via Lovable.** GitHub `main` is the source for the live frontend.

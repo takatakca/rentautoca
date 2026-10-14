@@ -1,60 +1,48 @@
-# Deploying Rentauto to MochaHost (cPanel Node.js)
+# MochaHost operating guide — Rentauto.ca
 
-Rentauto is a Vite + React SPA served in production by a small Express
-server (`server.cjs`) so React Router deep links survive a refresh.
-The canonical short version lives at `/DEPLOY_MOCHAHOST.md`; this file
-expands on it with troubleshooting.
+This guide describes the **existing immutable GitHub Actions production workflow**, not a manual cPanel build.
 
-## 1. cPanel Node.js app settings
+Source of truth: [DEPLOY_MOCHAHOST.md](../DEPLOY_MOCHAHOST.md) and [deployment workflow](../.github/workflows/deploy-mochahost.yml).
 
-In cPanel → **Setup Node.js App**:
+## Runtime topology
 
-| Field | Value |
-|---|---|
-| Node.js version | 18.x or 20.x |
-| Application mode | Production |
-| Application root | the folder you uploaded to |
-| Application URL | your domain or subdomain |
-| Application startup file | `server.cjs` |
+- Domain: `https://rentauto.ca`
+- cPanel account: `bolonca`
+- Node application root: `/home/bolonca/rentauto_node` (configurable via `MOCHAHOST_APP_PATH`)
+- Passenger startup: installed `app.js`; it reads `CURRENT` and serves `releases/<sha>/dist`
+- GitHub Actions builds off-server with Node 22, uploads the immutable release and touches `tmp/restart.txt`
+- The domain's `.htaccess` Passenger directives are maintained by the deploy workflow
+- `server.cjs` is an optional standalone server for local deployments, **not** the deployed Passenger entrypoint
 
-## 2. Environment variables
+## Initial cPanel settings
 
-Add these in the cPanel Node app's **Environment variables** panel:
+Create the Node application in Production mode with app root `rentauto_node` and URL `rentauto.ca`. Preserve the installed release-pointer `app.js` and do not overwrite the managed `CURRENT` / `PREVIOUS` files or Passenger mapping by uploading a new `dist` manually.
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_SUPABASE_PROJECT_ID`
-- `VITE_APP_URL` — canonical URL (e.g. `https://rentauto.ca`)
+Set the GitHub Actions SSH secret/variable names described in the root deployment guide. Public TAKATAK Supabase/Vite settings are compiled in GitHub Actions; they cannot be changed by setting cPanel runtime environment variables after the Vite build. Stripe and Supabase service-role keys must remain server-only in backend secret storage.
 
-⚠️ Do **not** put server secrets here. `STRIPE_SECRET_KEY`,
-`STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, and
-`TRACKING_PROVIDER_SECRET` live **only** in Supabase Edge Function secrets.
-
-## 3. Install + build + start
+## Safe diagnostics
 
 ```bash
-npm install
-npm run build
-npm start
+curl -fsS https://rentauto.ca/healthz
+curl -fsS https://rentauto.ca/revision.txt
+curl -I https://rentauto.ca/
+curl -I https://rentauto.ca/explore
 ```
 
-`npm run build` produces `dist/`. `npm start` runs `node server.cjs`, which
-serves `dist/` and falls back any unknown route to `dist/index.html`
-(SPA fallback so React Router deep links work).
+Expected: public routes return HTTP 200, `/healthz` returns JSON with `ok: true` and the deployed commit `revision`. Only the deployed SHA proves which GitHub revision is serving.
 
-## 4. Verifying
+In the cPanel File Manager, inspect `rentauto_node/CURRENT`, `rentauto_node/PREVIOUS`, `rentauto_node/releases/`, `rentauto_node/tmp/restart.txt`, and the `rentauto.ca/.htaccess` Passenger block. Do not delete the active release. Review GitHub workflow logs and the cPanel Node app logs before attempting any manual recovery.
 
-Browse and refresh each route — none should 404:
+## Troubleshooting
 
-- `/`, `/explore`, `/cars/<id>`, `/trips`, `/messages`, `/profile`,
-  `/host`, `/admin`, `/admin/launch-checklist`
+| Symptom | Next investigation |
+| --- | --- |
+| 403 Forbidden | Passenger binding for the domain; the deploy workflow's repair step |
+| 502 / startup error | Installed `app.js`, Node interpreter / nodevenv, and `CURRENT` target |
+| SPA deep link 404 | Passenger route/SPA fallback; domain mapping to app root |
+| Git SHA not current | GitHub CI/deploy outcome, `CURRENT`, Passenger restart, caching |
+| Blank page | Deployed `dist/index.html`, JS asset requests, browser console |
+| Google login or phone OTP fails | Shared TAKATAK Supabase redirect URLs and SMS provider |
+| Stripe or vehicle quote fails | Supabase Edge Functions and server secrets, not a frontend-only redeploy |
 
-## 5. Troubleshooting
-
-| Symptom | Likely cause |
-|---|---|
-| 502 / app won't start | Wrong startup file; must be `server.cjs` |
-| Routes 404 on refresh | `server.cjs` not serving SPA fallback (check `app.get('*', ...)`) |
-| Stripe success URL 404 | `VITE_APP_URL` mismatch with deployed domain |
-| Auth callback fails | Add deployed URL to Supabase Auth → URL Configuration → Site URL + Redirect URLs |
-| Blank page | Build did not run; `dist/` missing |
+The frontend deployment must not be presented as end-to-end launch approval. Follow `docs/LC1_RUNBOOK.md` for separate real host, guest, booking, payment, check-in, tracking, checkout and refund checks.
