@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { useLocation, matchPath } from "react-router-dom";
 
 const SITE = (
-  (import.meta.env.VITE_APP_URL as string | undefined) || "https://rentautoca.lovable.app"
+  (import.meta.env.VITE_APP_URL as string | undefined) || "https://rentauto.ca"
 ).replace(/\/$/, "");
 
 type Meta = { title: string; description: string };
@@ -21,7 +21,7 @@ const ROUTES: Array<{ pattern: string; meta: Meta }> = [
     meta: {
       title: "Explore cars to rent in Canada | Rentauto.ca",
       description:
-        "Browse hundreds of cars, SUVs and trucks available to rent from local hosts. Filter by city, dates and vehicle type.",
+        "Browse cars, SUVs and trucks available to rent from local hosts. Filter by city, dates and vehicle type.",
     },
   },
   {
