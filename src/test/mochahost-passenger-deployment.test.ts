@@ -43,6 +43,16 @@ describe("MochaHost release-pointer deployment contracts", () => {
     expect(workflow).toContain("dist/revision.txt");
   });
 
+  it("self-heals the Passenger domain binding before activation", () => {
+    expect(workflow).toContain("Repair Rentauto Passenger domain binding");
+    expect(workflow).toContain('DOCROOT="$HOME/rentauto.ca"');
+    expect(workflow).toContain("PassengerEnabled on");
+    expect(workflow).toContain('PassengerAppRoot "%s"');
+    expect(workflow).toContain("PassengerNodejs");
+    expect(workflow).toContain("PassengerStartupFile app.js");
+    expect(workflow).toContain("nodevenv/rentauto_node");
+  });
+
   it("diagnoses the release-pointer runtime before activation", () => {
     expect(workflow).toContain("installed release-pointer runtime");
     expect(workflow).toContain("current=");
