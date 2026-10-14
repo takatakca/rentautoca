@@ -98,7 +98,6 @@ jobs:
           mkdir -p .deploy/release
 
           cp -a dist .deploy/release/dist
-          cp server.cjs .deploy/release/server.cjs
           cp REVISION .deploy/release/REVISION
 
           tar             -C .deploy/release             -czf ".deploy/rentauto-${DEPLOY_SHA}.tar.gz"             .
@@ -184,7 +183,7 @@ jobs:
             exit 1
           fi
 
-      - name: Diagnose cPanel and Passenger binding
+      - name: Diagnose installed release-pointer runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -195,50 +194,42 @@ jobs:
             printf 'DOMAIN=%q\n' "rentauto.ca"
 
             cat <<'REMOTE'
-          echo "=== RENTAUTO HOST BINDING DIAGNOSTIC ==="
-          echo "user=$(id -un)"
-          echo "home=$HOME"
-          echo "expected_app_path=$APP_PATH"
+          cd "$APP_PATH" || exit 0
 
-          echo "--- expected app root ---"
-          ls -lad "$APP_PATH" "$APP_PATH/dist" "$APP_PATH/tmp" 2>&1
-          ls -la "$APP_PATH" 2>&1 | sed -n '1,80p'
-          test -f "$APP_PATH/server.cjs" && sha256sum "$APP_PATH/server.cjs"
-          test -f "$APP_PATH/REVISION" && { printf 'app_root_revision='; tr -d '\r\n' < "$APP_PATH/REVISION"; echo; }
-          test -f "$APP_PATH/dist/revision.txt" && { printf 'dist_revision='; tr -d '\r\n' < "$APP_PATH/dist/revision.txt"; echo; }
+          echo "=== RENTAUTO RELEASE RUNTIME DIAGNOSTIC ==="
+          echo "app_path=$APP_PATH"
 
-          echo "--- cPanel domain data ---"
-          if [ -x /usr/local/cpanel/bin/uapi ]; then
-            /usr/local/cpanel/bin/uapi --user="$(id -un)" --output=jsonpretty DomainInfo domains_data format=hash 2>&1 | sed -n '1,240p'
-          else
-            echo "uapi command unavailable"
-          fi
+          printf 'current='
+          test -f CURRENT && tr -d '\r\n' < CURRENT || true
+          echo
 
-          echo "--- cPanel document roots (legacy diagnostic API) ---"
-          if [ -x /usr/local/cpanel/bin/cpapi2 ]; then
-            /usr/local/cpanel/bin/cpapi2 --user="$(id -un)" --output=jsonpretty DomainLookup getdocroots 2>&1 | sed -n '1,240p'
-          else
-            echo "cpapi2 command unavailable"
-          fi
+          printf 'previous='
+          test -f PREVIOUS && tr -d '\r\n' < PREVIOUS || true
+          echo
+
+          echo "--- release directories ---"
+          ls -1dt releases/* 2>/dev/null | sed -n '1,12p' || true
+
+          echo "--- runtime files ---"
+          ls -la app.js CURRENT PREVIOUS public tmp 2>/dev/null || true
 
           echo "--- Passenger / Node processes ---"
-          ps -u "$(id -u)" -f 2>&1 | grep -E 'passenger|node|server\.cjs|rentauto' || true
+          ps -u "$(id -u)" -f 2>&1 | grep -E 'Passenger NodeApp|rentauto|node' || true
 
-          echo "--- relevant htaccess files ---"
-          find "$HOME" -maxdepth 4 -type f -name '.htaccess' -print 2>/dev/null | while IFS= read -r file; do
-            echo "### $file"
-            grep -E 'Passenger|Rewrite|rentauto|DocumentRoot|server\.cjs' "$file" 2>/dev/null | sed -n '1,120p' || true
-          done
-
-          echo "--- live probe before activation ---"
-          curl --silent --show-error --max-time 20 -D /tmp/rentauto-live-headers "https://$DOMAIN/healthz" -o /tmp/rentauto-live-health || true
-          sed -n '1,40p' /tmp/rentauto-live-headers 2>/dev/null || true
-          printf 'health_body='
-          head -c 200 /tmp/rentauto-live-health 2>/dev/null | tr '\n' ' ' || true
+          echo "--- live health before activation ---"
+          curl --silent --show-error --max-time 20 "https://$DOMAIN/healthz" || true
           echo
-          echo "=== END DIAGNOSTIC ==="
+          echo "=== END RELEASE RUNTIME DIAGNOSTIC ==="
           REMOTE
-          } | ssh -T                 -i ~/.ssh/rentauto_deploy_key                 -p "$MOCHAHOST_PORT"                 -o BatchMode=yes                 -o ConnectTimeout=15                 -o ServerAliveInterval=15                 -o ServerAliveCountMax=3                 "$MOCHAHOST_USER@$MOCHAHOST_HOST"                 "bash -se"
+          } | ssh -T \
+                -i ~/.ssh/rentauto_deploy_key \
+                -p "$MOCHAHOST_PORT" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=15 \
+                -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=3 \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+                "bash -se"
 
       - name: Upload artifact without SFTP dependency
         shell: bash
@@ -263,7 +254,7 @@ jobs:
             exit 1
           fi
 
-      - name: Atomically activate app-root dist
+      - name: Activate immutable release pointer
         shell: bash
         run: |
           set -euo pipefail
@@ -278,141 +269,171 @@ jobs:
           cd "$APP_PATH"
 
           ARCHIVE="incoming/rentauto-${SHA}.tar.gz"
-          STAGE=".deploy-stage-${SHA}"
-          ROLLBACK_ROOT=".deploy-rollbacks"
+          RELEASE_DIR="releases/${SHA}"
 
           test -f "$ARCHIVE"
 
-          rm -rf "$STAGE"
-          mkdir -p "$STAGE" "$ROLLBACK_ROOT"
-          tar -xzf "$ARCHIVE" -C "$STAGE"
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR" tmp releases
+          tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
 
-          test -f "$STAGE/dist/index.html"
-          test -f "$STAGE/dist/revision.txt"
-          test -f "$STAGE/server.cjs"
-          test "$(tr -d '\r\n' < "$STAGE/dist/revision.txt")" = "$SHA"
+          test -f "$RELEASE_DIR/dist/index.html"
+          test -f "$RELEASE_DIR/dist/revision.txt"
+          test -f "$RELEASE_DIR/REVISION"
+          test "$(tr -d '\r\n' < "$RELEASE_DIR/dist/revision.txt")" = "$SHA"
+          test "$(tr -d '\r\n' < "$RELEASE_DIR/REVISION")" = "$SHA"
 
           OLD=""
-          if [ -f REVISION ]; then
-            OLD="$(tr -cd '0-9a-fA-F' < REVISION | head -c 40)"
+          if [ -f CURRENT ]; then
+            OLD="$(tr -cd '0-9a-fA-F' < CURRENT | head -c 40)"
           fi
 
-          stamp="$(date +%Y%m%d%H%M%S)"
-          backup_name="${OLD:-legacy-${stamp}}"
-          BACKUP="$ROLLBACK_ROOT/$backup_name"
-
-          if [ -e "$BACKUP" ]; then
-            BACKUP="$ROLLBACK_ROOT/${backup_name}-${stamp}"
+          if [ -n "$OLD" ]; then
+            printf '%s\n' "$OLD" > PREVIOUS.new
+            mv PREVIOUS.new PREVIOUS
           fi
 
-          mkdir -p "$BACKUP"
+          printf '%s\n' "$SHA" > CURRENT.new
+          mv CURRENT.new CURRENT
 
-          if [ -d dist ]; then
-            mv dist "$BACKUP/dist"
-          fi
-
-          if [ -f server.cjs ]; then
-            cp -a server.cjs "$BACKUP/server.cjs"
-          fi
-
-          mv "$STAGE/dist" dist
-          mv "$STAGE/server.cjs" server.cjs
-          printf '%s\n' "$SHA" > REVISION.new
-          mv REVISION.new REVISION
-
-          rm -rf "$STAGE"
-
-          # cPanel Passenger only reloads modified application code after the
-          # restart touch file is updated.
-          mkdir -p tmp
+          # The installed app.js resolves CURRENT to releases/<sha>/dist.
+          # Passenger reloads that pointer after the restart touch file changes.
           touch tmp/restart.txt
-          sleep 2
 
           deployment_ok=0
 
           for attempt in $(seq 1 24); do
-            echo "Live verification attempt $attempt/24..."
+            echo "Release verification attempt $attempt/24..."
 
-            health_code="$(curl               --silent               --show-error               --output /tmp/rentauto-health-body               --write-out '%{http_code}'               --max-time 15               "$PRODUCTION_URL/healthz" || true)"
+            health_code="$(curl \
+              --silent \
+              --show-error \
+              --output /tmp/rentauto-health-body \
+              --write-out '%{http_code}' \
+              --max-time 15 \
+              "$PRODUCTION_URL/healthz" || true)"
+
             health_body="$(tr -d '\r\n' < /tmp/rentauto-health-body 2>/dev/null || true)"
 
-            root_code="$(curl               --silent               --show-error               --output /tmp/rentauto-root-body               --write-out '%{http_code}'               --max-time 15               "$PRODUCTION_URL/" || true)"
+            root_code="$(curl \
+              --silent \
+              --show-error \
+              --output /tmp/rentauto-root-body \
+              --write-out '%{http_code}' \
+              --max-time 15 \
+              "$PRODUCTION_URL/" || true)"
 
-            live_revision="$(curl               --fail               --silent               --show-error               --max-time 15               "$PRODUCTION_URL/revision.txt" 2>/dev/null               | tr -d '\r\n' || true)"
+            ok_flag=0
+            revision_flag=0
 
-            if [ "$health_code" = "200" ]               && [ "$health_body" = "ok" ]               && [ "$root_code" = "200" ]               && [ "$live_revision" = "$SHA" ]; then
+            if printf '%s' "$health_body" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then
+              ok_flag=1
+            fi
+
+            if printf '%s' "$health_body" | grep -Fq "\"revision\":\"$SHA\""; then
+              revision_flag=1
+            fi
+
+            if [ "$health_code" = "200" ] \
+               && [ "$root_code" = "200" ] \
+               && [ "$ok_flag" = "1" ] \
+               && [ "$revision_flag" = "1" ]; then
               deployment_ok=1
               break
             fi
 
-            echo "health=${health_code:-000} body=${health_body:0:80} root=${root_code:-000} revision=${live_revision:0:80}"
+            echo "health=${health_code:-000} root=${root_code:-000} body=${health_body:0:180}"
             sleep 5
           done
 
           if [ "$deployment_ok" -ne 1 ]; then
-            echo "ERROR: New dist did not verify. Restoring previous dist."
+            echo "ERROR: Release pointer $SHA did not become live."
 
-            rm -rf "dist.failed-${SHA}"
-            if [ -d dist ]; then
-              mv dist "dist.failed-${SHA}"
-            fi
+            if [ -n "$OLD" ] && [ -d "releases/$OLD" ]; then
+              printf '%s\n' "$OLD" > CURRENT.new
+              mv CURRENT.new CURRENT
+              touch tmp/restart.txt
 
-            if [ -d "$BACKUP/dist" ]; then
-              mv "$BACKUP/dist" dist
-            fi
+              echo "Rolled CURRENT back to $OLD."
 
-            if [ -f "$BACKUP/server.cjs" ]; then
-              cp -a "$BACKUP/server.cjs" server.cjs
-            fi
+              rollback_ok=0
+              for rollback_attempt in $(seq 1 18); do
+                rollback_code="$(curl \
+                  --silent \
+                  --show-error \
+                  --output /tmp/rentauto-rollback-body \
+                  --write-out '%{http_code}' \
+                  --max-time 15 \
+                  "$PRODUCTION_URL/healthz" || true)"
+                rollback_body="$(tr -d '\r\n' < /tmp/rentauto-rollback-body 2>/dev/null || true)"
 
-            if [ -n "$OLD" ]; then
-              printf '%s\n' "$OLD" > REVISION.new
-              mv REVISION.new REVISION
+                if [ "$rollback_code" = "200" ] \
+                   && printf '%s' "$rollback_body" | grep -Fq "\"revision\":\"$OLD\""; then
+                  rollback_ok=1
+                  break
+                fi
+
+                echo "Rollback verification attempt $rollback_attempt/18..."
+                sleep 5
+              done
+
+              if [ "$rollback_ok" -ne 1 ]; then
+                echo "ERROR: Previous release $OLD did not verify after rollback."
+              fi
             else
-              rm -f REVISION
+              echo "ERROR: No previous release was available for rollback."
             fi
 
-            mkdir -p tmp
-            touch tmp/restart.txt
-            sleep 2
-
-            rollback_code="$(curl               --silent               --show-error               --output /tmp/rentauto-rollback-body               --write-out '%{http_code}'               --max-time 20               "$PRODUCTION_URL/healthz" || true)"
-
-            echo "Rollback health HTTP ${rollback_code:-000}"
             exit 1
           fi
 
           rm -f "$ARCHIVE"
 
-          ls -1dt "$ROLLBACK_ROOT"/* 2>/dev/null             | tail -n +4             | while IFS= read -r old_backup; do
-                rm -rf -- "$old_backup"
-              done
+          # Keep a small rollback window. The newly activated release is newest.
+          ls -1dt releases/* 2>/dev/null \
+            | tail -n +7 \
+            | xargs -r rm -rf
 
-          echo "RENTAUTO revision $SHA is live and verified."
+          echo "RENTAUTO revision $SHA is live through CURRENT."
           REMOTE
-          } | ssh -T                 -i ~/.ssh/rentauto_deploy_key                 -p "$MOCHAHOST_PORT"                 -o BatchMode=yes                 -o ConnectTimeout=15                 -o ServerAliveInterval=15                 -o ServerAliveCountMax=3                 "$MOCHAHOST_USER@$MOCHAHOST_HOST"                 "bash -se"
+          } | ssh -T \
+                -i ~/.ssh/rentauto_deploy_key \
+                -p "$MOCHAHOST_PORT" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=15 \
+                -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=3 \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+                "bash -se"
 
       - name: Verify live revision from runner
         shell: bash
         run: |
           set -euo pipefail
 
-          health_body="$(curl             --fail             --silent             --show-error             --max-time 20             "$PRODUCTION_URL/healthz" | tr -d '\r\n')"
+          health_body="$(curl \
+            --fail \
+            --silent \
+            --show-error \
+            --max-time 20 \
+            "$PRODUCTION_URL/healthz" | tr -d '\r\n')"
 
-          if [ "$health_body" != "ok" ]; then
-            echo "::error::Health endpoint returned unexpected body: ${health_body:0:120}"
+          if ! printf '%s' "$health_body" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then
+            echo "::error::Health endpoint does not report ok=true: ${health_body:0:180}"
             exit 1
           fi
 
-          echo "healthz=ok"
-
-          curl             --fail             --silent             --show-error             --max-time 20             "$PRODUCTION_URL/"             >/dev/null
-
-          live_revision="$(curl             --fail             --silent             --show-error             --max-time 20             "$PRODUCTION_URL/revision.txt"             | tr -d '\r\n')"
-
-          if [ "$live_revision" != "$DEPLOY_SHA" ]; then
-            echo "::error::Live revision mismatch: expected $DEPLOY_SHA, got $live_revision"
+          if ! printf '%s' "$health_body" | grep -Fq "\"revision\":\"$DEPLOY_SHA\""; then
+            echo "::error::Live health revision mismatch: expected $DEPLOY_SHA, got ${health_body:0:180}"
             exit 1
           fi
 
-          echo "rentauto.ca is live at revision $live_revision"
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --max-time 20 \
+            "$PRODUCTION_URL/" \
+            >/dev/null
+
+          echo "rentauto.ca is live at revision $DEPLOY_SHA"
