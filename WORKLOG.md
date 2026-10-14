@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Hardened OAuth/login redirect parser against backslash and malformed URL redirect attacks; added tests | Verify CI/deploy then continue #39
+
 - 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Fixed live account_roles auth lookup and per-product private-route gate, added regression tests | Verify latest release SHA, continue #39 and LC1
 
 - 2026-10-14 | ChatGPT | main | done | Established canonical five-file agent handoff and CI continuity tests; audited actual shared TAKATAK schema | Continue #39 with isolated rentauto-schema implementation; do not run stale migration

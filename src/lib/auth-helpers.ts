@@ -2,15 +2,29 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 /**
- * Only accept same-origin internal paths starting with a single "/".
- * Rejects protocol-relative ("//evil.com"), absolute URLs, and empty strings.
+ * OAuth/login redirects must remain on this application's origin.
+ * WHATWG URL parsing catches navigation tricks that string prefix checks miss,
+ * including browser-normalized backslashes and control characters.
  */
 export function sanitizeRedirect(raw: string | null | undefined): string | null {
-  if (!raw || typeof raw !== "string") return null;
-  if (!raw.startsWith("/")) return null;
-  if (raw.startsWith("//")) return null;
-  if (/^\/https?:/i.test(raw)) return null;
-  return raw;
+  if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) {
+    return null;
+  }
+
+  if (/[\\\u0000-\u001f\u007f]/.test(raw) || /%5c/i.test(raw)) {
+    return null;
+  }
+
+  // A deliberately fixed base works in local development and production;
+  // the resulting relative URL keeps its original same-origin destination.
+  const origin = "https://rentauto.ca";
+  try {
+    const url = new URL(raw, origin);
+    if (url.origin !== origin || /^\/https?:/i.test(raw)) return null;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
 }
 
 export const RENTAUTO_OAUTH_INTENT_KEY = "rentauto_oauth_intent_v1";

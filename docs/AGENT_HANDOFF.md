@@ -37,3 +37,7 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - Located a functional mismatch: React `AuthContext` and `ensureProfile` read obsolete `user_roles.user_id`; production uses `rentauto.account_roles.auth_user_id`, with authenticated SELECT restricted by RLS.
 - Fixed both lookups, updated typed schema, normalized roles, gated all private routes on Rentauto membership, and refreshed roles after explicit consent. Added `src/lib/rentauto-membership.test.ts`.
 - This commit must pass typecheck/test/build and publish to MochaHost. Re-check the exact new commit SHA and update deployment evidence; no live guest/host login was performed.
+
+## Security follow-up: safe OAuth redirect parsing
+- Replaced prefix-only redirect checks with WHATWG URL origin validation and explicit backslash/control-character rejection. Added `src/lib/auth-helpers.test.ts` for both safe and malicious return destinations.
+- New commit built on `754c7578bb6143fb00a2b965ebaf61605a2ce6dc`; check its new SHA, CI and deployment independently. No credentials or user login were used.
