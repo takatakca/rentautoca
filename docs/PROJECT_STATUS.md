@@ -30,3 +30,10 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 ## Current TAKATAK sync clarification
 - The outbox issue #39 must not imply the absence of all sync: `rentauto.project_trip_to_takatak_marketplace_order` and the Rentauto account bootstrap are installed. External network outbox delivery is still absent and the original SQL is incompatible.
 - Role compatibility: `rentauto.user_roles` exists as a view of `rentauto.account_roles`; canonical direct reads now use the latter.
+
+## 2026-10-14 latest CI/deploy checkpoint
+
+- Verified main code SHA `32d615164bf09f0c6778bccb7b6c340fd0f2972b` passed CI run 38615508682.
+- The associated Deploy workflow 38615701658 failed at authenticated SSH remote exec, before activation. **Latest committed code is not confirmed in production.**
+- Last independently confirmed live SHA remains `98969f648124fac7eb4dc54e14158451246bf72a` from successful workflow 38608765943.
+- Hosting blocker: issue #40; TAKATAK outbox backend reconciliation: issue #39; LC1 end-to-end still unverified.

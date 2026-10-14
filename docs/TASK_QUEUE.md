@@ -13,3 +13,7 @@ Maintained newest first. One agent claims a task in `WORKLOG.md` before editing.
 | Done | SEO private-route noindex, immutable MochaHost release pinning, CI | done | Github runs 38608642413 and 38608765943 passed at `98969f648124fac7eb4dc54e14158451246bf72a` |
 
 Do not close blockers solely from successful frontend builds. Report only actual confirmations.
+
+## Blocking deployment evidence (2026-10-14)
+
+Issue #40: SSH authenticated but remote command channel rejected. GitHub build/test passes for code SHA `32d615164bf09f0c6778bccb7b6c340fd0f2972b`, but production cannot be reported updated until MochaHost accepts remote exec and health reports the exact SHA. Continue independent code work while the hosting permission problem is resolved; do not bypass security or repeatedly dispatch the same failing command without a new correction.

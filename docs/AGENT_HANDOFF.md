@@ -53,3 +53,16 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - CI for `67c7301e6e0b70b43e3343d1812ed470b75448d7` succeeded (run 38614477840). Previous `df6aed6362` deployment failed while MochaHost refused SSH exec commands; latest `67c7301e` deployment reached upload but remote transport again failed intermittently.
 - Updated `.github/workflows/deploy-mochahost.yml` to retry uploads with bounded backoff, SHA-256 and size readback before activating `CURRENT`. Updated contract test. Check exact new SHA's CI and MochaHost Deploy result, and ensure old artifact wasn't marked live on failure.
 - SHA before this fix: `e108e25bf14b33b6fc65292cb956bfa70fc0c1b1`.
+
+## 2026-10-14 FINAL CURRENT-SESSION READBACK
+
+- **Last pushed feature/deployment fix SHA:** `32d615164bf09f0c6778bccb7b6c340fd0f2972b` (`fix(deploy): retry MochaHost transfers with SHA-256 verification`). This handoff update is committed immediately after it; read `git rev-parse HEAD` to identify the self-containing documentation commit without creating an endless self-referential SHA change.
+- **CI:** latest feature/fix run **38615508682 succeeded** (Typecheck, parity, changed-file lint, tests, build).
+- **Production deploy for the same SHA:** run **38615701658 failed** at "Verify MochaHost remote command access", before upload/activation.
+- **Last confirmed deployed production SHA:** `98969f648124fac7eb4dc54e14158451246bf72a`, successful deploy **38608765943**. Do not claim the newer commits are live.
+- **Blocker:** GitHub issue [#40](https://github.com/takatakca/rentautoca/issues/40) — MochaHost SSH authenticates the deployment key but rejects execution channels intermittently. New bounded archive-upload retry helps only after SSH exec works. MochaHost operator must restore reliable non-interactive shell access before another deployment attempt.
+- **Backend blocker:** issue [#39](https://github.com/takatakca/rentautoca/issues/39). Existing TAKATAK direct account/order projections are installed; un-deployed outbox is incompatible with the live shared schema. No unsafe migration was applied.
+- **Files changed in newest code release:** `.github/workflows/deploy-mochahost.yml`, `src/test/mochahost-passenger-deployment.test.ts`, `docs/AGENT_HANDOFF.md`, `docs/TASK_QUEUE.md`, `WORKLOG.md`.
+- **Other completed source changes this session:** `src/contexts/AuthContext.tsx`, `src/lib/auth-helpers.ts`, `src/integrations/supabase/types.ts`, `src/components/auth/ProtectedRoute.tsx`, `src/pages/Signup.tsx`, `src/lib/rentauto-membership.ts`, their tests, `src/pages/legal/Privacy.tsx`, new documentation and tests.
+- **Verification commands:** GitHub Actions `npm run typecheck`, `npm run qa:edge-sources`, `npx eslint`, `npm run test`, `npm run build` passed for latest fix SHA; read-only Supabase schema/function/RLS introspection passed. Production `/healthz` exact-SHA verification did **not** pass for recent commits.
+- **Precise next action:** check issue #40 and restore MochaHost SSH exec permission, then dispatch the *newest* `main` deploy and check `/healthz` revision. While awaiting hosting, address issue #39 only via an additive isolated design verified against existing direct projections; do not run historical `20260930161000_takatak_integration_outbox.sql`. Then conduct LC1 real account/host/trip/Stripe/GPS acceptance.

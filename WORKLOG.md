@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-14 | ChatGPT | main | blocked: hosting SSH exec issue #40 | Feature/fix CI green at 32d615164bf09f0c6778bccb7b6c340fd0f2972b; deploy failed before activation; last live 98969f648124 | Fix MochaHost remote command permissions, deploy latest SHA; independently continue issue #39
+
 - 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Added bounded retry and SHA-256 validation for intermittent MochaHost upload failures | Verify live revision after CI and deploy; operator intervention if SSH exec remains unavailable
 
 - 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Updated TAKATAK direct projection and schema compatibility documentation after live readback | Continue #39 only after receiver contract validation

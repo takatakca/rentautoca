@@ -27,3 +27,10 @@ curl -I https://rentauto.ca/
 Compare `/healthz` revision to a successful **specific** GitHub deployment run. Inspect run steps, logs, `CURRENT`, `PREVIOUS` for mismatch.
 
 See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
+
+## 2026-10-14 incident update
+
+- Successful release baseline: `98969f648124fac7eb4dc54e14158451246bf72a`, GitHub Deploy run `38608765943`.
+- Latest code commit at incident checkpoint: `32d615164bf09f0c6778bccb7b6c340fd0f2972b`, GitHub CI `38615508682` **success**.
+- Its GitHub Deploy run `38615701658` **failure**: `Verify MochaHost remote command access` (SSH exec channel refused, before activation).
+- Production live revision for later commits **not confirmed**. See GitHub issue #40 for SSH operator diagnostics and exact resume procedure.
