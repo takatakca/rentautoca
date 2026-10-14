@@ -12,3 +12,6 @@
 New changes should be append-only decisions with date, reasoning and tradeoffs. Do not silently rewrite history.
 
 8. **Live role table authority (2026-10-14)**: `rentauto.account_roles` with `auth_user_id` and `role` is the RLS-protected production role source; obsolete `public.user_roles` cannot authorize Rentauto pages. Frontend requires a Rentauto role for any private route. TAKATAK Auth identity alone cannot bypass Rentauto consent.
+
+8. **Read-back correction (2026-10-14):** `rentauto.user_roles` is a compatibility view; it was not missing. Canonical membership is `rentauto.account_roles` with `auth_user_id` and per-user/admin RLS.
+9. **In-database TAKATAK sync:** the existing server function `rentauto.project_trip_to_takatak_marketplace_order` already handles Rentauto `source_marketplace_orders`; do not duplicate it with a blind outbox migration. Keep issue #39 for new requirements rather than claiming all integration is missing.

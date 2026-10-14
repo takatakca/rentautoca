@@ -1,8 +1,7 @@
 # API Reference (Frontend → Backend Data Flows)
 
 Rentauto's frontend talks to Supabase exclusively via the typed client at
-`@/integrations/supabase/client`. There is no custom REST layer — reads use
-`supabase.from(...)` with RLS, and privileged operations call Edge Functions.
+`@/integrations/supabase/client`. The client uses the `rentauto` schema for rental-domain reads, while TAKATAK master identity projections remain in `public`. RLS protects user-visible rows; privileged operations call Edge Functions.
 
 ## Auth / Profile
 - **Authority:** shared GROUPE TAKATAK Supabase Auth; Rentauto does not own an independent identity system.
@@ -11,10 +10,10 @@ Rentauto's frontend talks to Supabase exclusively via the typed client at
 - **Master identity:** `public.master_identities`, linked from shared `public.profiles`; verified phone or verified email may satisfy identity verification.
 - **Rentauto projection:** `public.source_profiles` with `sourceApplication = 'RENTAUTO'`, then `rentauto.accounts` + `rentauto.account_roles`.
 - **Isolation:** Rentauto receives the minimum identity projection it needs. Driver documents, vehicle records, GPS, trips, incidents, and Stripe operational data remain Rentauto-specific.
-- Hook: `AuthContext` + `useAuth()`; bootstrap authority: `rentauto-bootstrap-account`.
+- Hook: `AuthContext` + `useAuth()`; bootstrap authority: `rentauto-bootstrap-account`. Canonical membership: `rentauto.account_roles(auth_user_id, role)` with per-user/admin RLS; `rentauto.user_roles` is a compatibility view.
 
 ## Explore / Search
-- Table: `public.cars` joined with `car_photos`, `provinces`, `vehicle_tracking_devices`.
+- Tables: `rentauto.cars` and Rentauto-owned related photo, availability and tracking read surfaces.
 - Filters: province, city, dates (intersect `availability_blocks`), make/model, price.
 - File: `src/pages/Explore.tsx`.
 
@@ -24,12 +23,12 @@ Rentauto's frontend talks to Supabase exclusively via the typed client at
 - File: `src/pages/CarListing.tsx`.
 
 ## Quote
-- Edge Function: **`quote-trip`** (see `EDGE_FUNCTIONS.md`).
+- Edge Function: **`rentauto-quote-trip`** (see `EDGE_FUNCTIONS.md`).
 - Hook: `use-trip-quote.ts` (debounced on date/extras change).
 - Returns line items, taxes (GST/QST), protection cost, totals.
 
 ## Checkout
-- Edge Function: **`create-checkout-session`** — creates Stripe Checkout
+- Edge Function: **`rentauto-create-checkout-session`** — creates Stripe Checkout
   session and flips trip to `pending_payment`.
 - Stripe webhook flips to `confirmed` on `checkout.session.completed`.
 - File: `src/pages/Checkout.tsx`.
@@ -41,7 +40,7 @@ Rentauto's frontend talks to Supabase exclusively via the typed client at
 - File: `src/pages/Trips.tsx`, `src/pages/TripDetail.tsx`.
 
 ## Check-in
-- Edge Function: **`trip-transition`** with `action: "check_in"`.
+- Edge Function: **`rentauto-trip-transition`** with `action: "check_in"`.
 - Writes `trip_events`, uploads pickup photos to `trip-photos` bucket, sets
   `trips.status = active`, opens `trip_tracking_sessions` row.
 - File: `src/pages/TripCheckIn.tsx`.
@@ -65,3 +64,7 @@ Rentauto's frontend talks to Supabase exclusively via the typed client at
 - Aggregate counts, active sessions, pending check-ins, open incidents,
   LC1 launch checklist.
 - File: `src/pages/AdminPanel.tsx`, `src/pages/AdminLaunchChecklist.tsx`.
+
+## Deployment safety
+
+The GitHub CI/MochaHost workflow deploys frontend assets only. Never apply all historical `supabase/migrations/` files indiscriminately to the shared TAKATAK project: some describe the obsolete standalone `public` schema. Check issue #39 and live schema before any database changes.

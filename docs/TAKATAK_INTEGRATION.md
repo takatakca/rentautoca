@@ -8,7 +8,15 @@ Rentauto owns rental-domain state such as vehicles, availability, quotes, trips,
 
 A Rentauto booking must continue to succeed even if TAKATAK is temporarily unavailable. Synchronization therefore uses a durable outbox and retry model rather than a synchronous dependency.
 
-## Current event contract
+## Current production integration (verified 2026-10-14)
+
+- Shared project `pcjfahhlozsseqqevimi` already runs the explicit Rentauto authorization/account bootstrap which updates the TAKATAK `public.source_profiles` projection.
+- `rentauto.sync_takatak_marketplace_order_trigger` invokes `rentauto.project_trip_to_takatak_marketplace_order` for non-draft trips. It writes into TAKATAK-owned `public.source_marketplace_orders` in the same database transaction.
+- A separate `takatak-sync-outbox` Edge Function and its original `public.integration_outbox` table/RPCs **are not deployed**. The historical migration assumes absent `public.trips` and `public.user_roles` and modifies shared auth triggers; do not apply it unchanged (GitHub issue #39).
+- Production Rentauto accounts/trips were both zero at inspection, so this installed direct projection has not been proven end-to-end with a real rental.
+- Do not duplicate existing order projections or automatically enroll unrelated TAKATAK identities.
+
+## Proposed outbound event contract (not yet deployed)
 
 Rentauto emits privacy-minimized events with:
 
@@ -32,9 +40,9 @@ TAKATAK stores these in its existing master identity/source synchronization mode
 - `SourcePaymentSummary`
 - `SourceSynchronizationEvent`
 
-## Delivery
+## Planned outbound delivery (not yet deployed)
 
-Rentauto stores outbound events in `public.integration_outbox`.
+No active outbox is present in the production database. The contract below describes a future, separately verified sender rather than an operational integration. New designs must be Rentauto-scoped and additive; see issue #39.
 
 The `takatak-sync-outbox` Edge Function:
 

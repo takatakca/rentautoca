@@ -26,3 +26,7 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 
 ## Fixed in pending release df6aed6362c8+
 - Corrected browser role/membership queries to live `rentauto.account_roles.auth_user_id` and added explicit product membership gating. Verify CI/deploy for the new commit; do not treat this line as production proof.
+
+## Current TAKATAK sync clarification
+- The outbox issue #39 must not imply the absence of all sync: `rentauto.project_trip_to_takatak_marketplace_order` and the Rentauto account bootstrap are installed. External network outbox delivery is still absent and the original SQL is incompatible.
+- Role compatibility: `rentauto.user_roles` exists as a view of `rentauto.account_roles`; canonical direct reads now use the latter.

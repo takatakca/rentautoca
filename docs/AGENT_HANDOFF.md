@@ -45,3 +45,6 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 ## Privacy disclosure correction (2026-10-14)
 - Shared TAKATAK Supabase project metadata confirms `eu-west-1`. Corrected the old inaccurate Canada/US-only infrastructure statement in `src/pages/legal/Privacy.tsx`; updated retention to reflect applicable record-specific rules without a blanket unsupported period. Added `src/test/privacy-disclosure.test.ts`.
 - Base commit before this change: `67c7301e6e0b70b43e3343d1812ed470b75448d7`; confirm the new SHA and exact GitHub deploy run independently.
+
+## Direct TAKATAK integration correction
+- Verified installed `rentauto.project_trip_to_takatak_marketplace_order` procedure and trigger project non-draft trips into `public.source_marketplace_orders`; account bootstrap already creates explicit source profiles. Updated `docs/TAKATAK_INTEGRATION.md` and `docs/API_REFERENCE.md` to distinguish these live direct projections from the uninstalled outbox. Do not deploy the historical global-trigger migration. Base before this update: `0291737f123bb754dd70c7d381d44db7cd47e961`.
