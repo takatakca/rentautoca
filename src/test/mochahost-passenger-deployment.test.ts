@@ -53,6 +53,16 @@ describe("MochaHost release-pointer deployment contracts", () => {
     expect(workflow).toContain("nodevenv/rentauto_node");
   });
 
+  it("preserves current and previous releases during cleanup", () => {
+    expect(workflow).toContain('current_sha="$(tr -d');
+    expect(workflow).toContain('previous_sha="$(tr -d');
+    expect(workflow).toContain('"$release_sha" = "$current_sha"');
+    expect(workflow).toContain('"$release_sha" = "$previous_sha"');
+    expect(workflow).toContain('[[ "$release_sha" =~ ^[[:xdigit:]]{40}$ ]]');
+    expect(workflow).not.toContain("tail -n +7");
+    expect(workflow).not.toContain("xargs -r rm -rf");
+  });
+
   it("diagnoses the release-pointer runtime before activation", () => {
     expect(workflow).toContain("installed release-pointer runtime");
     expect(workflow).toContain("current=");

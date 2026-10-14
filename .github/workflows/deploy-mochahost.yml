@@ -484,10 +484,36 @@ jobs:
 
           rm -f "$ARCHIVE"
 
-          # Keep a small rollback window. The newly activated release is newest.
-          ls -1dt releases/* 2>/dev/null \
-            | tail -n +7 \
-            | xargs -r rm -rf
+          # Keep the active release and the rollback target regardless of age.
+          # Only prune well-formed, SHA-named release directories.
+          current_sha="$(tr -d '\r\n' < CURRENT)"
+          previous_sha="$(tr -d '\r\n' < PREVIOUS 2>/dev/null || true)"
+          non_pinned_kept=0
+          while IFS= read -r release_dir; do
+            [ -d "$release_dir" ] || continue
+            release_sha="${release_dir##*/}"
+
+            if ! [[ "$release_sha" =~ ^[[:xdigit:]]{40}$ ]]; then
+              echo "Skipping unexpected release directory: $release_dir"
+              continue
+            fi
+
+            if [ "$release_sha" = "$current_sha" ] || [ "$release_sha" = "$previous_sha" ]; then
+              echo "Preserving pinned release: $release_sha"
+              continue
+            fi
+
+            if [ "$non_pinned_kept" -lt 4 ]; then
+              non_pinned_kept=$((non_pinned_kept + 1))
+              continue
+            fi
+
+            rm -rf -- "$release_dir"
+          done < <(
+            find releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+              | sort -nr \
+              | cut -d' ' -f2-
+          )
 
           echo "RENTAUTO revision $SHA is live through CURRENT."
           REMOTE
