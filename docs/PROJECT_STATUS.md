@@ -23,3 +23,6 @@ Last reconciled: 2026-10-14 (UTC). Live GitHub evidence takes precedence over th
 
 ## Definition of done
 All approved requirements implemented, CI green, backend contracts deployed and verified, production exact revision verified, privacy/security controls reviewed, and LC1 acceptance recorded. No unsupported claim of complete/GA status.
+
+## Fixed in pending release df6aed6362c8+
+- Corrected browser role/membership queries to live `rentauto.account_roles.auth_user_id` and added explicit product membership gating. Verify CI/deploy for the new commit; do not treat this line as production proof.

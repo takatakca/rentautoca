@@ -41,7 +41,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshRoles } = useAuth();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const redirectParam = sanitizeRedirect(searchParams.get("redirect"));
@@ -85,6 +85,7 @@ export default function Signup() {
     const { error: authorizationError } = await authorizeRentautoAccount(hostIntent);
     if (!authorizationError) {
       await supabase.auth.refreshSession();
+      await refreshRoles();
     }
     setLoading(false);
 

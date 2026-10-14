@@ -10,3 +10,5 @@
 7. **Completion**: a green CI, `/healthz`, or screenshot never proves a real rental loop; LC1 field sign-off is required.
 
 New changes should be append-only decisions with date, reasoning and tradeoffs. Do not silently rewrite history.
+
+8. **Live role table authority (2026-10-14)**: `rentauto.account_roles` with `auth_user_id` and `role` is the RLS-protected production role source; obsolete `public.user_roles` cannot authorize Rentauto pages. Frontend requires a Rentauto role for any private route. TAKATAK Auth identity alone cannot bypass Rentauto consent.

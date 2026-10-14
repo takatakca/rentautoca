@@ -1691,24 +1691,24 @@ export type Database = {
           },
         ]
       }
-      user_roles: {
+      account_roles: {
         Row: {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
-          user_id: string
+          auth_user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
-          user_id: string
+          auth_user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
+          auth_user_id?: string
         }
         Relationships: []
       }

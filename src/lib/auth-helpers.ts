@@ -127,9 +127,9 @@ export type EnsureProfileResult =
 export async function ensureProfile(user: User): Promise<EnsureProfileResult> {
   try {
     const { data: existingRole, error: roleError } = await supabase
-      .from("user_roles")
+      .from("account_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("auth_user_id", user.id)
       .limit(1)
       .maybeSingle();
 

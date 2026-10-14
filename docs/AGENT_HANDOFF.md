@@ -32,3 +32,8 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 1. Re-read the current `main` SHA and this handoff, then inspect issue #39. Read the live `rentauto.sync_takatak_marketplace_order_trigger` and `public.bootstrap_rentauto_account_authorized_impl` contracts before writing a replacement outbox.
 2. Implement a restricted Rentauto-scoped migration and sender, **without touching shared `public.handle_new_user`**. Test schema/permission/idempotency/receiver contract in staging; deploy backend only when verified.
 3. Push to `main` through non-force GitHub CAS writes; inspect CI and exact-SHA live deploy, and record final SHA/results in this file.
+
+## Session follow-up: authentication gate repair
+- Located a functional mismatch: React `AuthContext` and `ensureProfile` read obsolete `user_roles.user_id`; production uses `rentauto.account_roles.auth_user_id`, with authenticated SELECT restricted by RLS.
+- Fixed both lookups, updated typed schema, normalized roles, gated all private routes on Rentauto membership, and refreshed roles after explicit consent. Added `src/lib/rentauto-membership.test.ts`.
+- This commit must pass typecheck/test/build and publish to MochaHost. Re-check the exact new commit SHA and update deployment evidence; no live guest/host login was performed.

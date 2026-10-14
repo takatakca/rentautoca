@@ -8,8 +8,9 @@ import {
   sanitizeRedirect,
 } from "@/lib/auth-helpers";
 import { authorizeRentautoAccount } from "@/lib/takatak-phone-auth";
+import { normalizeRentautoRoles, type RentautoRole } from "@/lib/rentauto-membership";
 
-export type AppRole = "guest" | "host" | "admin";
+export type AppRole = RentautoRole;
 
 interface AuthContextType {
   session: Session | null;
@@ -35,16 +36,16 @@ interface AuthContextType {
  
    const fetchRoles = async (userId: string) => {
      const { data, error } = await supabase
-       .from("user_roles")
+       .from("account_roles")
        .select("role")
-       .eq("user_id", userId);
+       .eq("auth_user_id", userId);
      
      if (error) {
        console.error("Error fetching roles:", error);
        return [];
      }
      
-     return (data || []).map((r) => r.role as AppRole);
+     return normalizeRentautoRoles(data || []);
    };
  
    const refreshRoles = async () => {
