@@ -2,7 +2,7 @@ import { LegalLayout } from "@/components/legal/LegalLayout";
 
 export default function Privacy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="May 14, 2026">
+    <LegalLayout title="Privacy Policy" updated="October 14, 2026">
       <p>Rentauto.ca ("we", "us") respects your privacy. This Policy explains what personal information we collect and how we use it, in accordance with Canada's <em>Personal Information Protection and Electronic Documents Act</em> (PIPEDA) and Quebec's <em>Law 25</em>.</p>
       <h2>1. Information we collect</h2>
       <ul>
@@ -21,11 +21,11 @@ export default function Privacy() {
       <h2>3. Sharing</h2>
       <p>We share information with the counterparty to a booking (Host or Guest) as needed to fulfill the rental, and with service providers (Stripe for payments, Supabase for hosting, ID verification vendors) under contract.</p>
       <h2>4. Retention</h2>
-      <p>We retain personal information for as long as your account is active and up to 7 years afterward to comply with tax and dispute-resolution obligations.</p>
+      <p>We retain personal information for as long as necessary to operate accounts, process bookings and payments, manage disputes, and comply with applicable recordkeeping laws. Retention periods depend on the type of record; contact our Privacy Officer for further details.</p>
       <h2>5. Your rights (PIPEDA &amp; Quebec Law 25)</h2>
       <p>You may request access, correction, portability, or deletion of your personal information by emailing privacy@rentauto.ca. Quebec residents may also lodge a complaint with the <em>Commission d'accès à l'information du Québec</em>.</p>
       <h2>6. Data residency</h2>
-      <p>Personal information is stored on infrastructure located in Canada and the United States. By using the Platform you consent to such cross-border transfer.</p>
+      <p>Rentauto uses a shared TAKATAK Supabase project configured in an EU West data region for identity and rental operations. Hosting, payment providers and other services may process information in additional jurisdictions, including outside Canada. Contact our Privacy Officer for information about service providers and cross-border processing.</p>
       <h2>7. Contact</h2>
       <p>Privacy Officer — privacy@rentauto.ca</p>
     </LegalLayout>

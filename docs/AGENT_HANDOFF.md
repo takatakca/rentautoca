@@ -41,3 +41,7 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 ## Security follow-up: safe OAuth redirect parsing
 - Replaced prefix-only redirect checks with WHATWG URL origin validation and explicit backslash/control-character rejection. Added `src/lib/auth-helpers.test.ts` for both safe and malicious return destinations.
 - New commit built on `754c7578bb6143fb00a2b965ebaf61605a2ce6dc`; check its new SHA, CI and deployment independently. No credentials or user login were used.
+
+## Privacy disclosure correction (2026-10-14)
+- Shared TAKATAK Supabase project metadata confirms `eu-west-1`. Corrected the old inaccurate Canada/US-only infrastructure statement in `src/pages/legal/Privacy.tsx`; updated retention to reflect applicable record-specific rules without a blanket unsupported period. Added `src/test/privacy-disclosure.test.ts`.
+- Base commit before this change: `67c7301e6e0b70b43e3343d1812ed470b75448d7`; confirm the new SHA and exact GitHub deploy run independently.
