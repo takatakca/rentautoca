@@ -120,7 +120,7 @@ export function FAQSection({ items }: { items: { q: string; a: string }[] }) {
 
 export function FinalCTA({
   title = "Ready to hit the road?",
-  body = "Browse hundreds of cars from trusted local hosts across Quebec and Canada.",
+  body = "Browse cars from trusted local hosts across Quebec and Canada.",
   primary = { label: "Browse cars", to: "/explore" },
   secondary = { label: "Become a host", to: "/become-host" },
 }: {
