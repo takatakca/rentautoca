@@ -338,14 +338,58 @@ jobs:
           printf -v remote_dir_q '%q' "$remote_dir"
           printf -v remote_archive_q '%q' "$remote_archive"
 
-          ssh -T             -i ~/.ssh/rentauto_deploy_key             -p "$MOCHAHOST_PORT"             -o BatchMode=yes             -o ConnectTimeout=15             -o ServerAliveInterval=15             -o ServerAliveCountMax=3             "$MOCHAHOST_USER@$MOCHAHOST_HOST"             "mkdir -p -- $remote_dir_q && cat > $remote_archive_q"             < "$archive"
+          # The shared MochaHost SSH service sometimes refuses exec channels
+          # or closes a connection during upload. Never activate a partial archive.
+          # Each retry overwrites the same SHA-named temporary incoming artifact.
+          local_size="$(wc -c < "$archive" | tr -d '[:space:]')"
+          local_sha="$(sha256sum "$archive" | cut -d ' ' -f1)"
+          uploaded=0
 
-          remote_size="$(ssh -T             -i ~/.ssh/rentauto_deploy_key             -p "$MOCHAHOST_PORT"             -o BatchMode=yes             "$MOCHAHOST_USER@$MOCHAHOST_HOST"             "wc -c < $remote_archive_q")"
+          for upload_attempt in $(seq 1 5); do
+            echo "Artifact upload attempt $upload_attempt/5"
 
-          local_size="$(wc -c < "$archive")"
+            if ssh -T \
+                 -i ~/.ssh/rentauto_deploy_key \
+                 -p "$MOCHAHOST_PORT" \
+                 -o BatchMode=yes \
+                 -o ConnectTimeout=15 \
+                 -o ServerAliveInterval=15 \
+                 -o ServerAliveCountMax=3 \
+                 "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+                 "mkdir -p -- $remote_dir_q && cat > $remote_archive_q" \
+                 < "$archive"; then
 
-          if [ "$remote_size" != "$local_size" ]; then
-            echo "::error::Remote artifact size mismatch."
+              remote_info="$(ssh -T \
+                -i ~/.ssh/rentauto_deploy_key \
+                -p "$MOCHAHOST_PORT" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=15 \
+                -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=3 \
+                "$MOCHAHOST_USER@$MOCHAHOST_HOST" \
+                "wc -c < $remote_archive_q && sha256sum -- $remote_archive_q" 2>/dev/null || true)"
+
+              remote_size="$(printf '%s\n' "$remote_info" | sed -n '1p' | tr -d '[:space:]')"
+              remote_sha="$(printf '%s\n' "$remote_info" | sed -n '2s/[[:space:]].*$//p')"
+
+              if [ "$remote_size" = "$local_size" ] && [ "$remote_sha" = "$local_sha" ]; then
+                uploaded=1
+                echo "Remote artifact size and SHA-256 verified."
+                break
+              fi
+
+              echo "::warning::Remote upload evidence missing or mismatched. Retrying from byte zero."
+            else
+              echo "::warning::SSH artifact upload failed; no release pointer has been changed."
+            fi
+
+            if [ "$upload_attempt" -lt 5 ]; then
+              sleep $((upload_attempt * 5))
+            fi
+          done
+
+          if [ "$uploaded" -ne 1 ]; then
+            echo "::error::Unable to upload and verify the immutable artifact after 5 tries."
             exit 1
           fi
 

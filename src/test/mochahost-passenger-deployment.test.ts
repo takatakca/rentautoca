@@ -63,6 +63,14 @@ describe("MochaHost release-pointer deployment contracts", () => {
     expect(workflow).not.toContain("xargs -r rm -rf");
   });
 
+  it("retries intermittent MochaHost exec failures and hashes uploaded archives", () => {
+    expect(workflow).toContain("for upload_attempt in $(seq 1 5)");
+    expect(workflow).toContain('local_sha="$(sha256sum "$archive"');
+    expect(workflow).toContain('remote_sha="$(printf');
+    expect(workflow).toContain('if [ "$remote_size" = "$local_size" ] && [ "$remote_sha" = "$local_sha" ]');
+    expect(workflow).toContain('if [ "$uploaded" -ne 1 ]');
+  });
+
   it("diagnoses the release-pointer runtime before activation", () => {
     expect(workflow).toContain("installed release-pointer runtime");
     expect(workflow).toContain("current=");

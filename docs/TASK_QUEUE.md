@@ -4,6 +4,7 @@ Maintained newest first. One agent claims a task in `WORKLOG.md` before editing.
 | Priority | Task | Status | Acceptance |
 | --- | --- | --- | --- |
 | P0 | #39 reconcile TAKATAK outbox with shared schema | blocked / in development | Non-destructive Rentauto-scoped migration; verify in staging; confirmed receiver/HMAC and runner secrets; deploy Edge + migrations; replay/idempotency tests |
+| P0 | Intermittent MochaHost SSH command/upload reliability | in progress | Retry with hash verification, observe successful final live SHA; host SSH exec access may require operator fix |
 | P0 | LC1 real rental loop | pending operational acceptance | Real verified host/guest, inventory, booking, Stripe test/live payments, refund, GPS, check-in/out, review and admin sign-off |
 | P0 | Auth, Stripe, provider secrets and redirect verification | pending read-only operator validation | Phone OTP delivered, correct redirect, Edge Function auth and webhook signatures work on live |
 | P1 | Privacy/RLS audit on rentauto schema and Edge functions | in progress (frontend role gate fixed) | Tests of owner/host/admin isolation, sensitive uploads, GPS privacy gate |

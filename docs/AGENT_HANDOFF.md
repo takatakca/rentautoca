@@ -48,3 +48,8 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 
 ## Direct TAKATAK integration correction
 - Verified installed `rentauto.project_trip_to_takatak_marketplace_order` procedure and trigger project non-draft trips into `public.source_marketplace_orders`; account bootstrap already creates explicit source profiles. Updated `docs/TAKATAK_INTEGRATION.md` and `docs/API_REFERENCE.md` to distinguish these live direct projections from the uninstalled outbox. Do not deploy the historical global-trigger migration. Base before this update: `0291737f123bb754dd70c7d381d44db7cd47e961`.
+
+## MochaHost upload-retry recovery
+- CI for `67c7301e6e0b70b43e3343d1812ed470b75448d7` succeeded (run 38614477840). Previous `df6aed6362` deployment failed while MochaHost refused SSH exec commands; latest `67c7301e` deployment reached upload but remote transport again failed intermittently.
+- Updated `.github/workflows/deploy-mochahost.yml` to retry uploads with bounded backoff, SHA-256 and size readback before activating `CURRENT`. Updated contract test. Check exact new SHA's CI and MochaHost Deploy result, and ensure old artifact wasn't marked live on failure.
+- SHA before this fix: `e108e25bf14b33b6fc65292cb956bfa70fc0c1b1`.

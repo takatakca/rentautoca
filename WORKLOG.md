@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Added bounded retry and SHA-256 validation for intermittent MochaHost upload failures | Verify live revision after CI and deploy; operator intervention if SSH exec remains unavailable
+
 - 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Updated TAKATAK direct projection and schema compatibility documentation after live readback | Continue #39 only after receiver contract validation
 
 - 2026-10-14 | ChatGPT | main | done (CI/deploy pending) | Corrected misleading cross-border data geography and retention statements in privacy copy; added tests | Verify CI/deploy; continue integration #39
