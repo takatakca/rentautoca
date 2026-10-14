@@ -183,6 +183,101 @@ jobs:
             exit 1
           fi
 
+      - name: Repair Rentauto Passenger domain binding
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            printf 'set -euo pipefail\n'
+            printf 'APP_PATH=%q\n' "$MOCHAHOST_APP_PATH"
+
+            cat <<'REMOTE'
+          DOCROOT="$HOME/rentauto.ca"
+          HTACCESS="$DOCROOT/.htaccess"
+
+          test -d "$DOCROOT"
+          test -f "$APP_PATH/app.js"
+
+          mkdir -p "$APP_PATH/tmp"
+
+          # Prefer the currently configured Node interpreter when it still
+          # exists. Otherwise discover the newest valid Rentauto nodeenv binary.
+          NODE_BIN=""
+          if [ -f "$HTACCESS" ]; then
+            NODE_BIN="$(
+              sed -n 's/^[[:space:]]*PassengerNodejs[[:space:]]*["'"'"']\([^"'"'"']*\)["'"'"'].*/\1/p' "$HTACCESS"                 | head -n 1
+            )"
+          fi
+
+          if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
+            NODE_BIN="$(
+              find "$HOME/nodevenv/rentauto_node"                 -type f                 -path '*/bin/node'                 -perm -u+x                 2>/dev/null                 | sort -V                 | tail -n 1
+            )"
+          fi
+
+          if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
+            for candidate in               /opt/alt/alt-nodejs22/root/usr/bin/node               /opt/alt/alt-nodejs20/root/usr/bin/node               /usr/bin/node
+            do
+              if [ -x "$candidate" ]; then
+                NODE_BIN="$candidate"
+                break
+              fi
+            done
+          fi
+
+          if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
+            echo "ERROR: Could not find a working Node.js interpreter for Passenger."
+            exit 1
+          fi
+
+          stamp="$(date +%Y%m%d%H%M%S)"
+          if [ -f "$HTACCESS" ]; then
+            cp -a "$HTACCESS" "$HTACCESS.rentauto-backup-$stamp"
+          fi
+
+          TMP_HTACCESS="$HTACCESS.rentauto-new"
+
+          if [ -f "$HTACCESS" ]; then
+            awk '
+              !/^[[:space:]]*PassengerEnabled[[:space:]]/ &&
+              !/^[[:space:]]*PassengerAppRoot[[:space:]]/ &&
+              !/^[[:space:]]*PassengerBaseURI[[:space:]]/ &&
+              !/^[[:space:]]*PassengerNodejs[[:space:]]/ &&
+              !/^[[:space:]]*PassengerAppType[[:space:]]/ &&
+              !/^[[:space:]]*PassengerStartupFile[[:space:]]/
+            ' "$HTACCESS" > "$TMP_HTACCESS"
+          else
+            : > "$TMP_HTACCESS"
+          fi
+
+          {
+            printf '\n# BEGIN RENTAUTO PASSENGER MANAGED BLOCK\n'
+            printf 'PassengerEnabled on\n'
+            printf 'PassengerAppRoot "%s"\n' "$APP_PATH"
+            printf 'PassengerBaseURI "/"\n'
+            printf 'PassengerNodejs "%s"\n' "$NODE_BIN"
+            printf 'PassengerAppType node\n'
+            printf 'PassengerStartupFile app.js\n'
+            printf '# END RENTAUTO PASSENGER MANAGED BLOCK\n'
+          } >> "$TMP_HTACCESS"
+
+          mv "$TMP_HTACCESS" "$HTACCESS"
+          chmod 0644 "$HTACCESS"
+
+          echo "Passenger binding repaired:"
+          sed -n '/BEGIN RENTAUTO PASSENGER/,/END RENTAUTO PASSENGER/p' "$HTACCESS"
+          echo "node=$NODE_BIN"
+
+          touch "$APP_PATH/tmp/restart.txt"
+          sleep 3
+
+          echo "Initial health after binding repair:"
+          curl --silent --show-error --max-time 20 https://rentauto.ca/healthz || true
+          echo
+          REMOTE
+          } | ssh -T                 -i ~/.ssh/rentauto_deploy_key                 -p "$MOCHAHOST_PORT"                 -o BatchMode=yes                 -o ConnectTimeout=15                 -o ServerAliveInterval=15                 -o ServerAliveCountMax=3                 "$MOCHAHOST_USER@$MOCHAHOST_HOST"                 "bash -se"
+
       - name: Diagnose installed release-pointer runtime
         shell: bash
         run: |
