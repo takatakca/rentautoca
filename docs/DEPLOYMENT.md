@@ -39,3 +39,8 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 - Starting main SHA: `c1028a551b06e907cb81e00785d63f63f003dc44`.
 - CI run 38616084653: success. Deploy run 38616259955: failure. Last confirmed active deployment SHA still `98969f648124fac7eb4dc54e14158451246bf72a`.
 - The new CI migration guard is validation-only; it does not deploy Supabase migrations or change MochaHost settings. Wait for a fresh successful deployment run and exact live SHA read-back.
+
+## 2026-10-15 release checkpoint
+- Verified exact-SHA frontend deployment `a0e2d5f2f5634d6f967f08d489e603b1934c1c7d`: [CI 38841266269](https://github.com/takatakca/rentautoca/actions/runs/38841266269) and [MochaHost 38841341501](https://github.com/takatakca/rentautoca/actions/runs/38841341501) succeeded, including live revision verification. Previous #40 SSH refusal is intermittent; latest success is not proof of permanent host repair.
+- Current change alters source for `takatak-sync-outbox` Edge Function but it is NOT deployed. GitHub frontend deployments cannot publish it. This change does not modify shared production data or secrets.
+- New setting `TAKATAK_RENTAUTO_SYNC_ALLOWED_ORIGIN` optional for controlled non-`*.takatak.ca` staging; never set to an untrusted endpoint. Receiver must be HTTPS at `/api/integrations/rentauto/events`.

@@ -42,3 +42,8 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 - At start, `main` was `c1028a551b06e907cb81e00785d63f63f003dc44`: GitHub CI succeeded but latest MochaHost deploy failed. No newer production release asserted.
 - Added a fail-closed CI migration safety gate: an automatic `supabase db push/migration up/reset` in GitHub Actions is prohibited until the shared-schema rollout is redesigned and reviewed. Existing production database untouched.
 - Blockers remain #39, #40, and LC1 acceptance.
+
+## 2026-10-15: cross-repo receiver verified
+- Source-side TAKATAK Next.js endpoint `/api/integrations/rentauto/events` validates HMAC-SHA256, timestamp, content length, schema and event ID; responds with `accepted: true` on success. Its production enable flag and actual availability remain unverified.
+- Rentauto's undeployed sender hardened: only HTTPS TAKATAK receiver (or explicitly approved origin), no redirects, and a positive receiver receipt required. No database migration or secret deployment performed.
+- Last independently confirmed MochaHost deploy before this change: SHA `a0e2d5f2f5634d6f967f08d489e603b1934c1c7d` (run 38841341501 success, exact SHA verification).

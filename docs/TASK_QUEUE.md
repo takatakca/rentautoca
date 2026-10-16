@@ -23,3 +23,9 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [ ] #40 Restore reliable MochaHost command execution; then deploy the newest successful `main` SHA and verify live `/healthz`.
 - [ ] #39 Reconcile existing direct TAKATAK projections with any proposed outbox before enabling a second delivery path. Stage and review RLS, grants, HMAC and idempotency.
 - [ ] LC1 run a real host/guest/Stripe/tracking/refund scenario; production validation remains unverified.
+
+## 2026-10-15 transport milestone
+- [x] Review TAKATAK master HMAC receiver and build sender SSRF/redirect and ack protections with tests.
+- [ ] #39 Replace obsolete historical outbox migration with Rentauto-scoped staged SQL and confirm receiver storage separation to avoid duplicated master projections.
+- [ ] Configure and test secrets, scheduler, replay/idempotent delivery in staging before backend function deployment.
+- [ ] #40 Follow intermittent SSH health, previous run 38841341501 succeeded; do not assume permanent host remediation.

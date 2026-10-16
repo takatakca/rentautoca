@@ -121,3 +121,9 @@ Later versions will add controlled projections for:
 - notification routing
 
 These must use versioned contracts rather than direct cross-database table access.
+
+## 2026-10-15 receiver contract verified in master source
+
+The TAKATAK master repository `takatakca/takatak-v1` contains `src/app/api/integrations/rentauto/events/route.ts`, re-exporting `src/lib/integrations/rentauto/events/route.ts`. The receiver verifies `x-integration-id`, timestamp within five minutes, raw-body HMAC and matching body/header event ID. It responds with JSON `accepted: true` on accepted events; a 2xx response without this receipt is not considered delivered.
+
+The Rentauto sender source now validates HTTPS destination at `/api/integrations/rentauto/events` and permits `takatak.ca` or its subdomains by default; staging requires explicit server-only `TAKATAK_RENTAUTO_SYNC_ALLOWED_ORIGIN`. HTTP redirects are forbidden. These checks are unit-tested. **Neither the receiver's live flag/configuration nor the sender's live deployment is confirmed**. The shared Supabase direct projection must be reconciled before a second writer is enabled.

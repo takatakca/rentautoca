@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isTakatakSyncReceipt, validateTakatakSyncUrl } from "../_shared/takatak-sync-transport.ts";
 
 type OutboxRow = {
   id: string;
@@ -50,6 +51,7 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const targetUrl = Deno.env.get("TAKATAK_RENTAUTO_SYNC_URL");
+  const approvedOrigin = Deno.env.get("TAKATAK_RENTAUTO_SYNC_ALLOWED_ORIGIN");
   const clientId = Deno.env.get("TAKATAK_RENTAUTO_SYNC_CLIENT_ID");
   const webhookSecret = Deno.env.get("TAKATAK_RENTAUTO_SYNC_WEBHOOK_SECRET");
   const runnerSecret = Deno.env.get("TAKATAK_SYNC_RUNNER_SECRET");
@@ -68,7 +70,8 @@ Deno.serve(async (req) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  if (!targetUrl || !clientId || !webhookSecret) {
+  const safeTargetUrl = validateTakatakSyncUrl(targetUrl, approvedOrigin);
+  if (!safeTargetUrl || !clientId || !webhookSecret) {
     console.error("[takatak-sync] TAKATAK integration configuration missing");
     return json({ error: "Integration not configured" }, 503);
   }
@@ -105,7 +108,8 @@ Deno.serve(async (req) => {
         `${timestamp}.${row.event_id}.${rawBody}`,
       );
 
-      const response = await fetch(targetUrl, {
+      const response = await fetch(safeTargetUrl, {
+        redirect: "error",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,6 +128,24 @@ Deno.serve(async (req) => {
           p_id: row.id,
           p_error: safeMessage,
         });
+        failed += 1;
+        continue;
+      }
+
+      // The TAKATAK receiver returns { accepted: true } for new and
+      // idempotently repeated events. A 2xx proxy/HTML/error body is not an ack.
+      let receipt: unknown;
+      try {
+        receipt = await response.json();
+      } catch {
+        receipt = null;
+      }
+      if (!isTakatakSyncReceipt(receipt)) {
+        const { error: failedMarkError } = await admin.rpc("mark_takatak_outbox_failed", {
+          p_id: row.id,
+          p_error: "TAKATAK acknowledgement missing",
+        });
+        if (failedMarkError) console.error("[takatak-sync] Failed to reschedule unacknowledged event", row.id);
         failed += 1;
         continue;
       }

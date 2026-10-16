@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-15 | ChatGPT | main | done (CI/deploy pending) | Verified TAKATAK receiver source, hardened undeployed Rentauto outbox sender against redirect/off-domain/false 2xx acknowledgements, unit tests, all five handoff files | Verify new commit CI and frontend deploy, continue staging-scoped outbox reconciliation #39
+
 - 2026-10-15 | ChatGPT | main | done (CI pending) | Add fail-closed shared-Supabase migration safety check to CI; synchronize five handoff docs | Check new CI and deploy, resolve SSH #40 with operator, continue reconciliation #39
 
 - 2026-10-14 | ChatGPT | main | blocked: hosting SSH exec issue #40 | Feature/fix CI green at 32d615164bf09f0c6778bccb7b6c340fd0f2972b; deploy failed before activation; last live 98969f648124 | Fix MochaHost remote command permissions, deploy latest SHA; independently continue issue #39
