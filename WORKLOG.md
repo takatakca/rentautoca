@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-15 | ChatGPT | main | done (CI pending) | Fix PL/pgSQL AS $ delimiter after actual PostgreSQL staging test failed; add exact delimiter test and record live release baseline | Re-run SQL CI; confirm next validated MochaHost live SHA before declaring release
+
 - 2026-10-15 | ChatGPT | main | done (CI pending) | Fix outbox kill-switch claim and legacy TAKATAK identity mapping; add full PostgreSQL regression smoke, update five continuity docs | Verify CI/deploy; stage-only SQL not applied to production
 
 - 2026-10-15 | ChatGPT | main | done (CI pending) | Add disposable PostgreSQL 16 smoke job exercising staged outbox SQL, RLS, gated events, lease acknowledgements and retries; update five continuity docs | Inspect CI result and correct SQL; no backend rollout before staging and receiver reconciliation

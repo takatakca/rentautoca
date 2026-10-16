@@ -43,3 +43,7 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [x] Add kill-switch protection to outbox claim and legacy-master-identity fallback for Rentauto-only account events.
 - [x] Extend disposable PostgreSQL validation to assert disabled backlog stays pending and resumes after enabled.
 - [ ] Verify new CI run and production frontend revision; keep backend activation pending actual schema/receiver validation.
+
+## 2026-10-15 follow-up from failing real SQL smoke
+- [x] Fix PL/pgSQL function opener flagged by disposable PostgreSQL CI and add automated delimiter regression.
+- [ ] Continue isolating SQL syntax/permissions errors through real CI PostgreSQL until all checks pass; backend still staging only.

@@ -25,3 +25,5 @@ New changes should be append-only decisions with date, reasoning and tradeoffs. 
 13. **2026-10-15 staging execution gate:** Run outbox SQL against a disposable GitHub Actions PostgreSQL 16 service, verify roles, RLS, gated account/payment triggers, lease fencing and retry. CI must block deploy on SQL failure, while production backend remains unchanged.
 
 14. **2026-10-15 kill switch / legacy mapping:** The `enabled=false` database setting must stop both event creation and claiming pending work; an operator disable may still allow in-flight deliveries, but no new leases. Rentauto source profiles can preserve a historical external user ID, so use the existing master identity link as a fallback within the RENTAUTO source boundary.
+
+15. **2026-10-15 executable SQL CI as release gate:** Never treat source-only static checks as proof staged SQL parses. The disposable PostgreSQL CI correctly caught an invalid PL/pgSQL delimiter; keep this job blocking release until fully green.

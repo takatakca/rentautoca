@@ -43,7 +43,7 @@ GRANT SELECT,INSERT,UPDATE ON rentauto.takatak_event_outbox TO service_role;
 CREATE OR REPLACE FUNCTION public.rentauto_claim_takatak_outbox(p_limit integer DEFAULT 20)
 RETURNS SETOF rentauto.takatak_event_outbox
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
-AS $
+AS $$
 BEGIN
   -- A disabled sync must stop claiming pending or retryable work too.
   IF NOT EXISTS (

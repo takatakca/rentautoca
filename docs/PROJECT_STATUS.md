@@ -59,3 +59,6 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 ## 2026-10-15 outbox kill-switch and identity compatibility
 - Scoped SQL now prevents claiming queued events while sync is disabled, not merely creating new events. It also looks up a prior Rentauto source profile by master identity when external user ID has been retained for legacy compatibility. Isolated PG tests cover both cases; live backend remains untouched.
 - Previous confirmed deployed SHA `17612acb30f8a77608baebf165cf65cb713607f5` (CI 38844556167, MochaHost 38844631301).
+
+## 2026-10-15 verified SQL failure and correction
+- CI 38844815420 exposed a stage-only PL/pgSQL opening delimiter typo in the new outbox claim function. Fixed and added static regression. No production migration occurred; previous confirmed live SHA is `17612acb30f8a77608baebf165cf65cb713607f5`.

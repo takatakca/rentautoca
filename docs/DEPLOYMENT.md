@@ -55,3 +55,6 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 
 ## 2026-10-15 staged outbox operational control
 - The reviewed staging-only SQL has a fail-closed outbox claim gate and master-identity-compatible source profile lookup. No production Supabase writes; the latest confirmed frontend deploy before these edits was `17612acb30f8a77608baebf165cf65cb713607f5` in run 38844631301.
+
+## 2026-10-15 SQL test failure/repair
+- CI run 38844815420 blocked frontend release after real PostgreSQL identified `AS $` typo. New commit corrects this; no production rollout was made for failing SHA. Last confirmed live remains `17612acb30f8a77608baebf165cf65cb713607f5` (run 38844631301).

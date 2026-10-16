@@ -118,3 +118,12 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Problems:** prior incompatible migration, possible duplicated master state, live runner/receiver configuration, LC1 real users/payments/GPS remain unresolved.
 - **Access:** isolated Supabase-equivalent staging, approved TAKATAK receiver settings, server-only credentials and real operator acceptance participants.
 - **Next exact action:** confirm updated PostgreSQL CI passes and frontend deploy is SHA-matched; only then stage-promote after identity and migration history reconciliation; do not auto-apply old migrations or enable network sync.
+
+## 2026-10-15 — Real PostgreSQL CI regression repaired
+- **Last completed:** SQL smoke run [38844815420](https://github.com/takatakca/rentautoca/actions/runs/38844815420) identified a malformed PL/pgSQL `AS $` delimiter in newly staged claim RPC. Corrected to `AS $$` and added a static test requiring exactly five correctly delimited functions.
+- **Current task:** confirm corrected disposable Postgres job succeeds, then CI/controlled MochaHost exact-SHA deployment; #39 still staged and disabled until shared Supabase receiver/dedup and staging review.
+- **Files:** `supabase/staged/rentauto-takatak-outbox-v1.sql`, `src/test/takatak-outbox-staging.test.ts`, five continuity docs and `WORKLOG.md`.
+- **Latest pushed base before correction:** `6adee37c540433b3edb6f0a0693c78cef1145029` — CI 38844815420 failure in isolated SQL smoke before deploy. **Last verified live production** `17612acb30f8a77608baebf165cf65cb713607f5`, successful deploy 38844631301.
+- **Verification:** inspected failed GitHub job 116792821489 log at staged SQL line 52, no SQL production changes. Corrected source, pending new CI checks.
+- **Known blockers:** #39 staging and real runner secrets/receiver, LC1 real trips and Stripe/GPS; transient SSH #40 historical.
+- **Next exact action:** read latest CI SQL job, fix any additional errors, verify MochaHost exact SHA only after successful complete CI; do NOT apply outbox staging SQL to live TAKATAK DB.
