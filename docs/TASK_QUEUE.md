@@ -17,3 +17,9 @@ Do not close blockers solely from successful frontend builds. Report only actual
 ## Blocking deployment evidence (2026-10-14)
 
 Issue #40: SSH authenticated but remote command channel rejected. GitHub build/test passes for code SHA `32d615164bf09f0c6778bccb7b6c340fd0f2972b`, but production cannot be reported updated until MochaHost accepts remote exec and health reports the exact SHA. Continue independent code work while the hosting permission problem is resolved; do not bypass security or repeatedly dispatch the same failing command without a new correction.
+
+## 2026-10-15 priority update
+- [x] Add automated guard preventing unsafe historical migration replay in current CI.
+- [ ] #40 Restore reliable MochaHost command execution; then deploy the newest successful `main` SHA and verify live `/healthz`.
+- [ ] #39 Reconcile existing direct TAKATAK projections with any proposed outbox before enabling a second delivery path. Stage and review RLS, grants, HMAC and idempotency.
+- [ ] LC1 run a real host/guest/Stripe/tracking/refund scenario; production validation remains unverified.

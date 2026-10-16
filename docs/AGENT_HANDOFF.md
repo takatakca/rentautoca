@@ -66,3 +66,14 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Other completed source changes this session:** `src/contexts/AuthContext.tsx`, `src/lib/auth-helpers.ts`, `src/integrations/supabase/types.ts`, `src/components/auth/ProtectedRoute.tsx`, `src/pages/Signup.tsx`, `src/lib/rentauto-membership.ts`, their tests, `src/pages/legal/Privacy.tsx`, new documentation and tests.
 - **Verification commands:** GitHub Actions `npm run typecheck`, `npm run qa:edge-sources`, `npx eslint`, `npm run test`, `npm run build` passed for latest fix SHA; read-only Supabase schema/function/RLS introspection passed. Production `/healthz` exact-SHA verification did **not** pass for recent commits.
 - **Precise next action:** check issue #40 and restore MochaHost SSH exec permission, then dispatch the *newest* `main` deploy and check `/healthz` revision. While awaiting hosting, address issue #39 only via an additive isolated design verified against existing direct projections; do not run historical `20260930161000_takatak_integration_outbox.sql`. Then conduct LC1 real account/host/trip/Stripe/GPS acceptance.
+
+## 2026-10-15 — Continuation: enforce migration-safety gate
+- **Last task completed:** reviewed issue #39/#40 and introduced CI static safety guard against automatic execution of the obsolete shared-auth/outbox migration.
+- **Current task:** #39, design additive Rentauto-only event delivery only after current direct TAKATAK projections and receiver are independently verified; #40 deployment SSH remains blocked.
+- **Files changed:** `scripts/check-migration-safety.mjs`, `.github/workflows/ci.yml`, five continuity documents, `WORKLOG.md`.
+- **Starting SHA:** `c1028a551b06e907cb81e00785d63f63f003dc44`. Resulting commit: consult `git rev-parse HEAD` (self-reference intentionally avoided).
+- **Checks:** remote GitHub `main`, open PR/issues, CI and deployment history inspected. New check will run as a dedicated CI step. No production schema changes or function deployments made.
+- **Known blockers:** issue #40 SSH remote exec rejects commands despite authentication; issue #39 historical migration touches nonexistent schema and shared identity trigger. TAKATAK direct account/order projections already exist.
+- **Deployment status:** newest inspected `c1028a551b06e907cb81e00785d63f63f003dc44` passed CI run 38616084653 but failed MochaHost deploy run 38616259955; last confirmed deployed SHA `98969f648124fac7eb4dc54e14158451246bf72a`.
+- **Access required:** MochaHost operator to restore non-interactive SSH exec; real host/guest, Stripe, SMS and GPS acceptance credentials/configuration for LC1 (never include secrets in repository).
+- **Exact next action:** verify this commit's CI guard; after host SSH repair, deploy the newest validated main SHA and compare /healthz revision. Reconcile direct TAKATAK projection versus network outbox before any new migration; perform staged permission/idempotency checks.

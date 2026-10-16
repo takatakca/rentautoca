@@ -34,3 +34,8 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 - Latest code commit at incident checkpoint: `32d615164bf09f0c6778bccb7b6c340fd0f2972b`, GitHub CI `38615508682` **success**.
 - Its GitHub Deploy run `38615701658` **failure**: `Verify MochaHost remote command access` (SSH exec channel refused, before activation).
 - Production live revision for later commits **not confirmed**. See GitHub issue #40 for SSH operator diagnostics and exact resume procedure.
+
+## 2026-10-15 read-back
+- Starting main SHA: `c1028a551b06e907cb81e00785d63f63f003dc44`.
+- CI run 38616084653: success. Deploy run 38616259955: failure. Last confirmed active deployment SHA still `98969f648124fac7eb4dc54e14158451246bf72a`.
+- The new CI migration guard is validation-only; it does not deploy Supabase migrations or change MochaHost settings. Wait for a fresh successful deployment run and exact live SHA read-back.

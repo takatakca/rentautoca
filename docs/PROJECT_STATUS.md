@@ -37,3 +37,8 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 - The associated Deploy workflow 38615701658 failed at authenticated SSH remote exec, before activation. **Latest committed code is not confirmed in production.**
 - Last independently confirmed live SHA remains `98969f648124fac7eb4dc54e14158451246bf72a` from successful workflow 38608765943.
 - Hosting blocker: issue #40; TAKATAK outbox backend reconciliation: issue #39; LC1 end-to-end still unverified.
+
+## 2026-10-15 continuation
+- At start, `main` was `c1028a551b06e907cb81e00785d63f63f003dc44`: GitHub CI succeeded but latest MochaHost deploy failed. No newer production release asserted.
+- Added a fail-closed CI migration safety gate: an automatic `supabase db push/migration up/reset` in GitHub Actions is prohibited until the shared-schema rollout is redesigned and reviewed. Existing production database untouched.
+- Blockers remain #39, #40, and LC1 acceptance.
