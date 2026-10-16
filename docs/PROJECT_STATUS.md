@@ -82,3 +82,6 @@ Fixed CI changed-file lint: prior origin/main...HEAD comparison on push could be
 
 ## 2026-10-16 remaining lint errors addressed
 - After `5d172495fecffcd68a06b2e6641f447fecfebadf`, GitHub full lint reported only six errors and 11 Fast Refresh warnings. Updated typed concierge tool results, standard fetch parameters and the generated preview auth broker timer. Verify CI for new SHA; latest confirmed deployed SHA before changes: `5d172495fecffcd68a06b2e6641f447fecfebadf`.
+
+## 2026-10-16 release lint enforced
+- Confirmed full-repository ESLint: 0 errors, 11 warnings at SHA `1a7b5098adbcab875bd41bc68d07ccf5f92ea71f`, all CI tests passed, MochaHost 38944889082 deployed exact SHA. Updated GitHub CI to enforce full `npm run lint` as blocking rather than continue-on-error. New commit result requires separate run verification.

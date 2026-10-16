@@ -84,8 +84,7 @@ jobs:
           VITE_APP_URL: https://rentauto.ca
         run: npm run build
 
-      - name: Full repository lint debt report
-        continue-on-error: true
+      - name: Full repository ESLint gate
         run: npm run lint
 
   outbox-sql-smoke:

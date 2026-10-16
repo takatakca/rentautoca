@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-16 | ChatGPT | main | done (CI pending) | Promote full ESLint from advisory to release-blocking after zero-error proof; add CI regression, update five handoff docs | Verify new CI and SHA live, continue LC1 real acceptance
+
 - 2026-10-16 | ChatGPT | main | done (CI pending) | Remove final 6 full lint errors from concierge, AI gateway and preview auth broker, update handoff | Verify actual global lint and deploy SHA, then enforce full lint, continue LC1
 
 - 2026-10-16 | ChatGPT | main | done (CI pending) | Fix first historical ESLint source errors with typed host/voice/compare/ui/auth/Tailwind implementations; update handoff | Confirm CI and deploy, finish remaining lint debt and LC1

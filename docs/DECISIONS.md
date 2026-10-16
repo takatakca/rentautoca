@@ -38,3 +38,5 @@ New changes should be append-only decisions with date, reasoning and tradeoffs. 
 20. **2026-10-16 lint remediation without rule suppressions:** Prefer typed domain records and Web Speech structural types, proper TypeScript imports and safe error narrowing; do not silence global lint through ignored files. Preserve browser voice processing disclosure accuracy.
 
 21. **2026-10-16 remaining lint errors:** Replace concierge untyped tool-output shapes and unsafe ID access with bounded component props and explicit runtime type narrowing; use standard fetch signatures; fix preview timer binding. Promote `npm run lint` only after verifying all errors are actually cleared.
+
+22. **2026-10-16 full-repository ESLint quality gate:** After actual CI proved no remaining lint errors, make `npm run lint` blocking rather than advisory. Existing 11 React Fast Refresh warnings are nonfatal; changes must not introduce new ESLint errors.

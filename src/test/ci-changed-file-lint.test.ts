@@ -10,6 +10,13 @@ describe("CI changed-file lint", () => {
     expect(lint).toContain('git diff --name-only --diff-filter=ACMR "$BASE_SHA" HEAD');
     expect(lint).not.toContain("origin/main...HEAD");
   });
+  it("blocks deploy on full-repository lint errors", () => {
+    const full = workflow.split("      - name: Full repository ESLint gate")[1] ?? "";
+    expect(full).toContain("run: npm run lint");
+    expect(full).not.toContain("continue-on-error: true");
+    expect(workflow).not.toContain("Full repository lint debt report");
+  });
+
   it("also handles PR bases and missing push history", () => {
     expect(lint).toContain("github.event.pull_request.base.sha");
     expect(lint).toContain('BASE_SHA="$PR_BASE"');

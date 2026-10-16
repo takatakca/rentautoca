@@ -70,3 +70,8 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 ## 2026-10-16 lint cleanup phase 2
 - [x] Replace remaining six historical explicit any/const lint issues (concierge result, AI gateway, preview session broker).
 - [ ] Confirm actual full lint has zero errors and typecheck/build succeed; promote full lint to a blocking gate when verified.
+
+## 2026-10-16 code quality gate
+- [x] Resolve all 20 pre-existing ESLint errors, verify full lint exit 0 despite 11 nonblocking Fast Refresh warnings.
+- [x] Enforce full `npm run lint` in GitHub Actions, add regression check against continue-on-error bypass.
+- [ ] Verify new CI and deploy; remaining React warning cleanups are optional quality work; LC1 provider/customer real acceptance is still outstanding.

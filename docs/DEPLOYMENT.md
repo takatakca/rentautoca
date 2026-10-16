@@ -76,3 +76,6 @@ Main push ESLint gate now compares github.event.before with HEAD, not origin/mai
 
 ## 2026-10-16 lint remediation phase 2
 - No schema or Edge Function deployment in this change. Frontend changes ship only after ESLint on actual changed files, TypeScript, Vitest, both disposable PostgreSQL tests and exact-SHA MochaHost health. Last confirmed live SHA: `5d172495fecffcd68a06b2e6641f447fecfebadf`, run 38944537116.
+
+## 2026-10-16 full lint now mandatory
+- CI no longer uses `continue-on-error` on the full ESLint step, so any future lint errors block downstream deployment. This was enabled only after the previous run reported 0 errors (11 warnings) and deployed SHA `1a7b5098adbcab875bd41bc68d07ccf5f92ea71f` successfully via MochaHost run 38944889082.

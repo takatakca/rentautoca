@@ -175,3 +175,13 @@ Last completed task: fix CI changed TypeScript lint diff; main push now compares
 - **Known blockers:** LC1 real host/guest, Stripe/SMS/GPS and settlement acceptance still missing; #39 external sender remains guarded/inactive due to co-resident master PostgreSQL; historical #40 SSH intermittent.
 - **Access needed:** consented test participants, provider settings, no additional paid Supabase project.
 - **Exact next action:** inspect new lint/build run, fix type errors if any; check full lint report and make it a release gate only when genuinely clean, then validate SHA live.
+
+## 2026-10-16 — Full-repository ESLint is now release-blocking
+- **Completed:** GitHub lint log for `1a7b5098adbcab875bd41bc68d07ccf5f92ea71f` shows `0 errors, 11 Fast Refresh warnings`; CI 38944750757 passed, exact MochaHost Deploy 38944889082 passed. Removed `continue-on-error: true` from `npm run lint` and added a Vitest regression that ensures full lint is a blocking job step.
+- **Current task:** verify the new CI including full ESLint gate, all other checks, and exact SHA deployment; then continue LC1 host/guest/Stripe/SMS/GPS and master projection real-data acceptance.
+- **Files modified:** `.github/workflows/ci.yml`, `src/test/ci-changed-file-lint.test.ts`, `docs/PROJECT_STATUS.md`, `docs/TASK_QUEUE.md`, `docs/AGENT_HANDOFF.md`, `docs/DEPLOYMENT.md`, `docs/DECISIONS.md`, `WORKLOG.md`.
+- **Starting/last verified deployed SHA:** `1a7b5098adbcab875bd41bc68d07ccf5f92ea71f` (GitHub CI [38944750757](https://github.com/takatakca/rentautoca/actions/runs/38944750757), MochaHost [38944889082](https://github.com/takatakca/rentautoca/actions/runs/38944889082) success with exact SHA). Current commit is the current main HEAD after push.
+- **Checks executed:** read GitHub full lint report (0 errors), read commit CI and deploy, confirmed no production DB writes. Next run will enforce lint without exception.
+- **Blockers:** LC1 operational validation absent (current production Rentauto data was empty at recent read-only check), legacy issue #39 HTTP outbox intentionally uninstalled to prevent duplicate TAKATAK shared-DB writes; #40 former SSH intermittency.
+- **Access needed:** consented guest/host test accounts, operational Stripe/SMS/GPS environment; no secrets recorded.
+- **Exact next action:** inspect new CI full lint step and exact SHA web deploy; then resume work on LC1 production read-only readiness, booking/checkout validations, and backend authorization diagnostics.
