@@ -48,3 +48,7 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 ## 2026-10-15 staging SQL release gate
 - `supabase/staged/rentauto-takatak-outbox-v1.sql` is deliberately outside auto-applied migrations. SQL and new Edge RPC code have NOT run on shared Supabase. Gate starts `enabled=false`; promotion requires isolated staging validation and a reviewed migration generated with the Supabase CLI.
 - Last confirmed deployed frontend SHA: `548df074d96ade2b5756c431fa597a69d533db56`, successful CI 38843662002 and MochaHost 38843721183 with exact revision. Confirm subsequent runs independently.
+
+## 2026-10-15 disposable PostgreSQL validation
+- GitHub Actions `outbox-sql-smoke` runs staged SQL against disposable Postgres 16 `rentauto_outbox_ci`, **without production secrets**. Script refuses non-CI database names. Frontend deploy does not enable the Supabase outbox.
+- Latest confirmed live frontend before this change: `b297e6aebc6f50109d5ff9f8d8e12d621c068c3f` (run 38844285977).

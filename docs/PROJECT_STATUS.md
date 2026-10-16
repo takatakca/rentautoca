@@ -51,3 +51,7 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 ## 2026-10-15 isolated outbox staged
 - New Rentauto-only SQL staging artifact is versioned, defaults disabled, and never modifies global TAKATAK auth/projection triggers. It is NOT applied in production. The sender now requires fenced lease RPCs and ack; LC1 remains pending.
 - Last confirmed production before this change: `548df074d96ade2b5756c431fa597a69d533db56` with CI 38843662002 and Deploy 38843721183 both successful.
+
+## 2026-10-15 SQL execution check
+- New CI job boots disposable PostgreSQL 16 and actually runs the staging SQL, role/RLS and outbox leasing checks. No production migrations or data writes. Verify job outcome before claiming passing SQL.
+- Last verified deployed SHA prior to this change: `b297e6aebc6f50109d5ff9f8d8e12d621c068c3f` (Deploy 38844285977 success).

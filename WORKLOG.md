@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-15 | ChatGPT | main | done (CI pending) | Add disposable PostgreSQL 16 smoke job exercising staged outbox SQL, RLS, gated events, lease acknowledgements and retries; update five continuity docs | Inspect CI result and correct SQL; no backend rollout before staging and receiver reconciliation
+
 - 2026-10-15 | ChatGPT | main | done (CI pending; backend staging only) | Add gated Rentauto-only outbox SQL, fenced claim/ack sender and contract tests, update five handoff files | Verify CI and frontend deploy; stage-run SQL and reconcile issue #39 before backend enable
 
 - 2026-10-15 | ChatGPT | main | done (CI/deploy pending) | Verified TAKATAK receiver source, hardened undeployed Rentauto outbox sender against redirect/off-domain/false 2xx acknowledgements, unit tests, all five handoff files | Verify new commit CI and frontend deploy, continue staging-scoped outbox reconciliation #39

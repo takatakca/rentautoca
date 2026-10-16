@@ -34,3 +34,7 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [x] Prepare default-off, Rentauto-only outbox SQL, lease tokens, dead-letter and narrow account/payment trigger sources; update sender and tests.
 - [ ] Staging DB integration tests for RLS, idempotency, race/expired leases and lifecycle.
 - [ ] Confirm TAKATAK receiver and shared database do not duplicate projections; reconcile old migration history; configure secrets and explicitly enable only after staging.
+
+## 2026-10-15 CI staging
+- [x] Add isolated Postgres SQL integration job to CI; runner refuses any database name besides `rentauto_outbox_ci`.
+- [ ] Confirm job passes, then independently exercise schema-aligned isolated Supabase before any production migration/Edge activation.

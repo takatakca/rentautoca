@@ -98,3 +98,13 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Known blockers:** issue #39, intermittent SSH #40 (last two runs passed), Stripe/SMS/GPS production acceptance; server secrets not inspected, staged SQL not applied and Edge sender not deployed.
 - **Environment and access:** MochaHost cPanel Passenger frontend; separate shared Supabase TAKATAK backend. Isolated staging/approved sender secrets needed to execute and verify migrations and integration.
 - **Exact next action:** verify CI and exact SHA deployment; run staged SQL in disposable PostgreSQL, test service-only grants/lease fencing/event order, verify TAKATAK Prisma datastore separation from shared Supabase direct projections, then create reviewed CLI-generated migration and deploy sender with secrets and explicit approval. Do not enable sync default flag prematurely.
+
+## 2026-10-15 — Disposable PostgreSQL test job
+- **Last task completed:** added a real isolated PostgreSQL 16 smoke-test job to GitHub CI for staged Rentauto outbox SQL.
+- **Current task:** verify job results, then reconcile #39 migration history/master datastore before any shared Supabase backend activation. LC1 real host/guest/Stripe/GPS still pending.
+- **Files changed:** `.github/workflows/ci.yml`, `scripts/test-takatak-outbox-sql.sh`, `docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `docs/TASK_QUEUE.md`, `docs/DEPLOYMENT.md`, `docs/DECISIONS.md`, `WORKLOG.md`.
+- **Last verified deployed SHA prior to this commit:** `b297e6aebc6f50109d5ff9f8d8e12d621c068c3f`; CI 38844219795 success and MochaHost Deploy 38844285977 success with exact SHA. New SHA is current GitHub main HEAD.
+- **Verification:** new SQL smoke job tests default-off, no anon/authenticated rights, RLS, actual account/payment triggers, lease fencing and retries against disposable `rentauto_outbox_ci`. Review latest CI results; no production SQL executed.
+- **Blockers:** old migration incompatible and cannot auto-apply; receiver runtime/master data separation and server secrets unknown; real LC1 pending; issue #40 SSH intermittently failed before but recent deploys succeeded.
+- **Deployment:** SQL outside auto migrations and Edge Function not deployed; GitHub frontend release must be checked independently after CI.
+- **Next exact action:** inspect isolated Postgres job outcome, correct any SQL errors, confirm latest frontend SHA via MochaHost; then stage-test in a schema-matched isolated Supabase environment before proposing production backend deployment.
