@@ -58,3 +58,6 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [x] Add explicit server-only receiver datastore separation confirmation to undeployed outbox sender; test default-deny and exact opt-in.
 - [ ] Verify fresh CI and exact live web SHA; maintain canonical direct projection as TAKATAK's database authority.
 - [ ] Actual host/guest, SMS, Stripe and GPS LC1 acceptance remains outstanding; avoid enabling redundant network writer.
+
+## 2026-10-16 CI lint correctness
+[x] Fix GitHub changed-file lint false empty diff on main. [ ] Verify new CI/test and MochaHost SHA; continue LC1 real acceptance.

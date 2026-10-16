@@ -152,3 +152,6 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Access needed:** real acceptance participants and provider credentials; no additional database account or billable Supabase project authorized.
 - **Exact next action:** inspect GitHub CI and live deployment for this SHA, update issue #39 and retire duplicate transport for shared DB, then continue LC1 operational acceptance and targeted security verification.
 
+
+## 2026-10-16 CI lint correctness
+Last completed task: fix CI changed TypeScript lint diff; main push now compares github.event.before to HEAD (PR base for PR) with safe fallback. Files changed: CI workflow, new Vitest contract, all five handoff docs, WORKLOG. Starting and last deployed SHA: 48bea913cabfac42bcfb2d04bdb80aed41e60933; CI 38943414132 and MochaHost 38943517693 successful. New SHA equals main head. Checks: GitHub runs and source inspection; new CI pending. Blockers: LC1 real bookings/payments/SMS/GPS; #39 direct master sync canonical; #40 historical SSH. No production Supabase changes. Next exact action: confirm fresh CI ESLint runs changed test, confirm exact web SHA, continue LC1.

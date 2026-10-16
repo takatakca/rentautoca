@@ -31,3 +31,6 @@ New changes should be append-only decisions with date, reasoning and tradeoffs. 
 16. **2026-10-16 shared-DB identity authority:** Two TAKATAK V1 Prisma migrations are installed in the same Supabase database containing Rentauto trips and TAKATAK master projections. Existing Rentauto bootstrap and order trigger are the canonical server-scoped transactional integration. A second HTTP outbox sender in this same deployment would risk duplicate customer/payment mutations and must not be enabled until a distinct receiver datastore, authorization and idempotency needs are proven.
 
 17. **2026-10-16 external receiver guarded by independent-store proof:** Do not assume that a populated endpoint and HMAC keys authorize a second TAKATAK writer. Outbox sender's backend requires exact `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` before any claims; absent/false values fail closed. Never set the variable for the current co-resident Prisma/Supabase architecture.
+
+## 2026-10-16 CI lint correctness
+19. 2026-10-16: Gate new TypeScript changes in CI by comparing actual push/PR base to HEAD; preserve separate full-repository lint debt report.

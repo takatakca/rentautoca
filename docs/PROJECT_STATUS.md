@@ -73,3 +73,6 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 ## 2026-10-16 explicit external-sync opt-in
 - The undeployed HTTP sender now refuses to run unless server-only `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` is explicitly configured after independent datastore verification. A signed URL/runner secret alone is insufficient. Default in shared Supabase deployment: blocked.
 - Last verified MochaHost web revision before this change `3a39c9b873ff0e6bf731439293bf4e4acc6e5d99` (run 38943130066). No Supabase production SQL or sender changes were deployed.
+
+## 2026-10-16 CI lint correctness
+Fixed CI changed-file lint: prior origin/main...HEAD comparison on push could be empty; use actual push before SHA and PR base. Regression test added. Last live SHA before change: 48bea913cabfac42bcfb2d04bdb80aed41e60933.

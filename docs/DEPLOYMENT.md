@@ -67,3 +67,6 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 - The HTTP `takatak-sync-outbox` code is **not installed**. It refuses requests (after runner authentication) unless `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` is explicitly present as a server-only setting. This flag is forbidden as a Vite public variable and must only be set with verified independent master datastore and accepted deduplication/consent tests.
 - In the current same-database architecture, **do not set it**. Direct in-DB projections already provide master authority. Frontend deploy does not activate a Supabase Edge Function.
 - Last verified web release before this change: `3a39c9b873ff0e6bf731439293bf4e4acc6e5d99`, run 38943130066.
+
+## 2026-10-16 CI lint correctness
+Main push ESLint gate now compares github.event.before with HEAD, not origin/main...HEAD. PRs use base SHA. Last confirmed release before update: 48bea913cabfac42bcfb2d04bdb80aed41e60933 (deploy 38943517693).
