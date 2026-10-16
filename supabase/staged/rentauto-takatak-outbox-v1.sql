@@ -43,8 +43,14 @@ GRANT SELECT,INSERT,UPDATE ON rentauto.takatak_event_outbox TO service_role;
 CREATE OR REPLACE FUNCTION public.rentauto_claim_takatak_outbox(p_limit integer DEFAULT 20)
 RETURNS SETOF rentauto.takatak_event_outbox
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
-AS $$
+AS $
 BEGIN
+  -- A disabled sync must stop claiming pending or retryable work too.
+  IF NOT EXISTS (
+    SELECT 1 FROM rentauto.takatak_sync_settings
+    WHERE singleton=true AND enabled=true
+  ) THEN RETURN; END IF;
+
   RETURN QUERY WITH candidates AS (
     SELECT o.id FROM rentauto.takatak_event_outbox o
     WHERE o.attempt_count<12 AND o.next_attempt_at<=now()
@@ -119,7 +125,10 @@ BEGIN
          sp."consentRecords" AS consent INTO v_source
   FROM public.source_profiles sp
   WHERE sp."sourceApplication"='RENTAUTO'
-    AND sp."externalUserId"=NEW.auth_user_id::text
+    AND (
+      sp."externalUserId"=NEW.auth_user_id::text
+      OR sp."identityId"=NEW.master_identity_id
+    )
   ORDER BY sp."lastSynchronizedAt" DESC LIMIT 1;
   IF NOT FOUND THEN RETURN NEW; END IF;
 

@@ -52,3 +52,6 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 ## 2026-10-15 disposable PostgreSQL validation
 - GitHub Actions `outbox-sql-smoke` runs staged SQL against disposable Postgres 16 `rentauto_outbox_ci`, **without production secrets**. Script refuses non-CI database names. Frontend deploy does not enable the Supabase outbox.
 - Latest confirmed live frontend before this change: `b297e6aebc6f50109d5ff9f8d8e12d621c068c3f` (run 38844285977).
+
+## 2026-10-15 staged outbox operational control
+- The reviewed staging-only SQL has a fail-closed outbox claim gate and master-identity-compatible source profile lookup. No production Supabase writes; the latest confirmed frontend deploy before these edits was `17612acb30f8a77608baebf165cf65cb713607f5` in run 38844631301.

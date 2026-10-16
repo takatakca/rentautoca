@@ -38,3 +38,8 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 ## 2026-10-15 CI staging
 - [x] Add isolated Postgres SQL integration job to CI; runner refuses any database name besides `rentauto_outbox_ci`.
 - [ ] Confirm job passes, then independently exercise schema-aligned isolated Supabase before any production migration/Edge activation.
+
+## 2026-10-15 regression coverage
+- [x] Add kill-switch protection to outbox claim and legacy-master-identity fallback for Rentauto-only account events.
+- [x] Extend disposable PostgreSQL validation to assert disabled backlog stays pending and resumes after enabled.
+- [ ] Verify new CI run and production frontend revision; keep backend activation pending actual schema/receiver validation.

@@ -19,6 +19,8 @@ describe("Rentauto-staged outbox and sender contract", () => {
     expect(sql).toContain("FROM PUBLIC,anon,authenticated");
     expect(sql).toContain("TO service_role");
     expect(sql).toContain("FOR UPDATE SKIP LOCKED");
+    expect(sql).toContain("WHERE singleton=true AND enabled=true");
+    expect(sql).toContain('sp."identityId"=NEW.master_identity_id');
     expect(sql).toContain("lock_token=p_lock_token");
     expect(sql).toContain("attempt_count>=12 THEN 'dead'");
   });

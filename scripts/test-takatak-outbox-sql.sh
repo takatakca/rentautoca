@@ -12,6 +12,7 @@ CREATE ROLE service_role BYPASSRLS;
 CREATE SCHEMA rentauto;
 CREATE TABLE rentauto.accounts (
   auth_user_id uuid PRIMARY KEY,
+  master_identity_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -20,6 +21,7 @@ CREATE TABLE rentauto.trips (
   booking_reference text,payment_status text,total_cents integer,currency text
 );
 CREATE TABLE public.source_profiles (
+  "identityId" uuid,
   "externalUserId" text,"sourceApplication" text,"collectedFields" jsonb,
   "verifiedFields" text[],"consentRecords" jsonb,"lastSynchronizedAt" timestamptz
 );
@@ -39,7 +41,10 @@ BEGIN
     WHERE oid='rentauto.takatak_event_outbox'::regclass)
   THEN RAISE EXCEPTION 'Missing RLS'; END IF;
 END $verify$;
-INSERT INTO public.source_profiles VALUES (
+INSERT INTO public.source_profiles (
+  "externalUserId","sourceApplication","collectedFields",
+  "verifiedFields","consentRecords","lastSynchronizedAt"
+) VALUES (
   '22222222-2222-4222-8222-222222222222','RENTAUTO',
   '{"firstName":"CI","email":"ci@example.test"}'::jsonb,ARRAY['email'],
   '[]'::jsonb,now()
@@ -52,7 +57,10 @@ BEGIN
   THEN RAISE EXCEPTION 'Outbox unexpectedly enabled'; END IF;
 END $verify$;
 UPDATE rentauto.takatak_sync_settings SET enabled=true WHERE singleton;
-INSERT INTO public.source_profiles VALUES (
+INSERT INTO public.source_profiles (
+  "externalUserId","sourceApplication","collectedFields",
+  "verifiedFields","consentRecords","lastSynchronizedAt"
+) VALUES (
   '33333333-3333-4333-8333-333333333333','RENTAUTO',
   '{"firstName":"CI","email":"ci2@example.test"}'::jsonb,ARRAY['email'],
   '[]'::jsonb,now()
@@ -97,6 +105,54 @@ BEGIN
     RAISE EXCEPTION 'Retry was not claimed'; END IF;
   IF NOT public.rentauto_mark_takatak_outbox_processed(r.id,r.lock_token)
   THEN RAISE EXCEPTION 'Retry acknowledgement failed'; END IF;
+END $verify$;
+SQL
+
+# Verify two subtle production boundaries in the same disposable DB:
+# (1) The kill switch must stop CLAIMS, not just new event creation.
+# (2) TAKATAK may keep a historical externalUserId tied to identityId.
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+INSERT INTO public.source_profiles (
+  "identityId","externalUserId","sourceApplication","collectedFields",
+  "verifiedFields","consentRecords","lastSynchronizedAt"
+) VALUES (
+  '55555555-5555-4555-8555-555555555555',
+  'historical-rentauto-user','RENTAUTO',
+  '{"firstName":"LinkedLegacy","email":"legacy@example.test"}'::jsonb,
+  ARRAY['email'],'[]'::jsonb,now()
+);
+INSERT INTO rentauto.accounts(auth_user_id,master_identity_id)
+VALUES (
+  '66666666-6666-4666-8666-666666666666',
+  '55555555-5555-4555-8555-555555555555'
+);
+DO $verify$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM rentauto.takatak_event_outbox
+    WHERE event_id='rentauto-account-66666666-6666-4666-8666-666666666666'
+  ) THEN RAISE EXCEPTION 'Legacy source profile identity linkage was lost'; END IF;
+END $verify$;
+UPDATE rentauto.takatak_sync_settings SET enabled=false WHERE singleton;
+DO $verify$
+BEGIN
+  IF (SELECT count(*) FROM public.rentauto_claim_takatak_outbox(10))<>0 THEN
+    RAISE EXCEPTION 'Disabled delivery still claimed pending events';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM rentauto.takatak_event_outbox
+    WHERE event_id='rentauto-account-66666666-6666-4666-8666-666666666666'
+      AND status='pending'
+  ) THEN RAISE EXCEPTION 'Disabled delivery lost queued event'; END IF;
+END $verify$;
+UPDATE rentauto.takatak_sync_settings SET enabled=true WHERE singleton;
+DO $verify$
+DECLARE r record;
+BEGIN
+  SELECT * INTO r FROM public.rentauto_claim_takatak_outbox(10);
+  IF r.event_id<>'rentauto-account-66666666-6666-4666-8666-666666666666'
+    OR NOT public.rentauto_mark_takatak_outbox_processed(r.id,r.lock_token)
+  THEN RAISE EXCEPTION 'Re-enabled delivery failed'; END IF;
 END $verify$;
 SQL
 echo "Rentauto disposable PostgreSQL staging smoke passed."

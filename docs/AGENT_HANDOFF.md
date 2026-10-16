@@ -108,3 +108,13 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Blockers:** old migration incompatible and cannot auto-apply; receiver runtime/master data separation and server secrets unknown; real LC1 pending; issue #40 SSH intermittently failed before but recent deploys succeeded.
 - **Deployment:** SQL outside auto migrations and Edge Function not deployed; GitHub frontend release must be checked independently after CI.
 - **Next exact action:** inspect isolated Postgres job outcome, correct any SQL errors, confirm latest frontend SHA via MochaHost; then stage-test in a schema-matched isolated Supabase environment before proposing production backend deployment.
+
+## 2026-10-15 — Outbox kill-switch and legacy-identity regression
+- **Completed:** patched scoped claim RPC to check `enabled=true` before claiming queued/retry events; account event trigger now resolves Rentauto source profiles by TAKATAK master identity when external user ID is historical. Extended disposable PostgreSQL smoke coverage and static tests.
+- **Current:** #39 staged backend still not promoted; verify latest CI/SQL smoke and MochaHost exact SHA, then reconcile master receiver datastore, run schema-matched staging and finish LC1 real flows.
+- **Files:** `supabase/staged/rentauto-takatak-outbox-v1.sql`, `scripts/test-takatak-outbox-sql.sh`, `src/test/takatak-outbox-staging.test.ts`, five continuity files, `docs/TAKATAK_INTEGRATION.md`, `WORKLOG.md`.
+- **Last confirmed deployed prior to this commit:** `17612acb30f8a77608baebf165cf65cb713607f5` (CI 38844556167 SUCCESS with PostgreSQL job, deploy 38844631301 SUCCESS exact-SHA). Current commit SHA is HEAD; check new runs.
+- **Verification:** previous disposable PG smoke truly passed. New smoke tests zero claims while disabled, event preservation, reenable/ack, and legacy identity lookup. No live SQL, secrets or Edge deploy.
+- **Problems:** prior incompatible migration, possible duplicated master state, live runner/receiver configuration, LC1 real users/payments/GPS remain unresolved.
+- **Access:** isolated Supabase-equivalent staging, approved TAKATAK receiver settings, server-only credentials and real operator acceptance participants.
+- **Next exact action:** confirm updated PostgreSQL CI passes and frontend deploy is SHA-matched; only then stage-promote after identity and migration history reconciliation; do not auto-apply old migrations or enable network sync.

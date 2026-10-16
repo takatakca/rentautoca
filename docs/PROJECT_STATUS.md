@@ -55,3 +55,7 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 ## 2026-10-15 SQL execution check
 - New CI job boots disposable PostgreSQL 16 and actually runs the staging SQL, role/RLS and outbox leasing checks. No production migrations or data writes. Verify job outcome before claiming passing SQL.
 - Last verified deployed SHA prior to this change: `b297e6aebc6f50109d5ff9f8d8e12d621c068c3f` (Deploy 38844285977 success).
+
+## 2026-10-15 outbox kill-switch and identity compatibility
+- Scoped SQL now prevents claiming queued events while sync is disabled, not merely creating new events. It also looks up a prior Rentauto source profile by master identity when external user ID has been retained for legacy compatibility. Isolated PG tests cover both cases; live backend remains untouched.
+- Previous confirmed deployed SHA `17612acb30f8a77608baebf165cf65cb713607f5` (CI 38844556167, MochaHost 38844631301).

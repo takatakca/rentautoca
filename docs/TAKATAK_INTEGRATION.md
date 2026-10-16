@@ -132,3 +132,7 @@ The Rentauto sender source now validates HTTPS destination at `/api/integrations
 - `supabase/staged/rentauto-takatak-outbox-v1.sql` defines disabled `rentauto.takatak_sync_settings`, `rentauto.takatak_event_outbox`, service-only claim/ack/failure RPCs and account/payment triggers only in the Rentauto schema. Last attempts become dead letters. A per-claim UUID lease prevents stale acknowledgements.
 - Sender source calls `rentauto_claim_takatak_outbox`, `rentauto_mark_takatak_outbox_processed`, `rentauto_mark_takatak_outbox_failed` with `p_lock_token`; requires signed HTTPS to the verified TAKATAK route and positive receipt.
 - **Not deployed**: no database SQL, backend Edge or runner secrets configured from this change. Do not enable a second master identity/payment update path until storage separation, idempotency and consent are verified in staging.
+
+## 2026-10-15 gate and identity fallback (staging only)
+- Enqueue and claim both enforce `rentauto.takatak_sync_settings.enabled`; queued events remain pending when disabled and resume only after explicit re-enablement. In-flight HTTP sends cannot be unsent.
+- The account trigger matches `public.source_profiles` for `RENTAUTO` by current auth UUID or the already linked `master_identity_id`, preserving legacy external-user identities. Disposable PostgreSQL CI simulates both behaviors.

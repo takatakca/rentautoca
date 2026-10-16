@@ -23,3 +23,5 @@ New changes should be append-only decisions with date, reasoning and tradeoffs. 
 12. **2026-10-15 staging-first outbox**: prepare a future Rentauto-owned durable event outbox only in `rentauto` schema. No global auth/profiles triggers, service-role-only RPCs and lease-fenced ack; enabled=false until TAKATAK master database separation and receiver flow are verified. Keep SQL outside `supabase/migrations` pending proper CLI-generated reviewed migration, and never apply obsolete global-trigger migration.
 
 13. **2026-10-15 staging execution gate:** Run outbox SQL against a disposable GitHub Actions PostgreSQL 16 service, verify roles, RLS, gated account/payment triggers, lease fencing and retry. CI must block deploy on SQL failure, while production backend remains unchanged.
+
+14. **2026-10-15 kill switch / legacy mapping:** The `enabled=false` database setting must stop both event creation and claiming pending work; an operator disable may still allow in-flight deliveries, but no new leases. Rentauto source profiles can preserve a historical external user ID, so use the existing master identity link as a fallback within the RENTAUTO source boundary.
