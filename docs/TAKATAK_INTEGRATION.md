@@ -136,3 +136,9 @@ The Rentauto sender source now validates HTTPS destination at `/api/integrations
 ## 2026-10-15 gate and identity fallback (staging only)
 - Enqueue and claim both enforce `rentauto.takatak_sync_settings.enabled`; queued events remain pending when disabled and resume only after explicit re-enablement. In-flight HTTP sends cannot be unsent.
 - The account trigger matches `public.source_profiles` for `RENTAUTO` by current auth UUID or the already linked `master_identity_id`, preserving legacy external-user identities. Disposable PostgreSQL CI simulates both behaviors.
+
+## 2026-10-16 production database identity reconciliation
+- Read-only inspection of shared Supabase `pcjfahhlozsseqqevimi` revealed TAKATAK V1 Prisma migration names matching the actual master repository, together with Rentauto and `public.source_profiles`/`public.source_marketplace_orders`. This confirms one PostgreSQL authority.
+- Existing `public.bootstrap_rentauto_account` and `rentauto.project_trip_to_takatak_marketplace_order` RPCs are service-role protected, and `trg_sync_takatak_marketplace_order` is installed on Rentauto trip insert/update.
+- Do not activate the staged HTTP sender: redundant cross-service writes may duplicate or overwrite already projected profiles/orders. Existing direct projection is canonical unless an independently verified second datastore is introduced.
+- New isolated CI job exercises the actual versioned direct order trigger SQL for draft suppression, identity linkage, idempotent payment/refund status changes and customer separation. A green test does not replace real Stripe/GPS acceptance.

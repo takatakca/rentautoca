@@ -47,3 +47,9 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 ## 2026-10-15 follow-up from failing real SQL smoke
 - [x] Fix PL/pgSQL function opener flagged by disposable PostgreSQL CI and add automated delimiter regression.
 - [ ] Continue isolating SQL syntax/permissions errors through real CI PostgreSQL until all checks pass; backend still staging only.
+
+## 2026-10-16 direct projection milestone
+- [x] Reconcile deployed TAKATAK V1 Prisma migrations with Rentauto shared Supabase database and active direct sync trigger.
+- [x] Add executable disposable PostgreSQL direct projection regression job for draft, order, payment/refund, idempotency and two customers.
+- [ ] Check new SQL job, CI and live MochaHost SHA. #39 requires architecture revision to avoid redundant HTTP sync.
+- [ ] LC1 actual host/guest/Stripe/SMS/GPS verification remains open.

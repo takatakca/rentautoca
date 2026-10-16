@@ -62,3 +62,10 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 
 ## 2026-10-15 verified SQL failure and correction
 - CI 38844815420 exposed a stage-only PL/pgSQL opening delimiter typo in the new outbox claim function. Fixed and added static regression. No production migration occurred; previous confirmed live SHA is `17612acb30f8a77608baebf165cf65cb713607f5`.
+
+## 2026-10-16 — Verified shared TAKATAK database authority
+- Read-only live Supabase `pcjfahhlozsseqqevimi` inspection found TAKATAK V1 Prisma migration entries `20261003152000_ahmv_product_catalog` and `20261004190000_community_content_moderation`, both present in `takatakca/takatak-v1/prisma/migrations`. Rentauto tables and master `public.source_profiles`/`public.source_marketplace_orders` are in the same database.
+- Live `rentauto.trips` has `trg_sync_takatak_marketplace_order` on INSERT/UPDATE; account bootstrap and trip projection functions have server-restricted execution. Live RENTAUTO accounts/trips/orders count 0; no real LC1 flow can yet be certified.
+- **Completed code:** added a CI job using isolated PostgreSQL 16 that executes the ACTUAL SQL defining `rentauto.project_trip_to_takatak_marketplace_order` and its trigger. It checks draft isolation, master identity, status/refund upsert/idempotency and separate guest identities.
+- New code remains independent of live production data. **Issue #39:** second HTTP sender/outbox stays uninstalled and disabled because it risks replaying data already projected in the shared database.
+- Last verified live web SHA at session start: `fc668ee922d808bc5aec047c3b1f4776c97252ac`, CI 38844933792 and MochaHost run 38845009659 success. New commit SHA is current `main` HEAD; read new CI/deploy separately.

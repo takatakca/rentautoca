@@ -108,3 +108,38 @@ jobs:
           fi
       - name: Run disposable SQL checks
         run: bash scripts/test-takatak-outbox-sql.sh
+
+  direct-projection-sql-smoke:
+    name: Existing TAKATAK direct trip projection SQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rentauto_projection_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rentauto_projection_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: rentauto_projection_ci
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Ensure PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Exercise installed direct projection SQL
+        run: bash scripts/test-takatak-direct-projection-sql.sh

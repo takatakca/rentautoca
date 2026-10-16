@@ -127,3 +127,16 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Verification:** inspected failed GitHub job 116792821489 log at staged SQL line 52, no SQL production changes. Corrected source, pending new CI checks.
 - **Known blockers:** #39 staging and real runner secrets/receiver, LC1 real trips and Stripe/GPS; transient SSH #40 historical.
 - **Next exact action:** read latest CI SQL job, fix any additional errors, verify MochaHost exact SHA only after successful complete CI; do NOT apply outbox staging SQL to live TAKATAK DB.
+
+## 2026-10-16 — Verified shared TAKATAK database authority
+- Read-only live Supabase `pcjfahhlozsseqqevimi` inspection found TAKATAK V1 Prisma migration entries `20261003152000_ahmv_product_catalog` and `20261004190000_community_content_moderation`, both present in `takatakca/takatak-v1/prisma/migrations`. Rentauto tables and master `public.source_profiles`/`public.source_marketplace_orders` are in the same database.
+- Live `rentauto.trips` has `trg_sync_takatak_marketplace_order` on INSERT/UPDATE; account bootstrap and trip projection functions have server-restricted execution. Live RENTAUTO accounts/trips/orders count 0; no real LC1 flow can yet be certified.
+- **Completed code:** added a CI job using isolated PostgreSQL 16 that executes the ACTUAL SQL defining `rentauto.project_trip_to_takatak_marketplace_order` and its trigger. It checks draft isolation, master identity, status/refund upsert/idempotency and separate guest identities.
+- New code remains independent of live production data. **Issue #39:** second HTTP sender/outbox stays uninstalled and disabled because it risks replaying data already projected in the shared database.
+- Last verified live web SHA at session start: `fc668ee922d808bc5aec047c3b1f4776c97252ac`, CI 38844933792 and MochaHost run 38845009659 success. New commit SHA is current `main` HEAD; read new CI/deploy separately.
+- **Files modified:** `scripts/test-takatak-direct-projection-sql.sh`, `.github/workflows/ci.yml`, all five continuity docs, `docs/TAKATAK_INTEGRATION.md`, and `WORKLOG.md`.
+- **Verification executed:** GitHub branch/PR/issues/workflows; Supabase live read-only function privileges and installed triggers, matching Prisma migration names; new CI verification pending after commit. No production SQL updates.
+- **Current task:** inspect the new SQL job, repair if needed, verify latest MochaHost SHA; then reconcile issue #39 and audit direct account/payment projections.
+- **Blockers:** transport and outbox may duplicate shared TAKATAK DB projections, live end-to-end booking/Stripe/GPS unverified, #40 historical intermittent SSH failure.
+- **Access required:** real guest/host and provider test configuration for LC1; no new billable Supabase instance.
+- **Exact next action:** check new direct-projection SQL CI job and correct failures, then verify live release SHA; do not enable unused HTTP outbox.
