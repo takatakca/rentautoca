@@ -155,3 +155,13 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 
 ## 2026-10-16 CI lint correctness
 Last completed task: fix CI changed TypeScript lint diff; main push now compares github.event.before to HEAD (PR base for PR) with safe fallback. Files changed: CI workflow, new Vitest contract, all five handoff docs, WORKLOG. Starting and last deployed SHA: 48bea913cabfac42bcfb2d04bdb80aed41e60933; CI 38943414132 and MochaHost 38943517693 successful. New SHA equals main head. Checks: GitHub runs and source inspection; new CI pending. Blockers: LC1 real bookings/payments/SMS/GPS; #39 direct master sync canonical; #40 historical SSH. No production Supabase changes. Next exact action: confirm fresh CI ESLint runs changed test, confirm exact web SHA, continue LC1.
+
+## 2026-10-16 — Existing ESLint error remediation (part 1)
+- **Latest completed:** replaced unsafe `any` types in host forms, comparison rows, favourite error handler and Web Speech hook; used type aliases for empty UI interfaces, removed the Tailwind CommonJS require, and replaced unsafe OAuth control-regex lint construct with a code-point check. Clarified that browser speech recognition might involve browser-managed remote processing.
+- **Current task:** confirm changed-file ESLint, TypeScript, Vitest and PostgreSQL tests, then exact MochaHost SHA. Continue remaining preexisting lint debt and LC1 operational verification.
+- **Files changed:** `src/components/concierge/results/CompareBar.tsx`, `src/components/host/BasicInfoForm.tsx`, `src/components/host/LocationForm.tsx`, `src/components/host/PreferencesForm.tsx`, `src/components/ui/command.tsx`, `src/components/ui/textarea.tsx`, `src/hooks/use-favorite.ts`, `src/hooks/use-voice-search.ts`, `src/lib/auth-helpers.ts`, `tailwind.config.ts`, five handoff docs and `WORKLOG.md`.
+- **Previous pushed and exact-deployed SHA:** `fd0dbd061aa09ded90d6764f985f7f42eb5af9e9`, GitHub CI 38943896774 success and MochaHost 38943989916 success. New commit SHA is this `main` HEAD after the write.
+- **Verifications:** inspected full-repository lint job log revealing 20 errors and 11 warnings; corrected a first independent subset. New CI verification pending; no production Supabase writes or Edge deployments.
+- **Known blockers:** remaining preexisting lint errors and warnings; #39 dormant outbox, direct shared TAKATAK projection tested; real LC1 host/guest/Stripe/SMS/GPS acceptance not completed.
+- **Access required:** real acceptance participants and provider settings; no secrets exposed.
+- **Next exact action:** read new CI logs (especially actual changed-file ESLint), fix any typed-prop regressions; verify MochaHost revision; then address remaining lint errors and LC1.

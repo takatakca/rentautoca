@@ -9,7 +9,7 @@ import { Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LocationFormProps {
-  data: Record<string, any> | null;
+  data: Partial<Record<"city" | "province" | "postal_code", string | null>> | null;
   onSaved: () => Promise<void>;
 }
 

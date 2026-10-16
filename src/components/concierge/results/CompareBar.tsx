@@ -1,4 +1,4 @@
-import { useCompare } from "./compare-context";
+import { useCompare, type CompareVehicle } from "./compare-context";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router-dom";
 import { X, Columns3 } from "lucide-react";
 
-const rows: { label: string; get: (v: any) => string }[] = [
+const rows: { label: string; get: (v: CompareVehicle) => string }[] = [
   { label: "Daily price", get: (v) => `$${Math.round(v.base_daily_price_cents / 100)}` },
   { label: "Year", get: (v) => String(v.year ?? "—") },
   { label: "Seats", get: (v) => String(v.seats ?? "—") },

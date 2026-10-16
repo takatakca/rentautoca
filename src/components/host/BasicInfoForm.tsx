@@ -10,7 +10,7 @@ import { Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface BasicInfoFormProps {
-  data: Record<string, any> | null;
+  data: Partial<Record<"display_name" | "bio" | "phone" | "avatar_url", string | null>> | null;
   onSaved: () => Promise<void>;
 }
 

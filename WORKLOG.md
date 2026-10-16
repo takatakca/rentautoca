@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-16 | ChatGPT | main | done (CI pending) | Fix first historical ESLint source errors with typed host/voice/compare/ui/auth/Tailwind implementations; update handoff | Confirm CI and deploy, finish remaining lint debt and LC1
+
 - 2026-10-16 | ChatGPT | main | done (CI pending) | Repair GitHub main-push changed-file lint, add regression, update handoff | Verify actual changed TS lint and live SHA, continue LC1
 
 - 2026-10-16 | ChatGPT | main | done (CI/deploy pending) | Block accidental external TAKATAK duplicate sync without explicit backend independent-store approval; add pure tests; update all five handoff docs | Verify CI/live SHA, reconcile #39; continue LC1

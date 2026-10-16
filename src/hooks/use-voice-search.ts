@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  [index: number]: { transcript: string };
+};
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike>;
+};
+type SpeechRecognitionErrorLike = { error?: string };
 type SpeechRecognitionLike = {
   lang: string;
   interimResults: boolean;
@@ -7,20 +16,23 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
   abort: () => void;
-  onresult: ((e: any) => void) | null;
-  onerror: ((e: any) => void) | null;
+  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((e: SpeechRecognitionErrorLike) => void) | null;
   onend: (() => void) | null;
 };
 
 function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
   if (typeof window === "undefined") return null;
-  const w = window as any;
+  const w = window as Window & {
+    SpeechRecognition?: new () => SpeechRecognitionLike;
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  };
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
 /**
- * Browser-native speech-to-text. No audio ever leaves the device beyond the
- * browser's own speech engine — we never upload audio to a third party.
+ * Voice recognition is performed by the browser speech engine. Rentauto does
+ * not explicitly upload recordings, but browsers may use remote speech services.
  */
 export function useVoiceSearch(onResult: (transcript: string) => void) {
   const [supported, setSupported] = useState(false);
@@ -65,7 +77,7 @@ export function useVoiceSearch(onResult: (transcript: string) => void) {
     rec.interimResults = true;
     rec.continuous = false;
 
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechRecognitionEventLike) => {
       let finalText = "";
       let interimText = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -80,7 +92,7 @@ export function useVoiceSearch(onResult: (transcript: string) => void) {
         callbackRef.current(finalText.trim());
       }
     };
-    rec.onerror = (e: any) => {
+    rec.onerror = (e: SpeechRecognitionErrorLike) => {
       setListening(false);
       setError(
         e?.error === "not-allowed"

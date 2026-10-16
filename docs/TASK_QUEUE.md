@@ -61,3 +61,8 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 
 ## 2026-10-16 CI lint correctness
 [x] Fix GitHub changed-file lint false empty diff on main. [ ] Verify new CI/test and MochaHost SHA; continue LC1 real acceptance.
+
+## 2026-10-16 lint remediation
+- [x] Fix the first set of historical ESLint issues using real TS types and non-destructive source changes.
+- [ ] Confirm CI lint/build, then finish remaining typed concierge/AI/auto-generated integration lint debt without suppressing security checks.
+- [ ] LC1 real accounts, bookings, payments and tracking acceptance remains.

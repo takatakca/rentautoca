@@ -9,7 +9,17 @@ import { Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PreferencesFormProps {
-  data: Record<string, any> | null;
+  data: Partial<{
+    min_trip_days: number | null;
+    max_trip_days: number | null;
+    advance_notice_hours: number | null;
+    buffer_hours: number | null;
+    delivery_available: boolean | null;
+    delivery_radius_km: number | null;
+    delivery_fee_cents: number | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+  }> | null;
   onSaved: () => Promise<void>;
   sectionFocus?: string;
 }

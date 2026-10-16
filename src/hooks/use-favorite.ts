@@ -55,9 +55,9 @@ export function useFavorite(carId: string | undefined) {
           .eq("car_id", carId);
         if (error) throw error;
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setIsFavorite(!next);
-      toast.error(e.message ?? "Could not update favorite");
+      toast.error(e instanceof Error ? e.message : "Could not update favorite");
     } finally {
       setLoading(false);
     }

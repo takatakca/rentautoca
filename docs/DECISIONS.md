@@ -34,3 +34,5 @@ New changes should be append-only decisions with date, reasoning and tradeoffs. 
 
 ## 2026-10-16 CI lint correctness
 19. 2026-10-16: Gate new TypeScript changes in CI by comparing actual push/PR base to HEAD; preserve separate full-repository lint debt report.
+
+20. **2026-10-16 lint remediation without rule suppressions:** Prefer typed domain records and Web Speech structural types, proper TypeScript imports and safe error narrowing; do not silence global lint through ignored files. Preserve browser voice processing disclosure accuracy.

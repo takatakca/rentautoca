@@ -76,3 +76,6 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 
 ## 2026-10-16 CI lint correctness
 Fixed CI changed-file lint: prior origin/main...HEAD comparison on push could be empty; use actual push before SHA and PR base. Regression test added. Last live SHA before change: 48bea913cabfac42bcfb2d04bdb80aed41e60933.
+
+## 2026-10-16 lint debt progress
+- GitHub full-lint report on SHA `fd0dbd061aa09ded90d6764f985f7f42eb5af9e9` showed 20 errors and 11 warnings, while changed-file gate passed. Started source-level fixes for host forms, comparison, Web Speech, favourites, UI prop types, OAuth sanitization and Tailwind import. Tests and build will validate behavior before deploy.

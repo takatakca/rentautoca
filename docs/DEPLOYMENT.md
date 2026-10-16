@@ -70,3 +70,6 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 
 ## 2026-10-16 CI lint correctness
 Main push ESLint gate now compares github.event.before with HEAD, not origin/main...HEAD. PRs use base SHA. Last confirmed release before update: 48bea913cabfac42bcfb2d04bdb80aed41e60933 (deploy 38943517693).
+
+## 2026-10-16 TypeScript debt cleanup
+- Historical lint errors found in the optional full lint report; selected fixes are behind changed-file ESLint, TS typecheck, tests, real Postgres CI and immutable SHA deployment. Last confirmed live SHA before changes: `fd0dbd061aa09ded90d6764f985f7f42eb5af9e9`, run 38943989916.

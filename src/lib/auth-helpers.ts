@@ -11,7 +11,10 @@ export function sanitizeRedirect(raw: string | null | undefined): string | null 
     return null;
   }
 
-  if (/[\\\u0000-\u001f\u007f]/.test(raw) || /%5c/i.test(raw)) {
+  if (raw.includes("\\") || [...raw].some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127;
+  }) || /%5c/i.test(raw)) {
     return null;
   }
 
