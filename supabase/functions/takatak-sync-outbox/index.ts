@@ -7,6 +7,7 @@ type OutboxRow = {
   event_id: string;
   payload_json: unknown;
   attempt_count: number;
+  lock_token: string;
 };
 
 const jsonHeaders = {
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
     ? Math.min(100, Math.max(1, requestedLimit))
     : 20;
 
-  const { data, error } = await admin.rpc("claim_takatak_outbox", {
+  const { data, error } = await admin.rpc("rentauto_claim_takatak_outbox", {
     p_limit: batchSize,
   });
 
@@ -124,7 +125,8 @@ Deno.serve(async (req) => {
 
       if (!response.ok) {
         const safeMessage = `TAKATAK returned HTTP ${response.status}`;
-        await admin.rpc("mark_takatak_outbox_failed", {
+        await admin.rpc("rentauto_mark_takatak_outbox_failed", {
+          p_lock_token: row.lock_token,
           p_id: row.id,
           p_error: safeMessage,
         });
@@ -141,7 +143,8 @@ Deno.serve(async (req) => {
         receipt = null;
       }
       if (!isTakatakSyncReceipt(receipt)) {
-        const { error: failedMarkError } = await admin.rpc("mark_takatak_outbox_failed", {
+        const { error: failedMarkError } = await admin.rpc("rentauto_mark_takatak_outbox_failed", {
+          p_lock_token: row.lock_token,
           p_id: row.id,
           p_error: "TAKATAK acknowledgement missing",
         });
@@ -150,11 +153,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const { error: markError } = await admin.rpc("mark_takatak_outbox_processed", {
+      const { data: marked, error: markError } = await admin.rpc("rentauto_mark_takatak_outbox_processed", {
+        p_lock_token: row.lock_token,
         p_id: row.id,
       });
 
-      if (markError) {
+      if (markError || marked !== true) {
         console.error("[takatak-sync] Delivery succeeded but marking failed", row.id);
         failed += 1;
         continue;
@@ -167,7 +171,8 @@ Deno.serve(async (req) => {
           ? "TAKATAK request timed out"
           : "TAKATAK delivery failed";
 
-      await admin.rpc("mark_takatak_outbox_failed", {
+      await admin.rpc("rentauto_mark_takatak_outbox_failed", {
+          p_lock_token: row.lock_token,
         p_id: row.id,
         p_error: safeMessage,
       });

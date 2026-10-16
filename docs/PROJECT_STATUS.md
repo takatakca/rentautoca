@@ -47,3 +47,7 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 - Source-side TAKATAK Next.js endpoint `/api/integrations/rentauto/events` validates HMAC-SHA256, timestamp, content length, schema and event ID; responds with `accepted: true` on success. Its production enable flag and actual availability remain unverified.
 - Rentauto's undeployed sender hardened: only HTTPS TAKATAK receiver (or explicitly approved origin), no redirects, and a positive receiver receipt required. No database migration or secret deployment performed.
 - Last independently confirmed MochaHost deploy before this change: SHA `a0e2d5f2f5634d6f967f08d489e603b1934c1c7d` (run 38841341501 success, exact SHA verification).
+
+## 2026-10-15 isolated outbox staged
+- New Rentauto-only SQL staging artifact is versioned, defaults disabled, and never modifies global TAKATAK auth/projection triggers. It is NOT applied in production. The sender now requires fenced lease RPCs and ack; LC1 remains pending.
+- Last confirmed production before this change: `548df074d96ade2b5756c431fa597a69d533db56` with CI 38843662002 and Deploy 38843721183 both successful.

@@ -44,3 +44,7 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 - Verified exact-SHA frontend deployment `a0e2d5f2f5634d6f967f08d489e603b1934c1c7d`: [CI 38841266269](https://github.com/takatakca/rentautoca/actions/runs/38841266269) and [MochaHost 38841341501](https://github.com/takatakca/rentautoca/actions/runs/38841341501) succeeded, including live revision verification. Previous #40 SSH refusal is intermittent; latest success is not proof of permanent host repair.
 - Current change alters source for `takatak-sync-outbox` Edge Function but it is NOT deployed. GitHub frontend deployments cannot publish it. This change does not modify shared production data or secrets.
 - New setting `TAKATAK_RENTAUTO_SYNC_ALLOWED_ORIGIN` optional for controlled non-`*.takatak.ca` staging; never set to an untrusted endpoint. Receiver must be HTTPS at `/api/integrations/rentauto/events`.
+
+## 2026-10-15 staging SQL release gate
+- `supabase/staged/rentauto-takatak-outbox-v1.sql` is deliberately outside auto-applied migrations. SQL and new Edge RPC code have NOT run on shared Supabase. Gate starts `enabled=false`; promotion requires isolated staging validation and a reviewed migration generated with the Supabase CLI.
+- Last confirmed deployed frontend SHA: `548df074d96ade2b5756c431fa597a69d533db56`, successful CI 38843662002 and MochaHost 38843721183 with exact revision. Confirm subsequent runs independently.

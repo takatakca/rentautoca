@@ -29,3 +29,8 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [ ] #39 Replace obsolete historical outbox migration with Rentauto-scoped staged SQL and confirm receiver storage separation to avoid duplicated master projections.
 - [ ] Configure and test secrets, scheduler, replay/idempotent delivery in staging before backend function deployment.
 - [ ] #40 Follow intermittent SSH health, previous run 38841341501 succeeded; do not assume permanent host remediation.
+
+## 2026-10-15 scoped outbox progress
+- [x] Prepare default-off, Rentauto-only outbox SQL, lease tokens, dead-letter and narrow account/payment trigger sources; update sender and tests.
+- [ ] Staging DB integration tests for RLS, idempotency, race/expired leases and lifecycle.
+- [ ] Confirm TAKATAK receiver and shared database do not duplicate projections; reconcile old migration history; configure secrets and explicitly enable only after staging.
