@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isIsolatedTakatakReceiverApproved,
   isTakatakSyncReceipt,
   validateTakatakSyncUrl,
 } from "../../supabase/functions/_shared/takatak-sync-transport";
@@ -47,5 +48,12 @@ describe("TAKATAK signed synchronization delivery boundary", () => {
     for (const body of [
       {}, { accepted: false }, { accepted: "true" }, [], null, "OK", { ok: true },
     ]) expect(isTakatakSyncReceipt(body)).toBe(false);
+  });
+
+  it("denies remote duplicate-writer activation without explicit independent-store approval", () => {
+    for (const value of [undefined, "", "false", "FALSE", "1", "yes", "TRUE", "true "]) {
+      expect(isIsolatedTakatakReceiverApproved(value)).toBe(false);
+    }
+    expect(isIsolatedTakatakReceiverApproved("true")).toBe(true);
   });
 });

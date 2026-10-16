@@ -62,3 +62,8 @@ See `DEPLOY_MOCHAHOST.md` and `docs/MOCHAHOST_DEPLOYMENT.md` for details.
 ## 2026-10-16 master direct projection
 - TAKATAK V1 Prisma migration rows and Rentauto tables coexist in the same live Supabase PostgreSQL instance. A second HTTP event sender remains UNDEPLOYED. New CI job `direct-projection-sql-smoke` uses only disposable PostgreSQL database `rentauto_projection_ci` and the actual versioned direct SQL from `supabase/migrations/20261001041000_rentauto_takatak_order_projection.sql`.
 - Last confirmed deployed frontend before this change: `fc668ee922d808bc5aec047c3b1f4776c97252ac`, GitHub run 38845009659. Check new CI/revision before declaring a new release.
+
+## 2026-10-16 duplicate-writer deployment safety
+- The HTTP `takatak-sync-outbox` code is **not installed**. It refuses requests (after runner authentication) unless `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` is explicitly present as a server-only setting. This flag is forbidden as a Vite public variable and must only be set with verified independent master datastore and accepted deduplication/consent tests.
+- In the current same-database architecture, **do not set it**. Direct in-DB projections already provide master authority. Frontend deploy does not activate a Supabase Edge Function.
+- Last verified web release before this change: `3a39c9b873ff0e6bf731439293bf4e4acc6e5d99`, run 38943130066.

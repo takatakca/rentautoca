@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-16 | ChatGPT | main | done (CI/deploy pending) | Block accidental external TAKATAK duplicate sync without explicit backend independent-store approval; add pure tests; update all five handoff docs | Verify CI/live SHA, reconcile #39; continue LC1
+
 - 2026-10-16 | ChatGPT | main | done (CI/deploy pending) | Confirm shared Supabase includes TAKATAK V1 Prisma migrations, add real-SQL isolated direct projection tests and refresh all handoff docs | Verify CI and SHA; retire redundant HTTP transport; continue LC1 acceptance
 
 - 2026-10-15 | ChatGPT | main | done (CI pending) | Fix PL/pgSQL AS $ delimiter after actual PostgreSQL staging test failed; add exact delimiter test and record live release baseline | Re-run SQL CI; confirm next validated MochaHost live SHA before declaring release

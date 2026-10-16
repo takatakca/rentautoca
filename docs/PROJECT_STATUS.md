@@ -69,3 +69,7 @@ All approved requirements implemented, CI green, backend contracts deployed and 
 - **Completed code:** added a CI job using isolated PostgreSQL 16 that executes the ACTUAL SQL defining `rentauto.project_trip_to_takatak_marketplace_order` and its trigger. It checks draft isolation, master identity, status/refund upsert/idempotency and separate guest identities.
 - New code remains independent of live production data. **Issue #39:** second HTTP sender/outbox stays uninstalled and disabled because it risks replaying data already projected in the shared database.
 - Last verified live web SHA at session start: `fc668ee922d808bc5aec047c3b1f4776c97252ac`, CI 38844933792 and MochaHost run 38845009659 success. New commit SHA is current `main` HEAD; read new CI/deploy separately.
+
+## 2026-10-16 explicit external-sync opt-in
+- The undeployed HTTP sender now refuses to run unless server-only `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` is explicitly configured after independent datastore verification. A signed URL/runner secret alone is insufficient. Default in shared Supabase deployment: blocked.
+- Last verified MochaHost web revision before this change `3a39c9b873ff0e6bf731439293bf4e4acc6e5d99` (run 38943130066). No Supabase production SQL or sender changes were deployed.

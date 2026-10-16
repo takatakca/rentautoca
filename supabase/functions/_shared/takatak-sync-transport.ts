@@ -53,3 +53,17 @@ export function isTakatakSyncReceipt(value: unknown): boolean {
     !Array.isArray(value) &&
     (value as Record<string, unknown>).accepted === true;
 }
+
+/**
+ * A separate signed HTTP receiver is forbidden for TAKATAK's co-resident
+ * PostgreSQL authority. A backend operator may opt in ONLY after verifying
+ * the receiver uses an independent datastore and does not replay the same
+ * customer/payment projections into the shared database.
+ *
+ * This switch is server-only; no browser or VITE_* variable is accepted.
+ */
+export function isIsolatedTakatakReceiverApproved(
+  serverOnlySetting: string | undefined,
+): boolean {
+  return serverOnlySetting === "true";
+}

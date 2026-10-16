@@ -142,3 +142,7 @@ The Rentauto sender source now validates HTTPS destination at `/api/integrations
 - Existing `public.bootstrap_rentauto_account` and `rentauto.project_trip_to_takatak_marketplace_order` RPCs are service-role protected, and `trg_sync_takatak_marketplace_order` is installed on Rentauto trip insert/update.
 - Do not activate the staged HTTP sender: redundant cross-service writes may duplicate or overwrite already projected profiles/orders. Existing direct projection is canonical unless an independently verified second datastore is introduced.
 - New isolated CI job exercises the actual versioned direct order trigger SQL for draft suppression, identity linkage, idempotent payment/refund status changes and customer separation. A green test does not replace real Stripe/GPS acceptance.
+
+## 2026-10-16 duplicate-writer guard
+- The unused Edge sender requires server-only `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` **in addition to** runner, URL and HMAC settings. The flag is intentionally unset for the current shared-db TAKATAK authority. Changing it requires independent datastore proof and staging tests; it is not a recommended deployment action in this environment.
+- No SQL or Edge deployment occurred, and the native transactional TAKATAK source profile/order projection remains authoritative.

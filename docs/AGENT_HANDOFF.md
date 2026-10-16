@@ -140,3 +140,15 @@ Updated: 2026-10-14 UTC. **Read this before coding, then refresh from GitHub and
 - **Blockers:** transport and outbox may duplicate shared TAKATAK DB projections, live end-to-end booking/Stripe/GPS unverified, #40 historical intermittent SSH failure.
 - **Access required:** real guest/host and provider test configuration for LC1; no new billable Supabase instance.
 - **Exact next action:** check new direct-projection SQL CI job and correct failures, then verify live release SHA; do not enable unused HTTP outbox.
+
+## 2026-10-16 — External sync fail-closed architecture gate
+- **Completed task:** added server-side exact opt-in `TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED=true` to the *undeployed* HTTP outbox sender. A URL or webhook key alone can no longer activate a duplicate-writer path. Helper test rejects malformed/false approvals.
+- **Current task:** verify new CI and exact SHA MochaHost release; issue #39 should retain the direct shared-database projection as canonical, and any new HTTP sender remains disabled without independently verified destination datastore and idempotency/consent tests.
+- **Files modified:** `supabase/functions/_shared/takatak-sync-transport.ts`, `supabase/functions/takatak-sync-outbox/index.ts`, `src/test/takatak-sync-transport.test.ts`, all five continuity files, `docs/TAKATAK_INTEGRATION.md`, `WORKLOG.md`.
+- **Starting SHA and last verified deployed:** `3a39c9b873ff0e6bf731439293bf4e4acc6e5d99` (CI 38943044443 SUCCESS, MochaHost deploy 38943130066 SUCCESS with exact live SHA); new self-containing commit SHA is current `main` head, check fresh runs after push.
+- **Executed checks:** GitHub run readback, read-only live Supabase migration/trigger/privilege/schema reconciliation, disposable direct-projection SQL job and staged-outbox SQL job green before this change. This commit's Vitest/CI results must be read separately.
+- **Blockers:** #39 additional external receiver not justified in same-DB deployment; real end-to-end host/guest/Stripe/SMS/GPS and refunds/return verification pending. Old SSH #40 intermittent, latest run good.
+- **Deployment:** web automatically via existing workflow after green CI, Supabase sender NOT deployed or enabled; no production SQL or secret modification.
+- **Access needed:** real acceptance participants and provider credentials; no additional database account or billable Supabase project authorized.
+- **Exact next action:** inspect GitHub CI and live deployment for this SHA, update issue #39 and retire duplicate transport for shared DB, then continue LC1 operational acceptance and targeted security verification.
+

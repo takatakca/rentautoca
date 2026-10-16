@@ -53,3 +53,8 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [x] Add executable disposable PostgreSQL direct projection regression job for draft, order, payment/refund, idempotency and two customers.
 - [ ] Check new SQL job, CI and live MochaHost SHA. #39 requires architecture revision to avoid redundant HTTP sync.
 - [ ] LC1 actual host/guest/Stripe/SMS/GPS verification remains open.
+
+## 2026-10-16 fail-closed transport gate
+- [x] Add explicit server-only receiver datastore separation confirmation to undeployed outbox sender; test default-deny and exact opt-in.
+- [ ] Verify fresh CI and exact live web SHA; maintain canonical direct projection as TAKATAK's database authority.
+- [ ] Actual host/guest, SMS, Stripe and GPS LC1 acceptance remains outstanding; avoid enabling redundant network writer.

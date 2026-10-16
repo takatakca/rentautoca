@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { isTakatakSyncReceipt, validateTakatakSyncUrl } from "../_shared/takatak-sync-transport.ts";
+import {
+  isIsolatedTakatakReceiverApproved,
+  isTakatakSyncReceipt,
+  validateTakatakSyncUrl,
+} from "../_shared/takatak-sync-transport.ts";
 
 type OutboxRow = {
   id: string;
@@ -69,6 +73,15 @@ Deno.serve(async (req) => {
     !(await constantTimeEqual(suppliedRunnerSecret, runnerSecret))
   ) {
     return json({ error: "Unauthorized" }, 401);
+  }
+
+  // RENTAUTO and TAKATAK already share the master Prisma PostgreSQL store.
+  // Merely supplying a URL and webhook secret must never start duplicate sync.
+  if (!isIsolatedTakatakReceiverApproved(
+    Deno.env.get("TAKATAK_RENTAUTO_SYNC_INDEPENDENT_STORE_CONFIRMED"),
+  )) {
+    console.warn("[takatak-sync] External sender blocked: direct shared-db projections are authoritative");
+    return json({ error: "External synchronization disabled" }, 503);
   }
 
   const safeTargetUrl = validateTakatakSyncUrl(targetUrl, approvedOrigin);
