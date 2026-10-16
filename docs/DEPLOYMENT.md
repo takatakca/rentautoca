@@ -73,3 +73,6 @@ Main push ESLint gate now compares github.event.before with HEAD, not origin/mai
 
 ## 2026-10-16 TypeScript debt cleanup
 - Historical lint errors found in the optional full lint report; selected fixes are behind changed-file ESLint, TS typecheck, tests, real Postgres CI and immutable SHA deployment. Last confirmed live SHA before changes: `fd0dbd061aa09ded90d6764f985f7f42eb5af9e9`, run 38943989916.
+
+## 2026-10-16 lint remediation phase 2
+- No schema or Edge Function deployment in this change. Frontend changes ship only after ESLint on actual changed files, TypeScript, Vitest, both disposable PostgreSQL tests and exact-SHA MochaHost health. Last confirmed live SHA: `5d172495fecffcd68a06b2e6641f447fecfebadf`, run 38944537116.

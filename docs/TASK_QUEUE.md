@@ -66,3 +66,7 @@ Issue #40: SSH authenticated but remote command channel rejected. GitHub build/t
 - [x] Fix the first set of historical ESLint issues using real TS types and non-destructive source changes.
 - [ ] Confirm CI lint/build, then finish remaining typed concierge/AI/auto-generated integration lint debt without suppressing security checks.
 - [ ] LC1 real accounts, bookings, payments and tracking acceptance remains.
+
+## 2026-10-16 lint cleanup phase 2
+- [x] Replace remaining six historical explicit any/const lint issues (concierge result, AI gateway, preview session broker).
+- [ ] Confirm actual full lint has zero errors and typecheck/build succeed; promote full lint to a blocking gate when verified.

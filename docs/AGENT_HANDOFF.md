@@ -165,3 +165,13 @@ Last completed task: fix CI changed TypeScript lint diff; main push now compares
 - **Known blockers:** remaining preexisting lint errors and warnings; #39 dormant outbox, direct shared TAKATAK projection tested; real LC1 host/guest/Stripe/SMS/GPS acceptance not completed.
 - **Access required:** real acceptance participants and provider settings; no secrets exposed.
 - **Next exact action:** read new CI logs (especially actual changed-file ESLint), fix any typed-prop regressions; verify MochaHost revision; then address remaining lint errors and LC1.
+
+## 2026-10-16 — Full ESLint error remediation follow-up
+- **Completed task:** after first batch reduced global lint from 20 to 6 errors (11 non-blocking React Fast Refresh warnings), typed the concierge tool result and guarded `carId` input, replaced the gateway's `any` fetch signature with standard web request types, and fixed the preview auth broker timer `const` diagnostic.
+- **Current:** check CI's changed-file ESLint, typecheck and full `npm run lint` report, then verify immutable SHA web deployment. If global lint reaches zero errors, promote it from advisory to blocking in next independent commit.
+- **Files changed:** `src/components/concierge/results/ConciergeToolResult.tsx`, `src/integrations/supabase/previewAuthStorage.ts`, `supabase/functions/_shared/ai-gateway.ts`, all five continuity docs and `WORKLOG.md`.
+- **Starting/last deployed SHA:** `5d172495fecffcd68a06b2e6641f447fecfebadf`, CI 38944420410 and MochaHost 38944537116 succeeded with exact live revision. New HEAD is current commit SHA; check its run independently.
+- **Verification:** reviewed GitHub complete lint logs, source typed props and build; new CI pending. No migrations, private data or Edge functions changed in production.
+- **Known blockers:** LC1 real host/guest, Stripe/SMS/GPS and settlement acceptance still missing; #39 external sender remains guarded/inactive due to co-resident master PostgreSQL; historical #40 SSH intermittent.
+- **Access needed:** consented test participants, provider settings, no additional paid Supabase project.
+- **Exact next action:** inspect new lint/build run, fix type errors if any; check full lint report and make it a release gate only when genuinely clean, then validate SHA live.

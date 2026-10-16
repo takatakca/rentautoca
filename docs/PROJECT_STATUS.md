@@ -79,3 +79,6 @@ Fixed CI changed-file lint: prior origin/main...HEAD comparison on push could be
 
 ## 2026-10-16 lint debt progress
 - GitHub full-lint report on SHA `fd0dbd061aa09ded90d6764f985f7f42eb5af9e9` showed 20 errors and 11 warnings, while changed-file gate passed. Started source-level fixes for host forms, comparison, Web Speech, favourites, UI prop types, OAuth sanitization and Tailwind import. Tests and build will validate behavior before deploy.
+
+## 2026-10-16 remaining lint errors addressed
+- After `5d172495fecffcd68a06b2e6641f447fecfebadf`, GitHub full lint reported only six errors and 11 Fast Refresh warnings. Updated typed concierge tool results, standard fetch parameters and the generated preview auth broker timer. Verify CI for new SHA; latest confirmed deployed SHA before changes: `5d172495fecffcd68a06b2e6641f447fecfebadf`.

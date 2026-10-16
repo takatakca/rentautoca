@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { ConciergeVehicleRail, type ConciergeVehicle } from "./ConciergeVehicleCard";
 import { ConciergeVehicleCard } from "./ConciergeVehicleCard";
 import { ConciergeQuoteCard } from "./ConciergeQuoteCard";
@@ -40,7 +41,16 @@ export function ConciergeToolResult({
   input?: unknown;
   output: unknown;
 }) {
-  const o = output as Record<string, any> | null;
+  type ToolResult = ComponentProps<typeof ConciergeQuoteCard>["quote"] & {
+    vehicles?: ConciergeVehicle[];
+    vehicle?: ConciergeVehicle;
+    rating_avg?: number | null;
+    rating_count?: number | null;
+    plans?: ComponentProps<typeof ConciergeProtectionCards>["plans"];
+    policies?: ComponentProps<typeof ConciergePolicyCards>["policies"];
+    trips?: ComponentProps<typeof ConciergeTripCards>["trips"];
+  };
+  const o = output as ToolResult | null;
   if (!o || typeof o !== "object" || o.error) return null;
 
   switch (toolName) {
@@ -55,7 +65,17 @@ export function ConciergeToolResult({
         />
       ) : null;
     case "quote_trip":
-      return <ConciergeQuoteCard quote={o} carId={(input as any)?.carId} />;
+      return (
+        <ConciergeQuoteCard
+          quote={o}
+          carId={
+            typeof input === "object" && input !== null &&
+            "carId" in input && typeof input.carId === "string"
+              ? input.carId
+              : undefined
+          }
+        />
+      );
     case "list_protection_plans":
       return <ConciergeProtectionCards plans={o.plans ?? []} />;
     case "list_cancellation_policies":
