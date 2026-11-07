@@ -1,14 +1,13 @@
 name: Deploy rentauto.ca to MochaHost
 
 on:
-  workflow_run:
-    workflows:
-      - Rentauto CI
-    types:
-      - completed
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      confirm_mochahost:
+        description: "Legacy only: confirm DNS and the active deployment target have been moved back to MochaHost"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,14 +19,17 @@ concurrency:
 jobs:
   build-and-deploy:
     name: Build artifact and deploy rentauto.ca
+    # Production moved to Coolify. Retain this rollback runbook without
+    # automatically writing to the retired Passenger installation after CI.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.event_name == 'workflow_dispatch' &&
+      inputs.confirm_mochahost == true &&
+      vars.RENTAUTO_DEPLOY_TARGET == 'mochahost'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     env:
-      DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ github.sha }}
 
       # Browser-safe shared TAKATAK Supabase project. Server secrets remain in Supabase.
       VITE_TAKATAK_SUPABASE_URL: https://pcjfahhlozsseqqevimi.supabase.co
@@ -70,7 +72,7 @@ jobs:
           echo "Validated revision: $DEPLOY_SHA"
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
 
       - name: Build production frontend
         run: npm run build

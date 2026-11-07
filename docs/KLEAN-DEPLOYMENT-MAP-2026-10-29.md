@@ -1,5 +1,7 @@
 # KLEAN — Carte de déploiement — 2026-10-29
 
+> Historical snapshot. Current Rentauto source/runtime/hosting and QMAPS deployment were reverified on 2026-11-07. See the current continuity checkpoint and release PR receipts; this old cross-project note is not current deployment evidence. Signature: Codex — ChatGPT Work.
+
 Note AVANT / PENDANT / APRÈS, signée KLEAN. Mission déploiement 9/10 lancée 2026-10-29 vers 17:14 EDT.
 Aucun secret n'est copié dans ce document. Un merge n'est PAS une preuve de mise en ligne.
 
