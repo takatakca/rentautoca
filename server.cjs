@@ -46,7 +46,25 @@ if (!fs.existsSync(INDEX_HTML)) {
   process.exit(1);
 }
 
-// Static assets with long cache for hashed files
+// Deployment probes must never fall through to the SPA. Keep them explicit,
+// uncacheable and backed by the same dist directory the app serves.
+app.get("/healthz", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.type("text/plain").status(200).send("ok");
+});
+
+app.get("/revision.txt", (_req, res) => {
+  const revisionPath = path.join(DIST_DIR, "revision.txt");
+  res.setHeader("Cache-Control", "no-store");
+
+  if (!fs.existsSync(revisionPath)) {
+    return res.status(404).type("text/plain").send("revision missing");
+  }
+
+  return res.type("text/plain").sendFile(revisionPath);
+});
+
+// Version probes precede static serving to avoid its one-year asset cache.
 app.use(
   express.static(DIST_DIR, {
     index: false,
@@ -59,30 +77,13 @@ app.use(
   })
 );
 
-// Deployment probes must never fall through to the SPA. Keep them explicit,
-// uncacheable and backed by the same dist directory the app serves.
-app.get("/healthz", (_req, res) => {
-  res.setHeader("Cache-Control", "no-store");
-  res.type("text/plain").status(200).send("ok");
-});
-
-app.get("/revision.txt", (_req, res) => {
-  const revisionPath = path.join(DIST_DIR, "revision.txt");
-
-  if (!fs.existsSync(revisionPath)) {
-    return res.status(404).type("text/plain").send("revision missing");
-  }
-
-  res.setHeader("Cache-Control", "no-store");
-  return res.type("text/plain").sendFile(revisionPath);
-});
-
 // SPA fallback — any non-asset GET returns index.html
 app.get(/.*/, (_req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.sendFile(INDEX_HTML);
 });
 
-app.listen(PORT, () => {
-  console.log(`[server] Rentauto listening on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  const address = server.address();
+  console.log(`[server] Rentauto listening on port ${typeof address === "object" ? address.port : PORT}`);
 });

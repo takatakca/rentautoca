@@ -1,5 +1,7 @@
 # Work log
 
+- 2026-11-07 | Codex — ChatGPT Work | codex/sequential-release-20261107 | active; local verification passed | Integrate PR42, stamp uncached build revision, reconcile lockfile and retire obsolete MochaHost auto-trigger; five continuity files updated | Validate exact CI, deploy existing Coolify target and record public SHA; LC1 remains open
+
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 

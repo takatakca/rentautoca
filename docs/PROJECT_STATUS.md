@@ -1,4 +1,23 @@
 # RENTAUTO.CA — PROJECT STATUS
+
+## 2026-11-07 — Sequential release checkpoint (current)
+
+Signature: Codex — ChatGPT Work.
+
+- BEFORE: claimed `codex/sequential-release-20261107` from main `0f451af2743c0bad5b2798c75a7694a1b8d90b1a`; read AGENTS, continuity, issues #39/#40/#41 and PR #42. Historical KLEAN note merged by ancestry, not treated as current hosting proof.
+- Verified production: DNS apex/www is `209.145.49.63`; existing Coolify application `rcsnisdtwllynxnoce6cehll` (id 24, controller on VPS2, actual destination VPS1), Nixpacks, `node server.cjs`, port 3000. Running image is the baseline main SHA; public HTML SHA-256 `d84c6ef912dc843ca42d0c13276ce060e6855b69047d60ad9493e6a97aa011ec` matches `/app/dist/index.html`. `/healthz` returns plain `ok`; `/revision.txt` is missing. No persistent container mounts. Configured shared Supabase hostname matches `pcjfahhlozsseqqevimi.supabase.co`.
+- DURING: production build now stamps `dist/revision.txt` from SOURCE_COMMIT, then GITHUB_SHA, then git HEAD; malformed supplied revisions fail. Explicit revision route precedes long-lived static caching and returns no-store even when missing. Actual HTTP test covers success, missing revision and unchanged health response. Enable Coolify Include Source Commit in Build before deployment.
+- Retire automatic MochaHost writes: legacy workflow retained for an explicitly selected manual rollback (`confirm_mochahost=true` and repository variable `RENTAUTO_DEPLOY_TARGET=mochahost`); no CI-completion trigger. This does not migrate DNS or alter the old host. Production remains the existing Coolify target.
+- Lockfile reconciliation: existing package.json declared AI SDK/react-markdown packages absent from the lock. npm install filled 94 missing transitive entries and resolved use-sync-external-store 1.5.0 to 1.7.0; no package.json version changes. CI and deployment use npm ci with the committed lock and existing legacy-peer-deps setting. Exact candidate tests/build and both isolated PostgreSQL CI jobs must pass before merge/deploy.
+- Branch reconciliation: historical host/guest/driver, booking, cancellation, reviews, payouts, support, tracking and identity branches have their feature files or equivalent consolidated commits in newer main. Do not merge old copies of App/types/Stripe handlers back over current source. Five fully patch-equivalent branches require no write. Old hosting diagnostic branches are not enabled; seo-legal-kit remains a separate unreviewed integration. Preserve all refs.
+- Files changed: package.json/package-lock.json, server.cjs, scripts/write-release.mjs, release provenance tests, both workflow install commands, legacy workflow trigger, WORKLOG, historical note preface, and all five continuity files.
+- Local verification completed: Node 22 frozen npm ci, typecheck, edge-source parity (24 canonical functions), migration guard, 102 tests / 15 files, production build, full lint (0 errors, 11 existing warnings). GitHub exact-candidate PostgreSQL jobs and main deployment receipt still pending.
+- AFTER source preparation: validation and merge pending; this checkpoint does not certify the new build live. Exact SHA/run/container/public revision receipt will be posted on the release PR and #40 after checks. Rollback image must be retained first. No DB migration, Edge Function, secret, Stripe/SMS/GPS or real customer operation is included.
+- Blockers retained: #39 second HTTP writer is disabled; shared direct projections remain canonical. Do not apply the obsolete global-auth/outbox migration. #41 LC1 real host/guest/payment/refund/return/GPS sign-off remains incomplete. Old MochaHost #40 errors are historical and not the active hosting diagnosis.
+- Exact next action: run frozen dependency install, typecheck, edge parity, migration safety, tests/lint/build, then green candidate and main CI; deploy the exact main through the existing Coolify target and verify uncached public revision, runtime hashes and UI. Publish signed AFTER receipt and proceed to the next repository.
+
+Earlier entries below are historical; this checkpoint supersedes their hosting assumptions.
+
 Last reconciled: 2026-10-14 (UTC). Live GitHub evidence takes precedence over this snapshot.
 
 ## Source of truth
