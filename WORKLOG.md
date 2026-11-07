@@ -1,5 +1,7 @@
 # Work log
 
+- 2026-11-07 | Codex — ChatGPT Work | codex/sequential-release-20261107 | active | Reconcile PR42 and existing Coolify deployment; verify source/runtime and prevent obsolete MochaHost auto-deploy | Check exact CI, live revision and LC1 boundaries; update all five continuity files
+
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
